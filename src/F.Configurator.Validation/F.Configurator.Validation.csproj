@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\F.Configurator.Catalog\F.Configurator.Catalog.csproj" />
+    <ProjectReference Include="..\F.Configurator.Engine\F.Configurator.Engine.csproj" />
+    <ProjectReference Include="..\F.Configurator.Expressions\F.Configurator.Expressions.csproj" />
+    <ProjectReference Include="..\F.Configurator.Pricing\F.Configurator.Pricing.csproj" />
+    <ProjectReference Include="..\F.Configurator.StepResult\F.Configurator.StepResult.csproj" />
+  </ItemGroup>
+
+</Project>

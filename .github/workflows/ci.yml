@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore F.Configurator.slnx
+      - run: dotnet build F.Configurator.slnx --no-restore
+      - run: dotnet format F.Configurator.slnx --verify-no-changes --no-restore
+      - run: dotnet test F.Configurator.slnx --no-build --settings tests/coverage.runsettings --results-directory coverage
+      - name: Coverage summary
+        if: always()
+        run: python3 .github/scripts/coverage-summary.py $(find coverage -name '*.cobertura.xml') >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage/**/*.cobertura.xml
+          if-no-files-found: ignore
