@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/src/">
+    <Project Path="src/F.Configurator.Expressions/F.Configurator.Expressions.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/F.Configurator.Architecture.Tests/F.Configurator.Architecture.Tests.csproj" />
   </Folder>
