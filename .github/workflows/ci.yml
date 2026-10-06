@@ -15,4 +15,5 @@ jobs:
           dotnet-version: 10.0.x
       - run: dotnet restore F.Configurator.slnx
       - run: dotnet build F.Configurator.slnx --no-restore
+      - run: dotnet format F.Configurator.slnx --verify-no-changes --no-restore
       - run: dotnet test F.Configurator.slnx --no-build
