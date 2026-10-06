@@ -6,28 +6,20 @@ namespace F.Configurator.Architecture.Tests;
 // Checks declared ProjectReferences, so it also catches references the code does not use yet.
 public class ModuleDependencyTests
 {
-    [Fact]
-    public void Expressions_does_not_depend_on_any_other_module()
+    public static TheoryData<string, string[]> AllowedDependencies => new()
     {
-        var references = ProjectReferencesOf("F.Configurator.Expressions");
+        { "F.Configurator.Expressions", [] },
+        { "F.Configurator.Catalog", ["F.Configurator.Expressions"] },
+        { "F.Configurator.Engine", ["F.Configurator.Catalog", "F.Configurator.Expressions"] },
+    };
 
-        Assert.Empty(references);
-    }
-
-    [Fact]
-    public void Catalog_depends_only_on_Expressions()
+    [Theory]
+    [MemberData(nameof(AllowedDependencies))]
+    public void Module_depends_only_on_allowed_modules(string module, string[] allowed)
     {
-        var references = ProjectReferencesOf("F.Configurator.Catalog");
+        var references = ProjectReferencesOf(module);
 
-        Assert.Subset(new HashSet<string> { "F.Configurator.Expressions" }, references.ToHashSet());
-    }
-
-    [Fact]
-    public void Engine_depends_only_on_Catalog_and_Expressions()
-    {
-        var references = ProjectReferencesOf("F.Configurator.Engine");
-
-        Assert.Subset(new HashSet<string> { "F.Configurator.Catalog", "F.Configurator.Expressions" }, references.ToHashSet());
+        Assert.Subset(allowed.ToHashSet(), references.ToHashSet());
     }
 
     private static IReadOnlyList<string> ProjectReferencesOf(string module)
