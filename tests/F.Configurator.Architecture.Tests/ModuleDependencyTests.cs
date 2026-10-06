@@ -29,7 +29,7 @@ public class ModuleDependencyTests
 
     private static IReadOnlyList<string> ProjectReferencesOf(string module)
     {
-        var path = Path.Combine(RepositoryRoot(), "src", module, $"{module}.csproj");
+        var path = Path.Combine(Repository.ModuleDirectory(module), $"{module}.csproj");
         Assert.True(File.Exists(path), $"Missing project for module {module}: {path}");
 
         return XDocument.Load(path)
@@ -38,13 +38,5 @@ public class ModuleDependencyTests
             .Select(reference => ((string)reference.Attribute("Include")!).Replace('\\', '/'))
             .Select(include => Path.GetFileNameWithoutExtension(include))
             .ToList();
-    }
-
-    private static string RepositoryRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "F.Configurator.slnx")))
-            directory = directory.Parent;
-        return directory?.FullName ?? throw new InvalidOperationException("F.Configurator.slnx not found");
     }
 }
