@@ -11,6 +11,7 @@ public class ModuleDependencyTests
         { "F.Configurator.Expressions", [] },
         { "F.Configurator.Catalog", ["F.Configurator.Expressions"] },
         { "F.Configurator.Engine", ["F.Configurator.Catalog", "F.Configurator.Expressions"] },
+        { "F.Configurator.StepResult", [] },
     };
 
     [Theory]
