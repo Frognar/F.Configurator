@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/F.Configurator.Catalog/F.Configurator.Catalog.csproj" />
     <Project Path="src/F.Configurator.Expressions/F.Configurator.Expressions.csproj" />
   </Folder>
   <Folder Name="/tests/">
