@@ -12,6 +12,7 @@ public class ModuleDependencyTests
         { "F.Configurator.Catalog", ["F.Configurator.Expressions"] },
         { "F.Configurator.Engine", ["F.Configurator.Catalog", "F.Configurator.Expressions"] },
         { "F.Configurator.StepResult", [] },
+        { "F.Configurator.Pricing", ["F.Configurator.Expressions", "F.Configurator.StepResult"] },
     };
 
     [Theory]
