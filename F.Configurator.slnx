@@ -1,2 +1,5 @@
 <Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/F.Configurator.Architecture.Tests/F.Configurator.Architecture.Tests.csproj" />
+  </Folder>
 </Solution>
