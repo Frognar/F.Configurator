@@ -8,6 +8,7 @@
     <Project Path="src/F.Configurator.Dsl/F.Configurator.Dsl.csproj" />
     <Project Path="src/F.Configurator.Engine/F.Configurator.Engine.csproj" />
     <Project Path="src/F.Configurator.Expressions/F.Configurator.Expressions.csproj" />
+    <Project Path="src/F.Configurator.Persistence/F.Configurator.Persistence.csproj" />
     <Project Path="src/F.Configurator.Pricing/F.Configurator.Pricing.csproj" />
     <Project Path="src/F.Configurator.StepResult/F.Configurator.StepResult.csproj" />
     <Project Path="src/F.Configurator.Validation/F.Configurator.Validation.csproj" />
