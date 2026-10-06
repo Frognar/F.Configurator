@@ -22,6 +22,14 @@ public class ModuleDependencyTests
         Assert.Subset(new HashSet<string> { "F.Configurator.Expressions" }, references.ToHashSet());
     }
 
+    [Fact]
+    public void Engine_depends_only_on_Catalog_and_Expressions()
+    {
+        var references = ProjectReferencesOf("F.Configurator.Engine");
+
+        Assert.Subset(new HashSet<string> { "F.Configurator.Catalog", "F.Configurator.Expressions" }, references.ToHashSet());
+    }
+
     private static IReadOnlyList<string> ProjectReferencesOf(string module)
     {
         var path = Path.Combine(RepositoryRoot(), "src", module, $"{module}.csproj");
