@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace F.Configurator.Architecture.Tests;
 
@@ -32,6 +33,18 @@ public class CorePurityTests
             .ToList();
 
         Assert.Empty(violations);
+    }
+
+    // Directory.Build.targets removes System.IO and System.Net.Http from implicit usings for flagged projects.
+    [Theory]
+    [MemberData(nameof(CoreModules))]
+    public void Core_module_is_marked_as_core(string module)
+    {
+        var project = XDocument.Load(Path.Combine(Repository.ModuleDirectory(module), $"{module}.csproj"));
+
+        var flags = project.Descendants("IsCoreModule").Select(flag => flag.Value.Trim()).ToList();
+
+        Assert.Equal(["true"], flags);
     }
 
     private static bool IsBuildOutput(string path) =>
