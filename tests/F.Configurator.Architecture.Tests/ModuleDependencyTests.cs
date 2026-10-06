@@ -2,8 +2,8 @@ using System.Xml.Linq;
 
 namespace F.Configurator.Architecture.Tests;
 
-// Pilnuje zależności między modułami z rozdziału 3.1 analizy.
-// Sprawdza zadeklarowane ProjectReference, więc łapie też referencje, których kod jeszcze nie używa.
+// Guards the module dependencies from section 3.1 of the analysis.
+// Checks declared ProjectReferences, so it also catches references the code does not use yet.
 public class ModuleDependencyTests
 {
     [Fact]
@@ -17,7 +17,7 @@ public class ModuleDependencyTests
     private static IReadOnlyList<string> ProjectReferencesOf(string module)
     {
         var path = Path.Combine(RepositoryRoot(), "src", module, $"{module}.csproj");
-        Assert.True(File.Exists(path), $"Brak projektu modułu {module}: {path}");
+        Assert.True(File.Exists(path), $"Missing project for module {module}: {path}");
 
         return XDocument.Load(path)
             .Descendants("ProjectReference")
@@ -30,6 +30,6 @@ public class ModuleDependencyTests
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "F.Configurator.slnx")))
             directory = directory.Parent;
-        return directory?.FullName ?? throw new InvalidOperationException("Nie znaleziono F.Configurator.slnx");
+        return directory?.FullName ?? throw new InvalidOperationException("F.Configurator.slnx not found");
     }
 }
