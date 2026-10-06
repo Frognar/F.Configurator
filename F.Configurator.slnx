@@ -17,5 +17,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/F.Configurator.Architecture.Tests/F.Configurator.Architecture.Tests.csproj" />
+    <Project Path="tests/F.Configurator.Expressions.Tests/F.Configurator.Expressions.Tests.csproj" />
   </Folder>
 </Solution>
