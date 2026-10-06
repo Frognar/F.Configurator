@@ -14,6 +14,14 @@ public class ModuleDependencyTests
         Assert.Empty(references);
     }
 
+    [Fact]
+    public void Catalog_depends_only_on_Expressions()
+    {
+        var references = ProjectReferencesOf("F.Configurator.Catalog");
+
+        Assert.Subset(new HashSet<string> { "F.Configurator.Expressions" }, references.ToHashSet());
+    }
+
     private static IReadOnlyList<string> ProjectReferencesOf(string module)
     {
         var path = Path.Combine(RepositoryRoot(), "src", module, $"{module}.csproj");
