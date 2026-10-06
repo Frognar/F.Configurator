@@ -31,7 +31,9 @@ public class ModuleDependencyTests
 
         return XDocument.Load(path)
             .Descendants("ProjectReference")
-            .Select(reference => Path.GetFileNameWithoutExtension((string)reference.Attribute("Include")!))
+            // Tooling writes Windows separators in .csproj even on Linux, where Path does not split on them.
+            .Select(reference => ((string)reference.Attribute("Include")!).Replace('\\', '/'))
+            .Select(include => Path.GetFileNameWithoutExtension(include))
             .ToList();
     }
 
