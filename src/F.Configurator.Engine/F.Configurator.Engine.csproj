@@ -1,2 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\F.Configurator.Catalog\F.Configurator.Catalog.csproj" />
+    <ProjectReference Include="..\F.Configurator.Expressions\F.Configurator.Expressions.csproj" />
+  </ItemGroup>
 </Project>

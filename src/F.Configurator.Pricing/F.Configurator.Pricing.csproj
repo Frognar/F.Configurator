@@ -1,2 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\F.Configurator.Expressions\F.Configurator.Expressions.csproj" />
+    <ProjectReference Include="..\F.Configurator.StepResult\F.Configurator.StepResult.csproj" />
+  </ItemGroup>
 </Project>
