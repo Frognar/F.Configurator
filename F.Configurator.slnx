@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/solution-items/">
     <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/F.Configurator.Catalog/F.Configurator.Catalog.csproj" />
