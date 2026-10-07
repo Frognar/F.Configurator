@@ -157,4 +157,15 @@ public class FunctionTests
 
         Assert.Equal(Value.Number(1230m), value);
     }
+
+    // A step works for prices too, e.g. rounding to 5 groszy.
+    [Fact]
+    public void Round_to_a_fractional_step_rounds_half_up()
+    {
+        var expression = Expression.Round(Expression.Number(1.225m), Expression.Number(0.05m));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Number(1.25m), value);
+    }
 }
