@@ -52,4 +52,16 @@ public class MembershipTests
 
         Assert.Equal(Value.Boolean(true), value);
     }
+
+    // Grammar 6.4: like `≠`, "A nie w X" is true when A has no value.
+    [Fact]
+    public void Missing_value_is_outside_every_range()
+    {
+        var expression = Expression.NotIn(Expression.Reference("Odchylka"), Expression.Range(-5m, -1m));
+        var values = new Dictionary<string, Value>();
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Boolean(true), value);
+    }
 }
