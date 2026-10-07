@@ -90,7 +90,7 @@ public sealed record Negate(Expression Operand) : Expression
         Operand.Evaluate(values) switch
         {
             NumberValue { Amount: var amount } => new NumberValue(-amount),
-            { } v => v,
+            _ => Value.Missing
         };
 }
 
