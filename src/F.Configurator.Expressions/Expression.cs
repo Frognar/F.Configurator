@@ -25,7 +25,9 @@ public abstract record Expression
     public static Expression LessThan(Expression left, Expression right) => new LessThan(left, right);
     public static Expression LessThanOrEqual(Expression left, Expression right) => new LessThanOrEqual(left, right);
     public static Expression GreaterThan(Expression left, Expression right) => new GreaterThan(left, right);
-    public static Expression GreaterThanOrEqual(Expression left, Expression right) => new GreaterThanOrEqual(left, right);
+
+    public static Expression GreaterThanOrEqual(Expression left, Expression right) =>
+        new GreaterThanOrEqual(left, right);
 
     public static Expression In(Expression left, Expression right) => new In(left, right);
     public static Expression NotIn(Expression left, Expression right) => new NotIn(left, right);
@@ -270,7 +272,7 @@ public sealed record Pad(Expression ValueText, Expression TotalWidth) : Expressi
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         (ValueText.Evaluate(values), TotalWidth.Evaluate(values)) switch
         {
-            (NumberValue {Value: var number}, NumberValue {Value: var width and >= 0}) =>
+            (NumberValue { Value: var number }, NumberValue { Value: var width and >= 0 }) =>
                 Value.Text(Format(number).PadLeft(decimal.ToInt32(width), '0')),
             _ => Value.Missing,
         };
