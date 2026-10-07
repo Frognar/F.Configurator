@@ -50,4 +50,15 @@ public class FunctionTests
 
         Assert.Equal(Value.Number(2000m), value);
     }
+
+    [Fact]
+    public void Length_evaluates_to_the_number_of_characters()
+    {
+        var expression = Expression.Length(Expression.Reference("Grawer"));
+        var values = new Dictionary<string, Value> { ["Grawer"] = Value.Text("Kowalscy") };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Number(8m), value);
+    }
 }
