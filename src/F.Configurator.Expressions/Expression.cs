@@ -22,14 +22,14 @@ public sealed record Add(Expression Left, Expression Right) : Expression
         (Left.Evaluate(), Right.Evaluate()) switch
         {
             (NumberValue left, NumberValue right) => new NumberValue(left.Amount + right.Amount),
-            _ => throw new NotImplementedException(),
+            _ => new MissingValue()
         };
 
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
             (NumberValue left, NumberValue right) => new NumberValue(left.Amount + right.Amount),
-            _ => throw new NotImplementedException(),
+            _ => new MissingValue()
         };
 }
 
