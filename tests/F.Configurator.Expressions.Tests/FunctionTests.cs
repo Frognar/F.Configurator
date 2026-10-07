@@ -20,4 +20,16 @@ public class FunctionTests
 
         Assert.Equal(Value.Number(900m), value);
     }
+
+    // Grammar 6.4: like arithmetic, a missing argument makes the result missing.
+    [Fact]
+    public void Min_with_a_missing_argument_evaluates_to_missing()
+    {
+        var expression = Expression.Min(Expression.Reference("SzerokoscMM"), Expression.Number(1000m));
+        var values = new Dictionary<string, Value>();
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Missing, value);
+    }
 }
