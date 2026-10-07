@@ -1,7 +1,9 @@
 namespace F.Configurator.Expressions;
 
-public record Value(decimal Amount)
+public abstract record Value
 {
-    public static Value Number(decimal number) => new(number);
-    public static Value Missing => new(1);
+    public static Value Number(decimal number) => new NumberValue(number);
+    public static Value Missing => new NumberValue(1);
 }
+
+public sealed record NumberValue(decimal Amount) : Value;

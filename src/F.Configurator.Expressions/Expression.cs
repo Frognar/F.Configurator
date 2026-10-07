@@ -12,14 +12,25 @@ public abstract record Expression
 
 public sealed record Number(decimal Amount) : Expression
 {
-    public override Value Evaluate() => new(Amount);
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => new(Amount);
+    public override Value Evaluate() => new NumberValue(Amount);
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => new NumberValue(Amount);
 }
 
 public sealed record Add(Expression Left, Expression Right) : Expression
 {
-    public override Value Evaluate() => new(Left.Evaluate().Amount + Right.Evaluate().Amount);
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => new(Left.Evaluate(values).Amount + Right.Evaluate(values).Amount);
+    public override Value Evaluate() =>
+        (Left.Evaluate(), Right.Evaluate()) switch
+        {
+            (NumberValue left, NumberValue right) => new NumberValue(left.Amount + right.Amount),
+            _ => throw new NotImplementedException(),
+        };
+
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
+        (Left.Evaluate(values), Right.Evaluate(values)) switch
+        {
+            (NumberValue left, NumberValue right) => new NumberValue(left.Amount + right.Amount),
+            _ => throw new NotImplementedException(),
+        };
 }
 
 public sealed record Reference(string Name) : Expression
