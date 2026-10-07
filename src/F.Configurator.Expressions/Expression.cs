@@ -44,6 +44,8 @@ public abstract record Expression
 
     public static Expression Pad(Expression value, Expression totalWidth, Expression paddingChar) =>
         new Pad(value, totalWidth, paddingChar);
+
+    public static Expression Round(Expression operand) => new Round(operand);
 }
 
 public sealed record Number(decimal Amount) : Expression
@@ -297,4 +299,14 @@ public sealed record Pad(Expression ValueText, Expression TotalWidth, Expression
 
     private static string Format(decimal number) =>
         number.ToString("0.############################", CultureInfo.InvariantCulture);
+}
+
+public sealed record Round(Expression Operand) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
+        Operand.Evaluate(values) switch
+        {
+            NumberValue { Value: var number } => Value.Number(Math.Round(number, MidpointRounding.AwayFromZero)),
+            _ => Value.Missing,
+        };
 }
