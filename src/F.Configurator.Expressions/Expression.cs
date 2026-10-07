@@ -40,7 +40,7 @@ public abstract record Expression
         => new If(condition, then, otherwise);
 
     public static Expression Length(Expression operand) => new Length(operand);
-    public static Expression Pad(Expression value, Expression totalWidth) => new Pad(value, totalWidth);
+    public static Expression Pad(Expression value, Expression totalWidth) => new Pad(value, totalWidth, Text("0"));
 
     public static Expression Pad(Expression value, Expression totalWidth, Expression paddingChar) =>
         new Pad(value, totalWidth, paddingChar);
@@ -272,22 +272,18 @@ public sealed record Length(Expression Operand) : Expression
         };
 }
 
-public sealed record Pad(Expression ValueText, Expression TotalWidth, Expression? PaddingChar = null) : Expression
+public sealed record Pad(Expression ValueText, Expression TotalWidth, Expression PaddingChar) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        (
-                AsText(ValueText.Evaluate(values)),
-                TotalWidth.Evaluate(values),
-                PaddingChar?.Evaluate(values) ?? Value.Text("0")
-            ) switch
-            {
-                (
-                    TextValue { Value: var text },
-                    NumberValue { Value: var width and >= 0 },
-                    TextValue { Value: [var c] }) =>
-                    Value.Text(text.PadLeft(decimal.ToInt32(width), c)),
-                _ => Value.Missing,
-            };
+        (AsText(ValueText.Evaluate(values)), TotalWidth.Evaluate(values), PaddingChar.Evaluate(values)) switch
+        {
+            (
+                TextValue { Value: var text },
+                NumberValue { Value: var width and >= 0 },
+                TextValue { Value: [var c] }) =>
+                Value.Text(text.PadLeft(decimal.ToInt32(width), c)),
+            _ => Value.Missing,
+        };
 
     private static Value AsText(Value value) =>
         value switch
