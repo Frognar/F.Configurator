@@ -68,7 +68,7 @@ public abstract record BinaryArithmetic(Expression Left, Expression Right) : Exp
         (left, right) switch
         {
             (NumberValue l, NumberValue r) => Apply(l.Value, r.Value),
-            _ => Value.Missing
+            _ => Value.Missing,
         };
 
     protected abstract Value Apply(decimal left, decimal right);
@@ -80,7 +80,7 @@ public sealed record Add(Expression Left, Expression Right) : BinaryArithmetic(L
         (left, right) switch
         {
             (TextValue l, TextValue r) => Value.Text(l.Value + r.Value),
-            _ => base.Combine(left, right)
+            _ => base.Combine(left, right),
         };
 
     protected override Value Apply(decimal left, decimal right) => Value.Number(left + right);
@@ -108,7 +108,7 @@ public sealed record Negate(Expression Operand) : Expression
         Operand.Evaluate(values) switch
         {
             NumberValue { Value: var amount } => Value.Number(-amount),
-            _ => Value.Missing
+            _ => Value.Missing,
         };
 }
 
@@ -143,7 +143,7 @@ public sealed record Equal(Expression Left, Expression Right) : Expression
         (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
             (MissingValue, _) or (_, MissingValue) => BooleanValue.False,
-            ({ } l, { } r) => Value.Boolean(l == r)
+            ({ } l, { } r) => Value.Boolean(l == r),
         };
 }
 
@@ -153,7 +153,7 @@ public sealed record NotEqual(Expression Left, Expression Right) : Expression
         (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
             (MissingValue, _) or (_, MissingValue) => BooleanValue.True,
-            ({ } l, { } r) => Value.Boolean(l != r)
+            ({ } l, { } r) => Value.Boolean(l != r),
         };
 }
 
@@ -164,7 +164,7 @@ public abstract record BinaryComparison(Expression Left, Expression Right) : Exp
         return (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
             (NumberValue left, NumberValue right) => Compare(left.Value, right.Value),
-            _ => BooleanValue.False
+            _ => BooleanValue.False,
         };
     }
 
@@ -248,7 +248,7 @@ public sealed record Length(Expression Operand) : Expression
         Operand.Evaluate(values) switch
         {
             TextValue { Value: var str } => Value.Number(str.Length),
-            _ => Value.Missing
+            _ => Value.Missing,
         };
 }
 
