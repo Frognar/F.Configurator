@@ -82,4 +82,22 @@ public class TableTests
 
         Assert.Equal(Value.Number(2030m), value);
     }
+
+    // "Any" means any chosen value: a feature without a value does not match an empty key cell (6.4).
+    [Fact]
+    public void Missing_key_does_not_match_an_empty_key_cell()
+    {
+        var table = new Table(
+            ["Norma", "Szerokosc"],
+            [new TableRow([[Value.Text("PL")], []], new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(2030m) })]);
+        var expression = Expression.TableLookup(
+            table,
+            [Expression.Reference("Norma"), Expression.Reference("Szerokosc")],
+            "WysokoscMM");
+        var values = new Dictionary<string, Value> { ["Norma"] = Value.Text("PL") };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Missing, value);
+    }
 }
