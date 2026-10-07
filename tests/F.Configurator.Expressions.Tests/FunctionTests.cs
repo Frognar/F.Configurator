@@ -124,4 +124,15 @@ public class FunctionTests
 
         Assert.Equal(Value.Missing, value);
     }
+
+    // `zaokrąglij(x)` rounds half up, like Excel (decision 2026-10-07).
+    [Fact]
+    public void Round_rounds_half_up()
+    {
+        var expression = Expression.Round(Expression.Number(2.5m));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Number(3m), value);
+    }
 }
