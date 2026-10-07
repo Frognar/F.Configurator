@@ -8,6 +8,7 @@ public abstract record Expression
     public static Expression Multiply(Expression left, Expression right) => new Multiply(left, right);
     public static Expression Divide(Expression left, Expression right) => new Divide(left, right);
     public static Expression Equal(Expression left, Expression right) => new Equal(left, right);
+    public static Expression NotEqual(Expression left, Expression right) => new NotEqual(left, right);
     public static Expression Reference(string name) => new Reference(name);
 
     public abstract Value Evaluate(IReadOnlyDictionary<string, Value> values);
@@ -61,7 +62,11 @@ public sealed record Equal(Expression Left, Expression Right) : Expression
             (MissingValue, _) or (_, MissingValue) => new BooleanValue(false),
             ({ } l, { } r) => new BooleanValue(l == r)
         };
+}
 
+public sealed record NotEqual(Expression Left, Expression Right) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => new BooleanValue(true);
 }
 
 public sealed record Reference(string Name) : Expression
