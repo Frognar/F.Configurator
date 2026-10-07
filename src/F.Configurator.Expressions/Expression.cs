@@ -32,10 +32,10 @@ public abstract record Expression
     public static Expression Or(Expression left, Expression right) => new Or(left, right);
     public static Expression Not(Expression operand) => new Not(operand);
 
-    public static Expression Length(Expression operand) => new Length(operand);
-
     public static Expression If(Expression condition, Expression then, Expression otherwise)
         => new If(condition, then, otherwise);
+
+    public static Expression Length(Expression operand) => new Length(operand);
 }
 
 public sealed record Number(decimal Amount) : Expression
@@ -242,16 +242,6 @@ public sealed record Not(Expression Operand) : Expression
         };
 }
 
-public sealed record Length(Expression Operand) : Expression
-{
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        Operand.Evaluate(values) switch
-        {
-            TextValue { Value: var str } => Value.Number(str.Length),
-            _ => Value.Missing,
-        };
-}
-
 public sealed record If(Expression Condition, Expression Then, Expression Otherwise) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
@@ -259,5 +249,15 @@ public sealed record If(Expression Condition, Expression Then, Expression Otherw
         {
             BooleanValue { Value: true } => Then.Evaluate(values),
             _ => Otherwise.Evaluate(values),
+        };
+}
+
+public sealed record Length(Expression Operand) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
+        Operand.Evaluate(values) switch
+        {
+            TextValue { Value: var str } => Value.Number(str.Length),
+            _ => Value.Missing,
         };
 }
