@@ -64,4 +64,22 @@ public class TableTests
 
         Assert.Equal(Value.Number(830m), value);
     }
+
+    // Grammar 4.4: an empty key cell matches any chosen value.
+    [Fact]
+    public void Lookup_matches_any_value_in_an_empty_key_cell()
+    {
+        var table = new Table(
+            ["Norma", "Szerokosc"],
+            [new TableRow([[Value.Text("PL")], []], new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(2030m) })]);
+        var expression = Expression.TableLookup(
+            table,
+            [Expression.Reference("Norma"), Expression.Reference("Szerokosc")],
+            "WysokoscMM");
+        var values = new Dictionary<string, Value> { ["Norma"] = Value.Text("PL"), ["Szerokosc"] = Value.Number(90m) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Number(2030m), value);
+    }
 }
