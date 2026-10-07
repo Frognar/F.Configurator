@@ -22,4 +22,19 @@ public class ArithmeticTests
 
         Assert.Equal(Value.Number(904m), value);
     }
+
+    // Grammar 6.4: arithmetic with a missing value gives a missing value.
+    [Theory]
+    [InlineData(1)]
+    [InlineData(-21)]
+    [InlineData(0.5)]
+    [InlineData(1044)]
+    public void Addition_with_missing_operand_evaluates_to_missing(decimal amount)
+    {
+        var expression = Expression.Add(Expression.Reference("SzerokoscMM"), Expression.Number(amount));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Missing, value);
+    }
 }
