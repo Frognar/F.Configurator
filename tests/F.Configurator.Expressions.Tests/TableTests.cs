@@ -32,4 +32,19 @@ public class TableTests
 
         Assert.Equal(Value.Missing, value);
     }
+
+    // A column outside the table is reported by the validator; at runtime it is a missing value.
+    [Fact]
+    public void Lookup_of_an_unknown_column_evaluates_to_missing()
+    {
+        var table = new Table(
+            ["Norma"],
+            [new TableRow([Value.Text("PL")], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
+        var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "WysokoscMM");
+        var values = new Dictionary<string, Value> { ["Norma"] = Value.Text("PL") };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Missing, value);
+    }
 }
