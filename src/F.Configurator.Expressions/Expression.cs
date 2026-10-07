@@ -5,6 +5,7 @@ public abstract record Expression
     public static Expression Number(decimal number) => new Number(number);
     public static Expression Add(Expression left, Expression right) => new Add(left, right);
     public static Expression Subtract(Expression left, Expression right) => new Subtract(left, right);
+    public static Expression Multiply(Expression left, Expression right) => new Multiply(left, right);
     public static Expression Reference(string name) => new Reference(name);
 
     public abstract Value Evaluate(IReadOnlyDictionary<string, Value> values);
@@ -37,6 +38,11 @@ public sealed record Add(Expression Left, Expression Right) : BinaryArithmetic(L
 public sealed record Subtract(Expression Left, Expression Right) : BinaryArithmetic(Left, Right)
 {
     protected override Value Apply(decimal left, decimal right) => new NumberValue(left - right);
+}
+
+public sealed record Multiply(Expression Left, Expression Right) : BinaryArithmetic(Left, Right)
+{
+    protected override Value Apply(decimal left, decimal right) => new NumberValue(left * right);
 }
 
 public sealed record Reference(string Name) : Expression
