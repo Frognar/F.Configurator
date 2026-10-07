@@ -87,4 +87,15 @@ public class FunctionTests
 
         Assert.Equal(Value.Text("0900"), value);
     }
+
+    [Fact]
+    public void Pad_fills_a_text_with_zeros_on_the_left()
+    {
+        var expression = Expression.Pad(Expression.Reference("Kod"), Expression.Number(3m));
+        var values = new Dictionary<string, Value> { ["Kod"] = Value.Text("7") };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Text("007"), value);
+    }
 }
