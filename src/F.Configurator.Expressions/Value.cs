@@ -6,6 +6,7 @@ public abstract record Value
     public static Value Number(decimal number) => new NumberValue(number);
     public static Value Boolean(bool boolean) => new BooleanValue(boolean);
     public static Value Text(string text) => new TextValue(text);
+    public static Value Range(decimal min, decimal max) => new RangeValue(min, max);
 }
 
 public sealed record NumberValue(decimal Value) : Value;

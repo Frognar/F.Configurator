@@ -47,7 +47,7 @@ public sealed record Reference(string Name) : Expression
 
 public sealed record Range(decimal Min, decimal Max) : Expression
 {
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => new RangeValue(Min, Max);
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => Value.Range(Min, Max);
 }
 
 public sealed record Text(string TextValue) : Expression
