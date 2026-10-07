@@ -68,4 +68,15 @@ public class LogicalTests
 
         Assert.Equal(Value.Boolean(false), value);
     }
+
+    [Fact]
+    public void Not_negates_a_condition()
+    {
+        var expression = Expression.Not(Expression.Reference("A"));
+        var values = new Dictionary<string, Value> { ["A"] = Value.Boolean(true) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Boolean(false), value);
+    }
 }
