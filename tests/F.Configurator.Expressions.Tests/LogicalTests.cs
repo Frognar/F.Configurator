@@ -79,4 +79,16 @@ public class LogicalTests
 
         Assert.Equal(Value.Boolean(false), value);
     }
+
+    // Grammar 6.4: a missing condition counts as false, so its negation is true, consistent with `≠` and `nie w`.
+    [Fact]
+    public void Not_of_a_missing_condition_is_true()
+    {
+        var expression = Expression.Not(Expression.Reference("A"));
+        var values = new Dictionary<string, Value>();
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Boolean(true), value);
+    }
 }
