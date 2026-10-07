@@ -74,4 +74,16 @@ public class ArithmeticTests
 
         Assert.Equal(Value.Number(1.845m), value);
     }
+
+    // Decision 2026-10-07: division by zero gives a missing value, like other undefined arithmetic (6.4).
+    [Fact]
+    public void Division_by_zero_evaluates_to_missing()
+    {
+        var expression = Expression.Divide(Expression.Number(1845m), Expression.Reference("Dzielnik"));
+        var values = new Dictionary<string, Value> { ["Dzielnik"] = Value.Number(0m) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Missing, value);
+    }
 }
