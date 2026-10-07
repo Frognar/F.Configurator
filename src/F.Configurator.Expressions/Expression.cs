@@ -61,7 +61,7 @@ public abstract record BinaryArithmetic(Expression Left, Expression Right) : Exp
     {
         return (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
-            (NumberValue left, NumberValue right) => Apply(left.Amount, right.Amount),
+            (NumberValue left, NumberValue right) => Apply(left.Value, right.Value),
             _ => Value.Missing
         };
     }
@@ -95,7 +95,7 @@ public sealed record Negate(Expression Operand) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         Operand.Evaluate(values) switch
         {
-            NumberValue { Amount: var amount } => new NumberValue(-amount),
+            NumberValue { Value: var amount } => new NumberValue(-amount),
             _ => Value.Missing
         };
 }
@@ -126,7 +126,7 @@ public abstract record BinaryComparison(Expression Left, Expression Right) : Exp
     {
         return (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
-            (NumberValue left, NumberValue right) => Compare(left.Amount, right.Amount),
+            (NumberValue left, NumberValue right) => Compare(left.Value, right.Value),
             _ => BooleanValue.False
         };
     }
@@ -159,7 +159,7 @@ public sealed record In(Expression Left, Expression Right) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
-            (NumberValue n, RangeValue r) => new BooleanValue(n.Amount >= r.Min && n.Amount <= r.Max),
+            (NumberValue n, RangeValue r) => new BooleanValue(n.Value >= r.Min && n.Value <= r.Max),
             _ => BooleanValue.False,
         };
 }
@@ -169,7 +169,7 @@ public sealed record NotIn(Expression Left, Expression Right) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
-            (NumberValue n, RangeValue r) => new BooleanValue(n.Amount < r.Min || n.Amount > r.Max),
+            (NumberValue n, RangeValue r) => new BooleanValue(n.Value < r.Min || n.Value > r.Max),
             (MissingValue, _) => BooleanValue.True,
             _ => BooleanValue.False,
         };

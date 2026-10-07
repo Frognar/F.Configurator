@@ -8,7 +8,7 @@ public abstract record Value
     public static Value Text(string text) => new TextValue(text);
 }
 
-public sealed record NumberValue(decimal Amount) : Value;
+public sealed record NumberValue(decimal Value) : Value;
 
 public sealed record BooleanValue(bool Value) : Value
 {
