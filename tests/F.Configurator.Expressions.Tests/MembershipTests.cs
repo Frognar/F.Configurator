@@ -13,4 +13,20 @@ public class MembershipTests
 
         Assert.Equal(Value.Boolean(true), value);
     }
+
+    // The range is closed on both ends.
+    [Theory]
+    [InlineData(-5, true)]
+    [InlineData(-1, true)]
+    [InlineData(-6, false)]
+    [InlineData(0, false)]
+    public void Range_includes_both_bounds_and_nothing_outside(int odchylka, bool expected)
+    {
+        var expression = Expression.In(Expression.Reference("Odchylka"), Expression.Range(-5m, -1m));
+        var values = new Dictionary<string, Value> { ["Odchylka"] = Value.Number(odchylka) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Boolean(expected), value);
+    }
 }
