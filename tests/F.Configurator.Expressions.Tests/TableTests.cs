@@ -9,7 +9,7 @@ public class TableTests
     {
         var table = new Table(
             ["Norma"],
-            [new TableRow([Value.Text("PL")], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
+            [new TableRow([[Value.Text("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
         var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "SzerokoscMM");
         var values = new Dictionary<string, Value> { ["Norma"] = Value.Text("PL") };
 
@@ -24,7 +24,7 @@ public class TableTests
     {
         var table = new Table(
             ["Norma"],
-            [new TableRow([Value.Text("PL")], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
+            [new TableRow([[Value.Text("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
         var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "SzerokoscMM");
         var values = new Dictionary<string, Value> { ["Norma"] = Value.Text("DE") };
 
@@ -39,12 +39,29 @@ public class TableTests
     {
         var table = new Table(
             ["Norma"],
-            [new TableRow([Value.Text("PL")], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
+            [new TableRow([[Value.Text("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
         var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "WysokoscMM");
         var values = new Dictionary<string, Value> { ["Norma"] = Value.Text("PL") };
 
         var value = expression.Evaluate(values);
 
         Assert.Equal(Value.Missing, value);
+    }
+
+    // Grammar 4.4: a key cell may list several values (`CZ, SK`); the row matches any of them.
+    [Theory]
+    [InlineData("CZ")]
+    [InlineData("SK")]
+    public void Lookup_matches_any_of_the_values_listed_in_a_key_cell(string norma)
+    {
+        var table = new Table(
+            ["Norma"],
+            [new TableRow([[Value.Text("CZ"), Value.Text("SK")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(830m) })]);
+        var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "SzerokoscMM");
+        var values = new Dictionary<string, Value> { ["Norma"] = Value.Text(norma) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Number(830m), value);
     }
 }
