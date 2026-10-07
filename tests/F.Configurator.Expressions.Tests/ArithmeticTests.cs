@@ -63,4 +63,15 @@ public class ArithmeticTests
 
         Assert.Equal(Value.Number(1845m), value);
     }
+
+    [Fact]
+    public void Division_evaluates_to_the_quotient()
+    {
+        var expression = Expression.Divide(Expression.Reference("PowierzchniaMM2"), Expression.Number(1000000m));
+        var values = new Dictionary<string, Value> { ["PowierzchniaMM2"] = Value.Number(1845000m) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Number(1.845m), value);
+    }
 }
