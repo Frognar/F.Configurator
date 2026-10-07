@@ -8,5 +8,10 @@ public abstract record Value
 }
 
 public sealed record NumberValue(decimal Amount) : Value;
-public sealed record BooleanValue(bool Value) : Value;
+
+public sealed record BooleanValue(bool Value) : Value
+{
+    public static BooleanValue True { get; } = new(true);
+    public static BooleanValue False { get; } = new(false);
+}
 public sealed record MissingValue : Value;
