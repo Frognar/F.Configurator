@@ -131,27 +131,27 @@ public abstract record BinaryComparison(Expression Left, Expression Right) : Exp
         };
     }
 
-    protected abstract BooleanValue Compare(decimal left, decimal right);
+    protected abstract Value Compare(decimal left, decimal right);
 }
 
 public sealed record LessThan(Expression Left, Expression Right) : BinaryComparison(Left, Right)
 {
-    protected override BooleanValue Compare(decimal left, decimal right) => new(left < right);
+    protected override Value Compare(decimal left, decimal right) => Value.Boolean(left < right);
 }
 
 public sealed record LessThanOrEqual(Expression Left, Expression Right) : BinaryComparison(Left, Right)
 {
-    protected override BooleanValue Compare(decimal left, decimal right) => new(left <= right);
+    protected override Value Compare(decimal left, decimal right) => Value.Boolean(left <= right);
 }
 
 public sealed record GreaterThan(Expression Left, Expression Right) : BinaryComparison(Left, Right)
 {
-    protected override BooleanValue Compare(decimal left, decimal right) => new(left > right);
+    protected override Value Compare(decimal left, decimal right) => Value.Boolean(left > right);
 }
 
 public sealed record GreaterThanOrEqual(Expression Left, Expression Right) : BinaryComparison(Left, Right)
 {
-    protected override BooleanValue Compare(decimal left, decimal right) => new(left >= right);
+    protected override Value Compare(decimal left, decimal right) => Value.Boolean(left >= right);
 }
 
 public sealed record In(Expression Left, Expression Right) : Expression
