@@ -1,5 +1,5 @@
 namespace F.Configurator.Expressions;
 
-public sealed record Table(string[] KeyColumns, TableRow[] Rows);
+public sealed record Table(IReadOnlyList<string> KeyColumns, IReadOnlyList<TableRow> Rows);
 
-public sealed record TableRow(Value[] Keys, IReadOnlyDictionary<string, Value> Values);
+public sealed record TableRow(IReadOnlyList<IReadOnlyList<Value>> Keys, IReadOnlyDictionary<string, Value> Values);
