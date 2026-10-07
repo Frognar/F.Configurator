@@ -48,4 +48,19 @@ public class ArithmeticTests
 
         Assert.Equal(Value.Number(896m), value);
     }
+
+    [Fact]
+    public void Multiplication_evaluates_to_the_product()
+    {
+        var expression = Expression.Multiply(Expression.Reference("SzerokoscMM"), Expression.Reference("WysokoscMM"));
+        var values = new Dictionary<string, Value>
+        {
+            ["SzerokoscMM"] = Value.Number(900m),
+            ["WysokoscMM"] = Value.Number(2.05m),
+        };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Number(1845m), value);
+    }
 }
