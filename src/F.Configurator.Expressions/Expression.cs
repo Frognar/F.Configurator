@@ -57,20 +57,29 @@ public sealed record Text(string TextValue) : Expression
 
 public abstract record BinaryArithmetic(Expression Left, Expression Right) : Expression
 {
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values)
-    {
-        return (Left.Evaluate(values), Right.Evaluate(values)) switch
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
+        Combine(Left.Evaluate(values), Right.Evaluate(values));
+
+    protected virtual Value Combine(Value left, Value right) =>
+        (left, right) switch
         {
-            (NumberValue left, NumberValue right) => Apply(left.Value, right.Value),
+            (NumberValue l, NumberValue r) => Apply(l.Value, r.Value),
             _ => Value.Missing
         };
-    }
 
     protected abstract Value Apply(decimal left, decimal right);
 }
 
 public sealed record Add(Expression Left, Expression Right) : BinaryArithmetic(Left, Right)
 {
+    protected override Value Combine(Value left, Value right) =>
+        (left, right) switch
+        {
+            (TextValue l, TextValue r) => Value.Text(l.Value + r.Value),
+            (NumberValue l, NumberValue r) => Apply(l.Value, r.Value),
+            _ => Value.Missing
+        };
+
     protected override Value Apply(decimal left, decimal right) => Value.Number(left + right);
 }
 
