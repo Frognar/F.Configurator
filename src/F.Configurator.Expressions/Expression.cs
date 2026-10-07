@@ -56,7 +56,12 @@ public sealed record Divide(Expression Left, Expression Right) : BinaryArithmeti
 public sealed record Equal(Expression Left, Expression Right) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        new BooleanValue(Left.Evaluate(values) == Right.Evaluate(values));
+        (Left.Evaluate(values), Right.Evaluate(values)) switch
+        {
+            (MissingValue, _) or (_, MissingValue) => new BooleanValue(false),
+            ({ } l, { } r) => new BooleanValue(l == r)
+        };
+
 }
 
 public sealed record Reference(string Name) : Expression
