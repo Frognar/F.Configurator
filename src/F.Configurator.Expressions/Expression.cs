@@ -56,9 +56,23 @@ public sealed record Divide(Expression Left, Expression Right) : BinaryArithmeti
         right == decimal.Zero ? Value.Missing : new NumberValue(left / right);
 }
 
-public sealed record LessThan(Expression Left, Expression Right) : BinaryArithmetic(Left, Right)
+public abstract record BinaryComparison(Expression Left, Expression Right) : Expression
 {
-    protected override Value Apply(decimal left, decimal right) => new BooleanValue(left < right);
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values)
+    {
+        return (Left.Evaluate(values), Right.Evaluate(values)) switch
+        {
+            (NumberValue left, NumberValue right) => Compare(left.Amount, right.Amount),
+            _ => BooleanValue.False
+        };
+    }
+
+    protected abstract BooleanValue Compare(decimal left, decimal right);
+}
+
+public sealed record LessThan(Expression Left, Expression Right) : BinaryComparison(Left, Right)
+{
+    protected override BooleanValue Compare(decimal left, decimal right) => new BooleanValue(left < right);
 }
 
 public sealed record Equal(Expression Left, Expression Right) : Expression
