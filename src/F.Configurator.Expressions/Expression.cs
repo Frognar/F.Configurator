@@ -7,6 +7,7 @@ public abstract record Expression
     public static Expression Subtract(Expression left, Expression right) => new Subtract(left, right);
     public static Expression Multiply(Expression left, Expression right) => new Multiply(left, right);
     public static Expression Divide(Expression left, Expression right) => new Divide(left, right);
+    public static Expression Equal(Expression left, Expression right) => new Equal(left, right);
     public static Expression Reference(string name) => new Reference(name);
 
     public abstract Value Evaluate(IReadOnlyDictionary<string, Value> values);
@@ -50,6 +51,12 @@ public sealed record Divide(Expression Left, Expression Right) : BinaryArithmeti
 {
     protected override Value Apply(decimal left, decimal right) =>
         right == decimal.Zero ? Value.Missing : new NumberValue(left / right);
+}
+
+public sealed record Equal(Expression Left, Expression Right) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
+        new BooleanValue(Left.Evaluate(values) == Right.Evaluate(values));
 }
 
 public sealed record Reference(string Name) : Expression
