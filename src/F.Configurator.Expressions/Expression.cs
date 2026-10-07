@@ -23,6 +23,8 @@ public abstract record Expression
 
     public static Expression In(Expression left, Expression right) => new In(left, right);
     public static Expression NotIn(Expression left, Expression right) => new NotIn(left, right);
+
+    public static Expression And(Expression left, Expression right) => new And(left, right);
 }
 
 public sealed record Number(decimal Amount) : Expression
@@ -147,6 +149,16 @@ public sealed record NotIn(Expression Left, Expression Right) : Expression
         {
             (NumberValue n, RangeValue r) => new BooleanValue(n.Amount < r.Min || n.Amount > r.Max),
             (MissingValue, _) => BooleanValue.True,
+            _ => BooleanValue.False,
+        };
+}
+
+public sealed record And(Expression Left, Expression Right) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
+        (Left.Evaluate(values), Right.Evaluate(values)) switch
+        {
+            (BooleanValue { Value: true }, BooleanValue { Value: true }) => BooleanValue.True,
             _ => BooleanValue.False,
         };
 }
