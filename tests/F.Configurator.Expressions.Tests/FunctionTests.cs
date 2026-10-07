@@ -61,4 +61,16 @@ public class FunctionTests
 
         Assert.Equal(Value.Number(8m), value);
     }
+
+    // Grammar 5.x index: `dopełnij(x, n)` pads with zeros on the left, e.g. `dopełnij(WysokoscMM, 4)`.
+    [Fact]
+    public void Pad_fills_a_number_with_zeros_on_the_left()
+    {
+        var expression = Expression.Pad(Expression.Reference("WysokoscMM"), Expression.Number(4m));
+        var values = new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(900m) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Text("0900"), value);
+    }
 }
