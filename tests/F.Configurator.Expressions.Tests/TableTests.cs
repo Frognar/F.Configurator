@@ -17,4 +17,19 @@ public class TableTests
 
         Assert.Equal(Value.Number(844m), value);
     }
+
+    // No row for the keys is a gap the validator reports; at runtime it is a missing value.
+    [Fact]
+    public void Lookup_without_a_matching_row_evaluates_to_missing()
+    {
+        var table = new Table(
+            ["Norma"],
+            [new TableRow([Value.Text("PL")], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
+        var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "SzerokoscMM");
+        var values = new Dictionary<string, Value> { ["Norma"] = Value.Text("DE") };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Missing, value);
+    }
 }
