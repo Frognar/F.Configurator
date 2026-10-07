@@ -13,4 +13,15 @@ public class TextTests
 
         Assert.Equal(Value.Text("ASTORIA"), value);
     }
+
+    [Fact]
+    public void Addition_of_two_texts_joins_them()
+    {
+        var expression = Expression.Add(Expression.Reference("Seria"), Expression.Text("-90"));
+        var values = new Dictionary<string, Value> { ["Seria"] = Value.Text("AST") };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Text("AST-90"), value);
+    }
 }
