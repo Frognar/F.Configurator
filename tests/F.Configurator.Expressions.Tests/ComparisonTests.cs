@@ -90,4 +90,15 @@ public class ComparisonTests
 
         Assert.Equal(Value.Boolean(true), value);
     }
+
+    [Fact]
+    public void Equal_number_is_greater_than_or_equal()
+    {
+        var expression = Expression.GreaterThanOrEqual(Expression.Reference("WysokoscMM"), Expression.Number(2000m));
+        var values = new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(2000m) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Boolean(true), value);
+    }
 }
