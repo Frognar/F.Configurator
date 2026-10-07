@@ -56,4 +56,16 @@ public class LogicalTests
 
         Assert.Equal(Value.Boolean(true), value);
     }
+
+    // Grammar 6.4: a missing condition counts as false, so only a true one makes `lub` true.
+    [Fact]
+    public void Or_without_a_true_condition_is_false()
+    {
+        var expression = Expression.Or(Expression.Reference("A"), Expression.Reference("B"));
+        var values = new Dictionary<string, Value> { ["B"] = Value.Boolean(false) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Boolean(false), value);
+    }
 }
