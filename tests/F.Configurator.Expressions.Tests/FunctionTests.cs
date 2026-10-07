@@ -62,11 +62,25 @@ public class FunctionTests
         Assert.Equal(Value.Number(8m), value);
     }
 
-    // Grammar 5.x index: `dopełnij(x, n)` pads with zeros on the left, e.g. `dopełnij(WysokoscMM, 4)`.
+    // Grammar, index section: `dopełnij(x, n)` pads with zeros on the left, e.g. `dopełnij(WysokoscMM, 4)`.
     [Fact]
     public void Pad_fills_a_number_with_zeros_on_the_left()
     {
         var expression = Expression.Pad(Expression.Reference("WysokoscMM"), Expression.Number(4m));
+        var values = new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(900m) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Text("0900"), value);
+    }
+
+    // A decimal keeps its scale (900 * 1.00 = 900.00); the index must not depend on it.
+    [Fact]
+    public void Pad_ignores_trailing_zeros_of_the_number()
+    {
+        var expression = Expression.Pad(
+            Expression.Multiply(Expression.Reference("WysokoscMM"), Expression.Number(1.00m)),
+            Expression.Number(4m));
         var values = new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(900m) };
 
         var value = expression.Evaluate(values);
