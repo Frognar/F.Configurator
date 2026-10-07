@@ -19,4 +19,30 @@ public class LogicalTests
 
         Assert.Equal(Value.Boolean(true), value);
     }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(false, false)]
+    public void And_with_a_false_condition_is_false(bool left, bool right)
+    {
+        var expression = Expression.And(Expression.Reference("A"), Expression.Reference("B"));
+        var values = new Dictionary<string, Value> { ["A"] = Value.Boolean(left), ["B"] = Value.Boolean(right) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Boolean(false), value);
+    }
+
+    // Grammar 6.4: a condition with a missing value is false.
+    [Fact]
+    public void And_with_a_missing_condition_is_false()
+    {
+        var expression = Expression.And(Expression.Reference("A"), Expression.Reference("B"));
+        var values = new Dictionary<string, Value> { ["B"] = Value.Boolean(true) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Boolean(false), value);
+    }
 }
