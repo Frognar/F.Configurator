@@ -4,7 +4,7 @@ public abstract record Value
 {
     public static Value Missing { get; } = new MissingValue();
     public static Value Number(decimal number) => new NumberValue(number);
-    public static Value Boolean(bool value) => new BooleanValue(value);
+    public static Value Boolean(bool boolean) => new BooleanValue(boolean);
     public static Value Text(string text) => new TextValue(text);
 }
 
