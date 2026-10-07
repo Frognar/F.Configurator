@@ -12,6 +12,7 @@ public abstract record Expression
     public static Expression Subtract(Expression left, Expression right) => new Subtract(left, right);
     public static Expression Multiply(Expression left, Expression right) => new Multiply(left, right);
     public static Expression Divide(Expression left, Expression right) => new Divide(left, right);
+    public static Expression Negate(Expression operand) => new Negate(operand);
 
     public static Expression Equal(Expression left, Expression right) => new Equal(left, right);
     public static Expression NotEqual(Expression left, Expression right) => new NotEqual(left, right);
@@ -81,6 +82,16 @@ public sealed record Divide(Expression Left, Expression Right) : BinaryArithmeti
 {
     protected override Value Apply(decimal left, decimal right) =>
         right == decimal.Zero ? Value.Missing : new NumberValue(left / right);
+}
+
+public sealed record Negate(Expression Operand) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
+        Operand.Evaluate(values) switch
+        {
+            NumberValue { Amount: var amount } => new NumberValue(-amount),
+            { } v => v,
+        };
 }
 
 public sealed record Equal(Expression Left, Expression Right) : Expression
