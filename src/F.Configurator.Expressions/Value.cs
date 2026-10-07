@@ -14,4 +14,6 @@ public sealed record BooleanValue(bool Value) : Value
     public static BooleanValue True { get; } = new(true);
     public static BooleanValue False { get; } = new(false);
 }
+
+public sealed record RangeValue(decimal Min, decimal Max) : Value;
 public sealed record MissingValue : Value;

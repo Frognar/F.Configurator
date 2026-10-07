@@ -14,13 +14,19 @@ public abstract record Expression
     public static Expression GreaterThan(Expression left, Expression right) => new GreaterThan(left, right);
     public static Expression GreaterThanOrEqual(Expression left, Expression right) => new GreaterThanOrEqual(left, right);
     public static Expression Reference(string name) => new Reference(name);
-
+    public static Expression In(Expression left, Expression right) => new In(left, right);
+    public static Expression Range(decimal min, decimal max) => new Range(min, max);
     public abstract Value Evaluate(IReadOnlyDictionary<string, Value> values);
 }
 
 public sealed record Number(decimal Amount) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => new NumberValue(Amount);
+}
+
+public sealed record Range(decimal Min, decimal Max) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => new RangeValue(Min, Max);
 }
 
 public abstract record BinaryArithmetic(Expression Left, Expression Right) : Expression
@@ -109,6 +115,16 @@ public sealed record NotEqual(Expression Left, Expression Right) : Expression
         {
             (MissingValue, _) or (_, MissingValue) => BooleanValue.True,
             ({ } l, { } r) => new BooleanValue(l != r)
+        };
+}
+
+public sealed record In(Expression Left, Expression Right) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
+        (Left.Evaluate(values), Right.Evaluate(values)) switch
+        {
+            (NumberValue n, RangeValue r) => new BooleanValue(n.Amount >= r.Min && n.Amount <= r.Max),
+            _ => BooleanValue.False,
         };
 }
 
