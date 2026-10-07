@@ -76,8 +76,7 @@ public sealed record Add(Expression Left, Expression Right) : BinaryArithmetic(L
         (left, right) switch
         {
             (TextValue l, TextValue r) => Value.Text(l.Value + r.Value),
-            (NumberValue l, NumberValue r) => Apply(l.Value, r.Value),
-            _ => Value.Missing
+            _ => base.Combine(left, right)
         };
 
     protected override Value Apply(decimal left, decimal right) => Value.Number(left + right);
