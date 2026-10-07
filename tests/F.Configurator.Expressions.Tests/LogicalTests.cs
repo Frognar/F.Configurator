@@ -45,4 +45,15 @@ public class LogicalTests
 
         Assert.Equal(Value.Boolean(false), value);
     }
+
+    [Fact]
+    public void Or_with_one_true_condition_is_true()
+    {
+        var expression = Expression.Or(Expression.Reference("A"), Expression.Reference("B"));
+        var values = new Dictionary<string, Value> { ["A"] = Value.Boolean(false), ["B"] = Value.Boolean(true) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Boolean(true), value);
+    }
 }
