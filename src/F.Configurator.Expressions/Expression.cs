@@ -27,6 +27,6 @@ public sealed record Reference(string Name) : Expression
     public override Value Evaluate() => throw new NotImplementedException();
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values)
     {
-        return values[Name];
+        return values.TryGetValue(Name, out var value) ? value : Value.Missing;
     }
 }
