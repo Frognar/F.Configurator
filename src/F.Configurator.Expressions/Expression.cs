@@ -312,7 +312,7 @@ public sealed record Round(Expression Input, Expression Step) : Expression
         };
 }
 
-public sealed record TableLookup(Table Table, List<Expression> Keys, string Value) : Expression
+public sealed record TableLookup(Table Table, IReadOnlyList<Expression> Keys, string Value) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values)
     {
