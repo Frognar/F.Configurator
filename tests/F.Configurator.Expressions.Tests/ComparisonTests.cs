@@ -68,4 +68,15 @@ public class ComparisonTests
 
         Assert.Equal(Value.Boolean(false), value);
     }
+
+    [Fact]
+    public void Equal_number_is_less_than_or_equal()
+    {
+        var expression = Expression.LessThanOrEqual(Expression.Reference("SzerokoscMM"), Expression.Number(900m));
+        var values = new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(900m) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Boolean(true), value);
+    }
 }
