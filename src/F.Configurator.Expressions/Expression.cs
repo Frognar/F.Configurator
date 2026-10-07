@@ -312,12 +312,12 @@ public sealed record Round(Expression Input, Expression Step) : Expression
         };
 }
 
-public sealed record TableLookup(Table Table, IReadOnlyList<Expression> Keys, string Value) : Expression
+public sealed record TableLookup(Table Table, IReadOnlyList<Expression> Keys, string ValueKey) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values)
     {
         var evaluatedKeys = Keys.Select(k => k.Evaluate(values)).ToArray();
-        var value = Table.Rows.First(r => r.Keys.SequenceEqual(evaluatedKeys)).Values[Value];
-        return value;
+        var row = Table.Rows.FirstOrDefault(r => r.Keys.SequenceEqual(evaluatedKeys));
+        return row is not null && row.Values.TryGetValue(ValueKey, out var value) ? value : Value.Missing;
     }
 }
