@@ -12,6 +12,7 @@ public abstract record Expression
     public static Expression LessThan(Expression left, Expression right) => new LessThan(left, right);
     public static Expression LessThanOrEqual(Expression left, Expression right) => new LessThanOrEqual(left, right);
     public static Expression GreaterThan(Expression left, Expression right) => new GreaterThan(left, right);
+    public static Expression GreaterThanOrEqual(Expression left, Expression right) => new GreaterThanOrEqual(left, right);
     public static Expression Reference(string name) => new Reference(name);
 
     public abstract Value Evaluate(IReadOnlyDictionary<string, Value> values);
@@ -84,6 +85,11 @@ public sealed record LessThanOrEqual(Expression Left, Expression Right) : Binary
 public sealed record GreaterThan(Expression Left, Expression Right) : BinaryComparison(Left, Right)
 {
     protected override BooleanValue Compare(decimal left, decimal right) => new(left > right);
+}
+
+public sealed record GreaterThanOrEqual(Expression Left, Expression Right) : BinaryComparison(Left, Right)
+{
+    protected override BooleanValue Compare(decimal left, decimal right) => new(left >= right);
 }
 
 public sealed record Equal(Expression Left, Expression Right) : Expression
