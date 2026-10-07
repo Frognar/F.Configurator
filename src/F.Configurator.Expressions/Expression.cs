@@ -36,7 +36,7 @@ public abstract record Expression
 
 public sealed record Number(decimal Amount) : Expression
 {
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => new NumberValue(Amount);
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => Value.Number(Amount);
 }
 
 public sealed record Reference(string Name) : Expression
@@ -71,23 +71,23 @@ public abstract record BinaryArithmetic(Expression Left, Expression Right) : Exp
 
 public sealed record Add(Expression Left, Expression Right) : BinaryArithmetic(Left, Right)
 {
-    protected override Value Apply(decimal left, decimal right) => new NumberValue(left + right);
+    protected override Value Apply(decimal left, decimal right) => Value.Number(left + right);
 }
 
 public sealed record Subtract(Expression Left, Expression Right) : BinaryArithmetic(Left, Right)
 {
-    protected override Value Apply(decimal left, decimal right) => new NumberValue(left - right);
+    protected override Value Apply(decimal left, decimal right) => Value.Number(left - right);
 }
 
 public sealed record Multiply(Expression Left, Expression Right) : BinaryArithmetic(Left, Right)
 {
-    protected override Value Apply(decimal left, decimal right) => new NumberValue(left * right);
+    protected override Value Apply(decimal left, decimal right) => Value.Number(left * right);
 }
 
 public sealed record Divide(Expression Left, Expression Right) : BinaryArithmetic(Left, Right)
 {
     protected override Value Apply(decimal left, decimal right) =>
-        right == decimal.Zero ? Value.Missing : new NumberValue(left / right);
+        right == decimal.Zero ? Value.Missing : Value.Number(left / right);
 }
 
 public sealed record Negate(Expression Operand) : Expression
@@ -95,7 +95,7 @@ public sealed record Negate(Expression Operand) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         Operand.Evaluate(values) switch
         {
-            NumberValue { Value: var amount } => new NumberValue(-amount),
+            NumberValue { Value: var amount } => Value.Number(-amount),
             _ => Value.Missing
         };
 }
