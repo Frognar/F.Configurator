@@ -79,4 +79,15 @@ public class ComparisonTests
 
         Assert.Equal(Value.Boolean(true), value);
     }
+
+    [Fact]
+    public void Larger_number_is_greater_than_smaller_number()
+    {
+        var expression = Expression.GreaterThan(Expression.Reference("WysokoscMM"), Expression.Number(2000m));
+        var values = new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(2100m) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Boolean(true), value);
+    }
 }
