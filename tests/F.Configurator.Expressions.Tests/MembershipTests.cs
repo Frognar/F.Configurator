@@ -29,4 +29,16 @@ public class MembershipTests
 
         Assert.Equal(Value.Boolean(expected), value);
     }
+
+    // Grammar 6.4: a missing value is not in anything.
+    [Fact]
+    public void Missing_value_is_not_in_a_range()
+    {
+        var expression = Expression.In(Expression.Reference("Odchylka"), Expression.Range(-5m, -1m));
+        var values = new Dictionary<string, Value>();
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Boolean(false), value);
+    }
 }
