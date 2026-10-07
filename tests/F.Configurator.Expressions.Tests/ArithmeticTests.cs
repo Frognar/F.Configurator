@@ -98,4 +98,16 @@ public class ArithmeticTests
 
         Assert.Equal(Value.Number(-3m), value);
     }
+
+    // Like the binary operators: arithmetic is only defined on numbers, anything else evaluates to missing.
+    [Fact]
+    public void Negation_of_a_non_number_evaluates_to_missing()
+    {
+        var expression = Expression.Negate(Expression.Reference("MaRamiak"));
+        var values = new Dictionary<string, Value> { ["MaRamiak"] = Value.Boolean(true) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Missing, value);
+    }
 }
