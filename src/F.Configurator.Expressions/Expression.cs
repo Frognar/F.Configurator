@@ -24,7 +24,7 @@ public abstract record BinaryArithmetic(Expression Left, Expression Right) : Exp
         return (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
             (NumberValue left, NumberValue right) => Apply(left.Amount, right.Amount),
-            _ => new MissingValue()
+            _ => Value.Missing
         };
     }
 
@@ -48,7 +48,8 @@ public sealed record Multiply(Expression Left, Expression Right) : BinaryArithme
 
 public sealed record Divide(Expression Left, Expression Right) : BinaryArithmetic(Left, Right)
 {
-    protected override Value Apply(decimal left, decimal right) => new NumberValue(left / right);
+    protected override Value Apply(decimal left, decimal right) =>
+        right == decimal.Zero ? Value.Missing : new NumberValue(left / right);
 }
 
 public sealed record Reference(string Name) : Expression
