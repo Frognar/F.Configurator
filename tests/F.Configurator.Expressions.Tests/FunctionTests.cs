@@ -32,4 +32,22 @@ public class FunctionTests
 
         Assert.Equal(Value.Missing, value);
     }
+
+    [Fact]
+    public void Max_evaluates_to_the_largest_argument()
+    {
+        var expression = Expression.Max(
+            Expression.Reference("SzerokoscMM"),
+            Expression.Number(1000m),
+            Expression.Reference("WysokoscMM"));
+        var values = new Dictionary<string, Value>
+        {
+            ["SzerokoscMM"] = Value.Number(900m),
+            ["WysokoscMM"] = Value.Number(2000m),
+        };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Number(2000m), value);
+    }
 }
