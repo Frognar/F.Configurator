@@ -32,6 +32,8 @@ public abstract record Expression
     public static Expression Or(Expression left, Expression right) => new Or(left, right);
     public static Expression Not(Expression operand) => new Not(operand);
 
+    public static Expression Length(Expression operand) => new Length(operand);
+
     public static Expression If(Expression condition, Expression then, Expression otherwise)
         => new If(condition, then, otherwise);
 }
@@ -237,6 +239,16 @@ public sealed record Not(Expression Operand) : Expression
         {
             BooleanValue { Value: false } or MissingValue => BooleanValue.True,
             _ => BooleanValue.False,
+        };
+}
+
+public sealed record Length(Expression Operand) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
+        Operand.Evaluate(values) switch
+        {
+            TextValue { Value: var str } => Value.Number(str.Length),
+            _ => Value.Missing
         };
 }
 
