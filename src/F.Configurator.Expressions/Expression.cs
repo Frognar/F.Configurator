@@ -47,6 +47,9 @@ public abstract record Expression
 
     public static Expression Round(Expression operand) => new Round(operand, Number(1));
     public static Expression Round(Expression operand, Expression step) => new Round(operand, step);
+
+    public static Expression TableLookup(Table table, List<Expression> keys, string value) =>
+        new TableLookup(table, keys, value);
 }
 
 public sealed record Number(decimal Amount) : Expression
@@ -307,4 +310,14 @@ public sealed record Round(Expression Input, Expression Step) : Expression
                 Value.Number(Math.Round(number / step, MidpointRounding.AwayFromZero) * step),
             _ => Value.Missing,
         };
+}
+
+public sealed record TableLookup(Table Table, List<Expression> Keys, string Value) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values)
+    {
+        var evaluatedKeys = Keys.Select(k => k.Evaluate(values)).ToArray();
+        var value = Table.Rows.First(r => r.Keys.SequenceEqual(evaluatedKeys)).Values[Value];
+        return value;
+    }
 }
