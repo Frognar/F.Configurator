@@ -22,6 +22,7 @@ public abstract record Expression
     public static Expression GreaterThanOrEqual(Expression left, Expression right) => new GreaterThanOrEqual(left, right);
 
     public static Expression In(Expression left, Expression right) => new In(left, right);
+    public static Expression NotIn(Expression left, Expression right) => new NotIn(left, right);
 }
 
 public sealed record Number(decimal Amount) : Expression
@@ -135,6 +136,16 @@ public sealed record In(Expression Left, Expression Right) : Expression
         (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
             (NumberValue n, RangeValue r) => new BooleanValue(n.Amount >= r.Min && n.Amount <= r.Max),
+            _ => BooleanValue.False,
+        };
+}
+
+public sealed record NotIn(Expression Left, Expression Right) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
+        (Left.Evaluate(values), Right.Evaluate(values)) switch
+        {
+            (NumberValue n, RangeValue r) => new BooleanValue(n.Amount < r.Min || n.Amount > r.Max),
             _ => BooleanValue.False,
         };
 }
