@@ -98,4 +98,16 @@ public class FunctionTests
 
         Assert.Equal(Value.Text("007"), value);
     }
+
+    // `dopełnij(x, n, znak)` pads with the given character instead of zeros.
+    [Fact]
+    public void Pad_fills_with_the_given_character()
+    {
+        var expression = Expression.Pad(Expression.Reference("Kod"), Expression.Number(4m), Expression.Text("_"));
+        var values = new Dictionary<string, Value> { ["Kod"] = Value.Text("AB") };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Text("__AB"), value);
+    }
 }
