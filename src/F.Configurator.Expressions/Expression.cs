@@ -14,6 +14,7 @@ public abstract record Expression
     public static Expression Multiply(Expression left, Expression right) => new Multiply(left, right);
     public static Expression Divide(Expression left, Expression right) => new Divide(left, right);
     public static Expression Negate(Expression operand) => new Negate(operand);
+    public static Expression Min(Expression first, params IEnumerable<Expression> rest) => new Min([first, ..rest]);
 
     public static Expression Equal(Expression left, Expression right) => new Equal(left, right);
     public static Expression NotEqual(Expression left, Expression right) => new NotEqual(left, right);
@@ -45,9 +46,9 @@ public sealed record Reference(string Name) : Expression
         values.TryGetValue(Name, out var value) ? value : Value.Missing;
 }
 
-public sealed record Range(decimal Min, decimal Max) : Expression
+public sealed record Range(decimal MinValue, decimal MaxValue) : Expression
 {
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => Value.Range(Min, Max);
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => Value.Range(MinValue, MaxValue);
 }
 
 public sealed record Text(string TextValue) : Expression
@@ -106,6 +107,21 @@ public sealed record Negate(Expression Operand) : Expression
             NumberValue { Value: var amount } => Value.Number(-amount),
             _ => Value.Missing
         };
+}
+
+public sealed record Min(IReadOnlyList<Expression> Expressions) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values)
+    {
+        var evaluated = Expressions
+            .Select(expr => expr.Evaluate(values))
+            .OfType<NumberValue>()
+            .ToList();
+
+        return evaluated.Count == Expressions.Count
+            ? evaluated.MinBy(v => v.Value) ?? Value.Missing
+            : Value.Missing;
+    }
 }
 
 public sealed record Equal(Expression Left, Expression Right) : Expression
