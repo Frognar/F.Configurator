@@ -3,5 +3,5 @@ namespace F.Configurator.Expressions;
 public record Value(decimal Amount)
 {
     public static Value Number(decimal number) => new(number);
-    public static Value Missing => new(0);
+    public static Value Missing => new(1);
 }
