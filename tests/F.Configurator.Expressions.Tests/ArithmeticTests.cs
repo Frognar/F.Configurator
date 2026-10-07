@@ -37,4 +37,15 @@ public class ArithmeticTests
 
         Assert.Equal(Value.Missing, value);
     }
+
+    [Fact]
+    public void Subtraction_evaluates_to_the_difference()
+    {
+        var expression = Expression.Subtract(Expression.Reference("SzerokoscMM"), Expression.Number(4m));
+        var values = new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(900m) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Number(896m), value);
+    }
 }
