@@ -7,4 +7,10 @@ public class ValueTests
     {
         Assert.NotEqual(Value.Number(1m), Value.Number(2m));
     }
+
+    [Fact]
+    public void Missing_is_not_equal_to_zero()
+    {
+        Assert.NotEqual(Value.Number(0m), Value.Missing);
+    }
 }
