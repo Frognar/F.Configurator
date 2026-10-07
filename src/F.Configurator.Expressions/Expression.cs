@@ -14,7 +14,7 @@ public abstract record Expression
     public static Expression Multiply(Expression left, Expression right) => new Multiply(left, right);
     public static Expression Divide(Expression left, Expression right) => new Divide(left, right);
     public static Expression Negate(Expression operand) => new Negate(operand);
-    public static Expression Min(Expression first, params IEnumerable<Expression> rest) => new Min([first, ..rest]);
+    public static Expression Min(Expression first, params IEnumerable<Expression> rest) => new Min([first, .. rest]);
 
     public static Expression Equal(Expression left, Expression right) => new Equal(left, right);
     public static Expression NotEqual(Expression left, Expression right) => new NotEqual(left, right);
