@@ -317,7 +317,9 @@ public sealed record TableLookup(Table Table, IReadOnlyList<Expression> Keys, st
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values)
     {
         var evaluatedKeys = Keys.Select(k => k.Evaluate(values)).ToArray();
-        var row = Table.Rows.FirstOrDefault(r => r.Keys.First().SequenceEqual(evaluatedKeys));
+        var row = Table.Rows
+            .FirstOrDefault(r => r.Keys.Zip(evaluatedKeys).All(p => p.First.Contains(p.Second)));
+
         return row is not null && row.Values.TryGetValue(ValueKey, out var value) ? value : Value.Missing;
     }
 }
