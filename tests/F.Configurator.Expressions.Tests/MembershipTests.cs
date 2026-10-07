@@ -41,4 +41,15 @@ public class MembershipTests
 
         Assert.Equal(Value.Boolean(false), value);
     }
+
+    [Fact]
+    public void Number_outside_range_is_not_in_the_range()
+    {
+        var expression = Expression.NotIn(Expression.Reference("Odchylka"), Expression.Range(-5m, -1m));
+        var values = new Dictionary<string, Value> { ["Odchylka"] = Value.Number(2m) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Boolean(true), value);
+    }
 }
