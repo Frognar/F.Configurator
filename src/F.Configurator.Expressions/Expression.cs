@@ -320,7 +320,7 @@ public sealed record TableLookup(Table Table, IReadOnlyList<Expression> Keys, st
         var row = Table.Rows
             .FirstOrDefault(r => r.Keys
                 .Zip(evaluatedKeys)
-                .All(p => p.First.Contains(p.Second) || p.First.Count == 0));
+                .All(p => p.First.Contains(p.Second) || p.First.Count == 0 && p.Second is not MissingValue));
 
         return row is not null && row.Values.TryGetValue(ValueKey, out var value) ? value : Value.Missing;
     }
