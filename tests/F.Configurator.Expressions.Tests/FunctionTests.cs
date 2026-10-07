@@ -135,4 +135,15 @@ public class FunctionTests
 
         Assert.Equal(Value.Number(3m), value);
     }
+
+    // Half up means away from zero for negatives too, as in Excel.
+    [Fact]
+    public void Round_rounds_negative_half_away_from_zero()
+    {
+        var expression = Expression.Round(Expression.Number(-2.5m));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Number(-3m), value);
+    }
 }
