@@ -4,6 +4,7 @@ public abstract record Expression
 {
     public static Expression Number(decimal number) => new Number(number);
     public static Expression Add(Expression left, Expression right) => new Add(left, right);
+    public static Expression Subtract(Expression left, Expression right) => new Subtract(left, right);
     public static Expression Reference(string name) => new Reference(name);
 
     public abstract Value Evaluate(IReadOnlyDictionary<string, Value> values);
@@ -20,6 +21,16 @@ public sealed record Add(Expression Left, Expression Right) : Expression
         (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
             (NumberValue left, NumberValue right) => new NumberValue(left.Amount + right.Amount),
+            _ => new MissingValue()
+        };
+}
+
+public sealed record Subtract(Expression Left, Expression Right) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
+        (Left.Evaluate(values), Right.Evaluate(values)) switch
+        {
+            (NumberValue left, NumberValue right) => new NumberValue(left.Amount - right.Amount),
             _ => new MissingValue()
         };
 }
