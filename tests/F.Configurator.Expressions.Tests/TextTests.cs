@@ -24,4 +24,27 @@ public class TextTests
 
         Assert.Equal(Value.Text("AST-90"), value);
     }
+
+    // Grammar 6.2: `+` joins texts or adds numbers, never mixes them.
+    [Fact]
+    public void Addition_of_text_and_number_evaluates_to_missing()
+    {
+        var expression = Expression.Add(Expression.Reference("Seria"), Expression.Number(90m));
+        var values = new Dictionary<string, Value> { ["Seria"] = Value.Text("AST") };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Missing, value);
+    }
+
+    [Fact]
+    public void Equal_texts_compare_as_equal()
+    {
+        var expression = Expression.Equal(Expression.Reference("Seria"), Expression.Text("AST"));
+        var values = new Dictionary<string, Value> { ["Seria"] = Value.Text("AST") };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Boolean(true), value);
+    }
 }
