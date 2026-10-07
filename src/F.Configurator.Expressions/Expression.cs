@@ -26,6 +26,7 @@ public abstract record Expression
 
     public static Expression And(Expression left, Expression right) => new And(left, right);
     public static Expression Or(Expression left, Expression right) => new Or(left, right);
+    public static Expression Not(Expression operand) => new Not(operand);
 }
 
 public sealed record Number(decimal Amount) : Expression
@@ -170,6 +171,17 @@ public sealed record Or(Expression Left, Expression Right) : Expression
         (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
             (BooleanValue { Value: true }, _) or (_, BooleanValue { Value: true }) => BooleanValue.True,
+            _ => BooleanValue.False,
+        };
+}
+
+public sealed record Not(Expression Operand) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
+        Operand.Evaluate(values) switch
+        {
+            BooleanValue { Value: true } => BooleanValue.False,
+            BooleanValue { Value: false } => BooleanValue.True,
             _ => BooleanValue.False,
         };
 }
