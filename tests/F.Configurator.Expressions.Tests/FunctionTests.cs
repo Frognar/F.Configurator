@@ -110,4 +110,18 @@ public class FunctionTests
 
         Assert.Equal(Value.Text("__AB"), value);
     }
+
+    // The fill must be exactly one character; anything else is reported by the validator.
+    [Theory]
+    [InlineData("")]
+    [InlineData("_-")]
+    public void Pad_with_a_fill_other_than_one_character_evaluates_to_missing(string fill)
+    {
+        var expression = Expression.Pad(Expression.Reference("Kod"), Expression.Number(4m), Expression.Text(fill));
+        var values = new Dictionary<string, Value> { ["Kod"] = Value.Text("AB") };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Missing, value);
+    }
 }
