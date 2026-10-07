@@ -9,9 +9,11 @@ public abstract record Expression
     public static Expression Divide(Expression left, Expression right) => new Divide(left, right);
     public static Expression Equal(Expression left, Expression right) => new Equal(left, right);
     public static Expression NotEqual(Expression left, Expression right) => new NotEqual(left, right);
+    public static Expression LessThan(Expression left, Expression right) => new LessThan(left, right);
     public static Expression Reference(string name) => new Reference(name);
 
     public abstract Value Evaluate(IReadOnlyDictionary<string, Value> values);
+
 }
 
 public sealed record Number(decimal Amount) : Expression
@@ -52,6 +54,11 @@ public sealed record Divide(Expression Left, Expression Right) : BinaryArithmeti
 {
     protected override Value Apply(decimal left, decimal right) =>
         right == decimal.Zero ? Value.Missing : new NumberValue(left / right);
+}
+
+public sealed record LessThan(Expression Left, Expression Right) : BinaryArithmetic(Left, Right)
+{
+    protected override Value Apply(decimal left, decimal right) => new BooleanValue(left < right);
 }
 
 public sealed record Equal(Expression Left, Expression Right) : Expression
