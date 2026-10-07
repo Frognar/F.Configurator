@@ -7,7 +7,7 @@ public class ArithmeticTests
     {
         var expression = Expression.Add(Expression.Number(2m), Expression.Number(3m));
 
-        var value = expression.Evaluate();
+        var value = expression.Evaluate(new Dictionary<string, Value>());
 
         Assert.Equal(Value.Number(5m), value);
     }

@@ -7,7 +7,7 @@ public class LiteralTests
     {
         var expression = Expression.Number(1044m);
 
-        var value = expression.Evaluate();
+        var value = expression.Evaluate(new Dictionary<string, Value>());
 
         Assert.Equal(Value.Number(1044m), value);
     }
