@@ -110,34 +110,29 @@ public sealed record Negate(Expression Operand) : Expression
         };
 }
 
-public sealed record Min(IReadOnlyList<Expression> Expressions) : Expression
+public abstract record Extremum(IReadOnlyList<Expression> Expressions) : Expression
 {
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values)
+    public sealed override Value Evaluate(IReadOnlyDictionary<string, Value> values)
     {
         var evaluated = Expressions
             .Select(expr => expr.Evaluate(values))
             .OfType<NumberValue>()
             .ToList();
 
-        return evaluated.Count == Expressions.Count
-            ? evaluated.MinBy(v => v.Value) ?? Value.Missing
-            : Value.Missing;
+        return evaluated.Count == Expressions.Count ? Pick(evaluated) ?? Value.Missing : Value.Missing;
     }
+
+    protected abstract Value? Pick(IReadOnlyList<NumberValue> evaluated);
 }
 
-public sealed record Max(IReadOnlyList<Expression> Expressions) : Expression
+public sealed record Min(IReadOnlyList<Expression> Expressions) : Extremum(Expressions)
 {
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values)
-    {
-        var evaluated = Expressions
-            .Select(expr => expr.Evaluate(values))
-            .OfType<NumberValue>()
-            .ToList();
+    protected override Value? Pick(IReadOnlyList<NumberValue> evaluated) => evaluated.MinBy(v => v.Value);
+}
 
-        return evaluated.Count == Expressions.Count
-            ? evaluated.MaxBy(v => v.Value) ?? Value.Missing
-            : Value.Missing;
-    }
+public sealed record Max(IReadOnlyList<Expression> Expressions) : Extremum(Expressions)
+{
+    protected override Value? Pick(IReadOnlyList<NumberValue> evaluated) => evaluated.MaxBy(v => v.Value);
 }
 
 public sealed record Equal(Expression Left, Expression Right) : Expression
