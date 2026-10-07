@@ -34,4 +34,15 @@ public class ComparisonTests
 
         Assert.Equal(Value.Boolean(true), value);
     }
+
+    [Fact]
+    public void Equal_numbers_are_not_unequal()
+    {
+        var expression = Expression.NotEqual(Expression.Reference("SzerokoscMM"), Expression.Number(900m));
+        var values = new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(900m) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Boolean(false), value);
+    }
 }
