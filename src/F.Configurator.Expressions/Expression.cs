@@ -15,6 +15,7 @@ public abstract record Expression
     public static Expression Divide(Expression left, Expression right) => new Divide(left, right);
     public static Expression Negate(Expression operand) => new Negate(operand);
     public static Expression Min(Expression first, params IEnumerable<Expression> rest) => new Min([first, .. rest]);
+    public static Expression Max(Expression first, params IEnumerable<Expression> rest) => new Max([first, .. rest]);
 
     public static Expression Equal(Expression left, Expression right) => new Equal(left, right);
     public static Expression NotEqual(Expression left, Expression right) => new NotEqual(left, right);
@@ -120,6 +121,21 @@ public sealed record Min(IReadOnlyList<Expression> Expressions) : Expression
 
         return evaluated.Count == Expressions.Count
             ? evaluated.MinBy(v => v.Value) ?? Value.Missing
+            : Value.Missing;
+    }
+}
+
+public sealed record Max(IReadOnlyList<Expression> Expressions) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values)
+    {
+        var evaluated = Expressions
+            .Select(expr => expr.Evaluate(values))
+            .OfType<NumberValue>()
+            .ToList();
+
+        return evaluated.Count == Expressions.Count
+            ? evaluated.MaxBy(v => v.Value) ?? Value.Missing
             : Value.Missing;
     }
 }
