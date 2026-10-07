@@ -146,4 +146,15 @@ public class FunctionTests
 
         Assert.Equal(Value.Number(-3m), value);
     }
+
+    // `zaokrąglij(x, krok)` rounds to the nearest multiple of the step, half up.
+    [Fact]
+    public void Round_to_a_step_rounds_to_the_nearest_multiple()
+    {
+        var expression = Expression.Round(Expression.Number(1234m), Expression.Number(10m));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Number(1230m), value);
+    }
 }
