@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace F.Configurator.Expressions;
 
 public abstract record Expression
@@ -36,6 +38,7 @@ public abstract record Expression
         => new If(condition, then, otherwise);
 
     public static Expression Length(Expression operand) => new Length(operand);
+    public static Expression Pad(Expression value, Expression totalWidth) => new Pad(value, totalWidth);
 }
 
 public sealed record Number(decimal Amount) : Expression
@@ -260,4 +263,18 @@ public sealed record Length(Expression Operand) : Expression
             TextValue { Value: var str } => Value.Number(str.Length),
             _ => Value.Missing,
         };
+}
+
+public sealed record Pad(Expression ValueText, Expression TotalWidth) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
+        (ValueText.Evaluate(values), TotalWidth.Evaluate(values)) switch
+        {
+            (NumberValue {Value: var number}, NumberValue {Value: var width and >= 0}) =>
+                Value.Text(Format(number).PadLeft(decimal.ToInt32(width), '0')),
+            _ => Value.Missing,
+        };
+
+    private static string Format(decimal number) =>
+        number.ToString("0.############################", CultureInfo.InvariantCulture);
 }
