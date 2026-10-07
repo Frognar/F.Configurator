@@ -10,10 +10,10 @@ public abstract record Expression
     public static Expression Equal(Expression left, Expression right) => new Equal(left, right);
     public static Expression NotEqual(Expression left, Expression right) => new NotEqual(left, right);
     public static Expression LessThan(Expression left, Expression right) => new LessThan(left, right);
+    public static Expression LessThanOrEqual(Expression left, Expression right) => new LessThanOrEqual(left, right);
     public static Expression Reference(string name) => new Reference(name);
 
     public abstract Value Evaluate(IReadOnlyDictionary<string, Value> values);
-
 }
 
 public sealed record Number(decimal Amount) : Expression
@@ -72,7 +72,12 @@ public abstract record BinaryComparison(Expression Left, Expression Right) : Exp
 
 public sealed record LessThan(Expression Left, Expression Right) : BinaryComparison(Left, Right)
 {
-    protected override BooleanValue Compare(decimal left, decimal right) => new BooleanValue(left < right);
+    protected override BooleanValue Compare(decimal left, decimal right) => new(left < right);
+}
+
+public sealed record LessThanOrEqual(Expression Left, Expression Right) : BinaryComparison(Left, Right)
+{
+    protected override BooleanValue Compare(decimal left, decimal right) => new(left <= right);
 }
 
 public sealed record Equal(Expression Left, Expression Right) : Expression
