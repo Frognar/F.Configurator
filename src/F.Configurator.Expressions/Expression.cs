@@ -106,7 +106,7 @@ public sealed record Equal(Expression Left, Expression Right) : Expression
         (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
             (MissingValue, _) or (_, MissingValue) => BooleanValue.False,
-            ({ } l, { } r) => new BooleanValue(l == r)
+            ({ } l, { } r) => Value.Boolean(l == r)
         };
 }
 
@@ -116,7 +116,7 @@ public sealed record NotEqual(Expression Left, Expression Right) : Expression
         (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
             (MissingValue, _) or (_, MissingValue) => BooleanValue.True,
-            ({ } l, { } r) => new BooleanValue(l != r)
+            ({ } l, { } r) => Value.Boolean(l != r)
         };
 }
 
@@ -159,7 +159,7 @@ public sealed record In(Expression Left, Expression Right) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
-            (NumberValue n, RangeValue r) => new BooleanValue(n.Value >= r.Min && n.Value <= r.Max),
+            (NumberValue n, RangeValue r) => Value.Boolean(n.Value >= r.Min && n.Value <= r.Max),
             _ => BooleanValue.False,
         };
 }
@@ -169,7 +169,7 @@ public sealed record NotIn(Expression Left, Expression Right) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
-            (NumberValue n, RangeValue r) => new BooleanValue(n.Value < r.Min || n.Value > r.Max),
+            (NumberValue n, RangeValue r) => Value.Boolean(n.Value < r.Min || n.Value > r.Max),
             (MissingValue, _) => BooleanValue.True,
             _ => BooleanValue.False,
         };
