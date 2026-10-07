@@ -56,4 +56,16 @@ public class ComparisonTests
 
         Assert.Equal(Value.Boolean(true), value);
     }
+
+    // Grammar 6.4: a comparison with a missing value is false, it does not propagate the missing value.
+    [Fact]
+    public void Missing_value_is_not_less_than_a_number()
+    {
+        var expression = Expression.LessThan(Expression.Reference("SzerokoscMM"), Expression.Number(900m));
+        var values = new Dictionary<string, Value>();
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Boolean(false), value);
+    }
 }
