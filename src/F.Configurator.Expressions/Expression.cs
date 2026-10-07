@@ -57,7 +57,7 @@ public sealed record Text(string TextValue) : Expression
 
 public abstract record BinaryArithmetic(Expression Left, Expression Right) : Expression
 {
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
+    public sealed override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         Combine(Left.Evaluate(values), Right.Evaluate(values));
 
     protected virtual Value Combine(Value left, Value right) =>
@@ -131,7 +131,7 @@ public sealed record NotEqual(Expression Left, Expression Right) : Expression
 
 public abstract record BinaryComparison(Expression Left, Expression Right) : Expression
 {
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values)
+    public sealed override Value Evaluate(IReadOnlyDictionary<string, Value> values)
     {
         return (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
