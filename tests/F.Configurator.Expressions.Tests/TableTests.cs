@@ -1,0 +1,103 @@
+namespace F.Configurator.Expressions.Tests;
+
+// Grammar 4.4 and 6.3: `Tabela[k1, k2].Kolumna` reads a value column from the row matching the keys.
+// The node holds the table itself; the catalog compiler resolves the table name.
+public class TableTests
+{
+    [Fact]
+    public void Lookup_reads_the_column_from_the_matching_row()
+    {
+        var table = new Table(
+            ["Norma"],
+            [new TableRow([[Value.Text("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
+        var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "SzerokoscMM");
+        var values = new Dictionary<string, Value> { ["Norma"] = Value.Text("PL") };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Number(844m), value);
+    }
+
+    // No row for the keys is a gap the validator reports; at runtime it is a missing value.
+    [Fact]
+    public void Lookup_without_a_matching_row_evaluates_to_missing()
+    {
+        var table = new Table(
+            ["Norma"],
+            [new TableRow([[Value.Text("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
+        var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "SzerokoscMM");
+        var values = new Dictionary<string, Value> { ["Norma"] = Value.Text("DE") };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Missing, value);
+    }
+
+    // A column outside the table is reported by the validator; at runtime it is a missing value.
+    [Fact]
+    public void Lookup_of_an_unknown_column_evaluates_to_missing()
+    {
+        var table = new Table(
+            ["Norma"],
+            [new TableRow([[Value.Text("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
+        var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "WysokoscMM");
+        var values = new Dictionary<string, Value> { ["Norma"] = Value.Text("PL") };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Missing, value);
+    }
+
+    // Grammar 4.4: a key cell may list several values (`CZ, SK`); the row matches any of them.
+    [Theory]
+    [InlineData("CZ")]
+    [InlineData("SK")]
+    public void Lookup_matches_any_of_the_values_listed_in_a_key_cell(string norma)
+    {
+        var table = new Table(
+            ["Norma"],
+            [new TableRow([[Value.Text("CZ"), Value.Text("SK")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(830m) })]);
+        var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "SzerokoscMM");
+        var values = new Dictionary<string, Value> { ["Norma"] = Value.Text(norma) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Number(830m), value);
+    }
+
+    // Grammar 4.4: an empty key cell matches any chosen value.
+    [Fact]
+    public void Lookup_matches_any_value_in_an_empty_key_cell()
+    {
+        var table = new Table(
+            ["Norma", "Szerokosc"],
+            [new TableRow([[Value.Text("PL")], []], new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(2030m) })]);
+        var expression = Expression.TableLookup(
+            table,
+            [Expression.Reference("Norma"), Expression.Reference("Szerokosc")],
+            "WysokoscMM");
+        var values = new Dictionary<string, Value> { ["Norma"] = Value.Text("PL"), ["Szerokosc"] = Value.Number(90m) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Number(2030m), value);
+    }
+
+    // "Any" means any chosen value: a feature without a value does not match an empty key cell (6.4).
+    [Fact]
+    public void Missing_key_does_not_match_an_empty_key_cell()
+    {
+        var table = new Table(
+            ["Norma", "Szerokosc"],
+            [new TableRow([[Value.Text("PL")], []], new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(2030m) })]);
+        var expression = Expression.TableLookup(
+            table,
+            [Expression.Reference("Norma"), Expression.Reference("Szerokosc")],
+            "WysokoscMM");
+        var values = new Dictionary<string, Value> { ["Norma"] = Value.Text("PL") };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Missing, value);
+    }
+}
