@@ -23,4 +23,15 @@ public class ComparisonTests
 
         Assert.Equal(Value.Boolean(false), value);
     }
+
+    // Grammar 6.4: "A is not X" is true when A has no value.
+    [Fact]
+    public void Missing_value_is_not_equal_to_a_number()
+    {
+        var expression = Expression.NotEqual(Expression.Reference("SzerokoscMM"), Expression.Number(900m));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Boolean(true), value);
+    }
 }
