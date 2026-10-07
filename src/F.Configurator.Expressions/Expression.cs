@@ -15,30 +15,32 @@ public sealed record Number(decimal Amount) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => new NumberValue(Amount);
 }
 
-public sealed record Add(Expression Left, Expression Right) : Expression
+public abstract record BinaryArithmetic(Expression Left, Expression Right) : Expression
 {
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        (Left.Evaluate(values), Right.Evaluate(values)) switch
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values)
+    {
+        return (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
-            (NumberValue left, NumberValue right) => new NumberValue(left.Amount + right.Amount),
+            (NumberValue left, NumberValue right) => Apply(left.Amount, right.Amount),
             _ => new MissingValue()
         };
+    }
+
+    protected abstract Value Apply(decimal left, decimal right);
 }
 
-public sealed record Subtract(Expression Left, Expression Right) : Expression
+public sealed record Add(Expression Left, Expression Right) : BinaryArithmetic(Left, Right)
 {
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        (Left.Evaluate(values), Right.Evaluate(values)) switch
-        {
-            (NumberValue left, NumberValue right) => new NumberValue(left.Amount - right.Amount),
-            _ => new MissingValue()
-        };
+    protected override Value Apply(decimal left, decimal right) => new NumberValue(left + right);
+}
+
+public sealed record Subtract(Expression Left, Expression Right) : BinaryArithmetic(Left, Right)
+{
+    protected override Value Apply(decimal left, decimal right) => new NumberValue(left - right);
 }
 
 public sealed record Reference(string Name) : Expression
 {
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values)
-    {
-        return values.TryGetValue(Name, out var value) ? value : Value.Missing;
-    }
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
+        values.TryGetValue(Name, out var value) ? value : Value.Missing;
 }
