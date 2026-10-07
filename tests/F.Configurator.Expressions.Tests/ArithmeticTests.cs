@@ -86,4 +86,16 @@ public class ArithmeticTests
 
         Assert.Equal(Value.Missing, value);
     }
+
+    // Grammar 6.1 level 8: prefix minus.
+    [Fact]
+    public void Negation_evaluates_to_the_opposite_number()
+    {
+        var expression = Expression.Negate(Expression.Reference("Odchylka"));
+        var values = new Dictionary<string, Value> { ["Odchylka"] = Value.Number(3m) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Number(-3m), value);
+    }
 }
