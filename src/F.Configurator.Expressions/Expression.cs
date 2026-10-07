@@ -318,7 +318,9 @@ public sealed record TableLookup(Table Table, IReadOnlyList<Expression> Keys, st
     {
         var evaluatedKeys = Keys.Select(k => k.Evaluate(values)).ToArray();
         var row = Table.Rows
-            .FirstOrDefault(r => r.Keys.Zip(evaluatedKeys).All(p => p.First.Contains(p.Second)));
+            .FirstOrDefault(r => r.Keys
+                .Zip(evaluatedKeys)
+                .All(p => p.First.Contains(p.Second) || p.First.Count == 0));
 
         return row is not null && row.Values.TryGetValue(ValueKey, out var value) ? value : Value.Missing;
     }
