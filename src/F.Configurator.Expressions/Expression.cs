@@ -41,6 +41,9 @@ public abstract record Expression
 
     public static Expression Length(Expression operand) => new Length(operand);
     public static Expression Pad(Expression value, Expression totalWidth) => new Pad(value, totalWidth);
+
+    public static Expression Pad(Expression value, Expression totalWidth, Expression paddingChar) =>
+        new Pad(value, totalWidth, paddingChar);
 }
 
 public sealed record Number(decimal Amount) : Expression
@@ -267,15 +270,22 @@ public sealed record Length(Expression Operand) : Expression
         };
 }
 
-public sealed record Pad(Expression ValueText, Expression TotalWidth) : Expression
+public sealed record Pad(Expression ValueText, Expression TotalWidth, Expression? PaddingChar = null) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        (AsText(ValueText.Evaluate(values)), TotalWidth.Evaluate(values)) switch
-        {
-            (TextValue { Value: var text }, NumberValue { Value: var width and >= 0 }) =>
-                Value.Text(text.PadLeft(decimal.ToInt32(width), '0')),
-            _ => Value.Missing,
-        };
+        (
+                AsText(ValueText.Evaluate(values)),
+                TotalWidth.Evaluate(values),
+                PaddingChar?.Evaluate(values) ?? Value.Text("0")
+            ) switch
+            {
+                (
+                    TextValue { Value: var text },
+                    NumberValue { Value: var width and >= 0 },
+                    TextValue { Value: [var c] }) =>
+                    Value.Text(text.PadLeft(decimal.ToInt32(width), c)),
+                _ => Value.Missing,
+            };
 
     private static Value AsText(Value value) =>
         value switch
