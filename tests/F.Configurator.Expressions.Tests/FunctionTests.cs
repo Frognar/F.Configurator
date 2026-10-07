@@ -168,4 +168,17 @@ public class FunctionTests
 
         Assert.Equal(Value.Number(1.25m), value);
     }
+
+    // A step must be positive; anything else is reported by the validator.
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-10)]
+    public void Round_to_a_non_positive_step_evaluates_to_missing(int step)
+    {
+        var expression = Expression.Round(Expression.Number(1234m), Expression.Number(step));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Missing, value);
+    }
 }
