@@ -19,7 +19,7 @@ public sealed record Number(decimal Amount) : Expression
 public sealed record Add(Expression Left, Expression Right) : Expression
 {
     public override Value Evaluate() => new(Left.Evaluate().Amount + Right.Evaluate().Amount);
-    public override Value Evaluate(Dictionary<string, Value> values) => new(Left.Evaluate().Amount + Right.Evaluate().Amount);
+    public override Value Evaluate(Dictionary<string, Value> values) => new(Left.Evaluate(values).Amount + Right.Evaluate(values).Amount);
 }
 
 public sealed record Reference(string Name) : Expression
