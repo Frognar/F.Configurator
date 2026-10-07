@@ -12,4 +12,15 @@ public class ReferenceTests
 
         Assert.Equal(Value.Number(900m), value);
     }
+
+    // Grammar 6.4: a feature may have no value yet (e.g. before it is chosen).
+    [Fact]
+    public void Reference_to_feature_without_value_evaluates_to_missing()
+    {
+        var expression = Expression.Reference("SzerokoscMM");
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Missing, value);
+    }
 }
