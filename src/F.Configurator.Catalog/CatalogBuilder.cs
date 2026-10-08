@@ -22,6 +22,12 @@ public record CatalogBuilder(string CatalogName, IReadOnlyList<Feature> Features
         return this with { Features = [.. Features.Append(feature)] };
     }
 
+    public CatalogBuilder Text(string name)
+    {
+        var feature = TextFeatureBuilder.Create(name).Build();
+        return this with { Features = [.. Features.Append(feature)] };
+    }
+
     public Catalog Build() => new(CatalogName, Features);
 }
 
@@ -71,4 +77,12 @@ public sealed record BooleanFeatureBuilder(string Name)
 {
     public static BooleanFeatureBuilder Create(string name) => new(name);
     public BooleanFeature Build() => new(Name);
+}
+
+public sealed record TextFeature(string Name) : Feature(Name);
+
+public sealed record TextFeatureBuilder(string Name)
+{
+    public static TextFeatureBuilder Create(string name) => new(name);
+    public TextFeature Build() => new(Name);
 }
