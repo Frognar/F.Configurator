@@ -23,4 +23,16 @@ public class CatalogBuilderTests
 
         Assert.Equal("Drzwi wewnętrzne", catalog.Name);
     }
+
+    // Grammar 4.2: `opcja L "Lewe"` gives the option a display name.
+    [Fact]
+    public void Option_keeps_its_name()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Choice("Kierunek", feature => feature.Option("L", "Lewe"))
+            .Build();
+
+        var option = Assert.Single(Assert.IsType<ChoiceFeature>(Assert.Single(catalog.Features)).Options);
+        Assert.Equal("Lewe", option.Name);
+    }
 }
