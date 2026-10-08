@@ -1,20 +1,20 @@
 namespace F.Configurator.Catalog;
 
-public record CatalogBuilder(IReadOnlyList<ChoiceFeature> Features)
+public record CatalogBuilder(string CatalogName, IReadOnlyList<ChoiceFeature> Features)
 {
-    public static CatalogBuilder Create(string name) => new([]);
+    public static CatalogBuilder Create(string name) => new(name, []);
 
     public CatalogBuilder Choice(string name, Func<ChoiceFeature, ChoiceFeature> setupFeature)
     {
         ChoiceFeature feature = new(name, []);
         feature = setupFeature(feature);
-        return new CatalogBuilder(Features: [.. Features.Append(feature)]);
+        return this with { Features = [.. Features.Append(feature)] };
     }
 
-    public Catalog Build() => new(Features);
+    public Catalog Build() => new(CatalogName, Features);
 }
 
-public sealed record Catalog(IReadOnlyList<ChoiceFeature> Features);
+public sealed record Catalog(string Name, IReadOnlyList<ChoiceFeature> Features);
 
 public sealed record ChoiceFeature(string Name, IReadOnlyList<FeatureOption> Options)
 {
