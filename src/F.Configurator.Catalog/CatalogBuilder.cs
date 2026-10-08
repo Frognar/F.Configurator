@@ -20,8 +20,8 @@ public sealed record ChoiceFeature(string Name, IReadOnlyList<FeatureOption> Opt
 {
     public ChoiceFeature Option(string id, string name)
     {
-        return this with { Options = [.. Options.Append(new FeatureOption(id))] };
+        return this with { Options = [.. Options.Append(new FeatureOption(id, name))] };
     }
 }
 
-public sealed record FeatureOption(string Id);
+public sealed record FeatureOption(string Id, string Name);
