@@ -5,10 +5,11 @@ namespace F.Configurator.Catalog;
 
 public record CatalogBuilder(
     string CatalogName,
-    IReadOnlyList<Feature> Features,
-    IReadOnlyDictionary<string, Table> Tables)
+    ImmutableList<Feature> Features,
+    ImmutableDictionary<string, Table> Tables)
 {
-    public static CatalogBuilder Create(string name) => new(name, [], new Dictionary<string, Table>());
+    public static CatalogBuilder Create(string name) =>
+        new(name, ImmutableList<Feature>.Empty, ImmutableDictionary<string, Table>.Empty);
 
     public CatalogBuilder Choice(string name, Func<ChoiceFeatureBuilder, ChoiceFeatureBuilder> setupFeature) =>
         AddFeature(setupFeature(ChoiceFeatureBuilder.Create(name)).Build());
@@ -24,9 +25,9 @@ public record CatalogBuilder(
         AddFeature(ComputedFeatureBuilder.Create(name, expression).Build());
 
     public CatalogBuilder Table(string name, Table table) =>
-        this with { Tables = new Dictionary<string, Table>(Tables) { { name, table } } };
+        this with { Tables = Tables.Add(name, table) };
 
-    private CatalogBuilder AddFeature(Feature feature) => this with { Features = [.. Features.Append(feature)] };
+    private CatalogBuilder AddFeature(Feature feature) => this with { Features = Features.Add(feature) };
 
     public Catalog Build() => new(CatalogName, Features, Tables);
 }
