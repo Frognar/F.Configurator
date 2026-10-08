@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace F.Configurator.Expressions;
 
 public abstract record Value
@@ -9,7 +11,14 @@ public abstract record Value
     public static Value Range(decimal min, decimal max) => new RangeValue(min, max);
 }
 
-public sealed record NumberValue(decimal Value) : Value;
+public sealed record NumberValue(decimal Amount) : Value
+{
+    internal NumberValue RoundTo(NumberValue step) =>
+        new(Math.Round(Amount / step.Amount, MidpointRounding.AwayFromZero) * step.Amount);
+
+    public TextValue AsText() =>
+        new(Amount.ToString("0.############################", CultureInfo.InvariantCulture));
+}
 
 public sealed record BooleanValue(bool Value) : Value
 {
@@ -18,5 +27,7 @@ public sealed record BooleanValue(bool Value) : Value
 }
 
 public sealed record RangeValue(decimal Min, decimal Max) : Value;
+
 public sealed record TextValue(string Value) : Value;
+
 public sealed record MissingValue : Value;

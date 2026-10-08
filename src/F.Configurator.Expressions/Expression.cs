@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace F.Configurator.Expressions;
 
 public abstract record Expression
@@ -81,7 +79,7 @@ public abstract record BinaryArithmetic(Expression Left, Expression Right) : Exp
     protected virtual Value Combine(Value left, Value right) =>
         (left, right) switch
         {
-            (NumberValue l, NumberValue r) => Apply(l.Value, r.Value),
+            (NumberValue l, NumberValue r) => Apply(l.Amount, r.Amount),
             _ => Value.Missing,
         };
 
@@ -121,7 +119,7 @@ public sealed record Negate(Expression Operand) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         Operand.Evaluate(values) switch
         {
-            NumberValue { Value: var amount } => Value.Number(-amount),
+            NumberValue { Amount: var amount } => Value.Number(-amount),
             _ => Value.Missing,
         };
 }
@@ -143,12 +141,12 @@ public abstract record Extremum(IReadOnlyList<Expression> Expressions) : Express
 
 public sealed record Min(IReadOnlyList<Expression> Expressions) : Extremum(Expressions)
 {
-    protected override Value? Pick(IReadOnlyList<NumberValue> evaluated) => evaluated.MinBy(v => v.Value);
+    protected override Value? Pick(IReadOnlyList<NumberValue> evaluated) => evaluated.MinBy(v => v.Amount);
 }
 
 public sealed record Max(IReadOnlyList<Expression> Expressions) : Extremum(Expressions)
 {
-    protected override Value? Pick(IReadOnlyList<NumberValue> evaluated) => evaluated.MaxBy(v => v.Value);
+    protected override Value? Pick(IReadOnlyList<NumberValue> evaluated) => evaluated.MaxBy(v => v.Amount);
 }
 
 public sealed record Equal(Expression Left, Expression Right) : Expression
@@ -177,7 +175,7 @@ public abstract record BinaryComparison(Expression Left, Expression Right) : Exp
     {
         return (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
-            (NumberValue left, NumberValue right) => Compare(left.Value, right.Value),
+            (NumberValue left, NumberValue right) => Compare(left.Amount, right.Amount),
             _ => BooleanValue.False,
         };
     }
@@ -210,7 +208,7 @@ public sealed record In(Expression Left, Expression Right) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
-            (NumberValue n, RangeValue r) => Value.Boolean(n.Value >= r.Min && n.Value <= r.Max),
+            (NumberValue n, RangeValue r) => Value.Boolean(n.Amount >= r.Min && n.Amount <= r.Max),
             _ => BooleanValue.False,
         };
 }
@@ -220,7 +218,7 @@ public sealed record NotIn(Expression Left, Expression Right) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
-            (NumberValue n, RangeValue r) => Value.Boolean(n.Value < r.Min || n.Value > r.Max),
+            (NumberValue n, RangeValue r) => Value.Boolean(n.Amount < r.Min || n.Amount > r.Max),
             (MissingValue, _) => BooleanValue.True,
             _ => BooleanValue.False,
         };
@@ -279,26 +277,16 @@ public sealed record Length(Expression Operand) : Expression
 public sealed record Pad(Expression ValueText, Expression TotalWidth, Expression PaddingChar) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        (AsText(ValueText.Evaluate(values)), TotalWidth.Evaluate(values), PaddingChar.Evaluate(values)) switch
+        (ValueText.Evaluate(values).AsText(), TotalWidth.Evaluate(values), PaddingChar.Evaluate(values)) switch
         {
             (
                 TextValue { Value: var text },
-                NumberValue { Value: var width and >= 0 },
-                TextValue { Value: [var c] }) =>
+                NumberValue { Amount: var width and >= 0 },
+                TextValue { Value: [var c] }
+                ) =>
                 Value.Text(text.PadLeft(decimal.ToInt32(width), c)),
             _ => Value.Missing,
         };
-
-    private static Value AsText(Value value) =>
-        value switch
-        {
-            NumberValue { Value: var number } => Value.Text(Format(number)),
-            TextValue => value,
-            _ => Value.Missing,
-        };
-
-    private static string Format(decimal number) =>
-        number.ToString("0.############################", CultureInfo.InvariantCulture);
 }
 
 public sealed record Round(Expression Input, Expression Step) : Expression
@@ -306,8 +294,7 @@ public sealed record Round(Expression Input, Expression Step) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         (Input.Evaluate(values), Step.Evaluate(values)) switch
         {
-            (NumberValue { Value: var number }, NumberValue { Value: var step and > 0 }) =>
-                Value.Number(Math.Round(number / step, MidpointRounding.AwayFromZero) * step),
+            (NumberValue number, NumberValue { Amount: > 0 } step) => number.RoundTo(step),
             _ => Value.Missing,
         };
 }
@@ -317,11 +304,20 @@ public sealed record TableLookup(Table Table, IReadOnlyList<Expression> Keys, st
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values)
     {
         var evaluatedKeys = Keys.Select(k => k.Evaluate(values)).ToArray();
-        var row = Table.Rows
-            .FirstOrDefault(r => r.Keys
-                .Zip(evaluatedKeys)
-                .All(p => p.First.Contains(p.Second) || p.First.Count == 0 && p.Second is not MissingValue));
+        return Table.Lookup(evaluatedKeys, ValueKey);
+    }
+}
 
-        return row is not null && row.Values.TryGetValue(ValueKey, out var value) ? value : Value.Missing;
+file static class ValueExtensions
+{
+    extension(Value value)
+    {
+        public Value AsText() =>
+            value switch
+            {
+                NumberValue number => number.AsText(),
+                TextValue text => text,
+                _ => Value.Missing,
+            };
     }
 }
