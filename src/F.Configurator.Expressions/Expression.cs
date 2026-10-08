@@ -10,6 +10,9 @@ public abstract record Expression
     public static Expression Text(string name) => new Text(name);
     public static Expression Option(string id) => new Option(id);
 
+    public static Expression OptionAttribute(Expression name, IReadOnlyDictionary<string, Value> values) =>
+        new OptionAttribute(name, values);
+
     public static Expression Add(Expression left, Expression right) => new Add(left, right);
     public static Expression Subtract(Expression left, Expression right) => new Subtract(left, right);
     public static Expression Multiply(Expression left, Expression right) => new Multiply(left, right);
@@ -75,6 +78,16 @@ public sealed record Text(string TextValue) : Expression
 public sealed record Option(string Id) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => Value.Option(Id);
+}
+
+public sealed record OptionAttribute(Expression Opt, IReadOnlyDictionary<string, Value> Values) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
+        Opt.Evaluate(values) switch
+        {
+            OptionValue option => Values[option.Id],
+            _ => Value.Missing,
+        };
 }
 
 public abstract record BinaryArithmetic(Expression Left, Expression Right) : Expression
