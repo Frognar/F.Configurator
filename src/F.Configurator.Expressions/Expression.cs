@@ -85,7 +85,7 @@ public sealed record OptionAttribute(Expression Choice, IReadOnlyDictionary<stri
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         Choice.Evaluate(values) switch
         {
-            OptionValue option => Values[option.Id],
+            OptionValue option => Values.TryGetValue(option.Id, out var value) ? value : Value.Missing,
             _ => Value.Missing,
         };
 }
