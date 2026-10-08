@@ -54,11 +54,11 @@ public sealed record FeatureOption(
 public sealed record FeatureOptionBuilder(
     string Id,
     string Name,
-    ImmutableDictionary<string, Value> Attributes,
-    string? SymbolValue = null)
+    string? SymbolValue,
+    ImmutableDictionary<string, Value> Attributes)
 {
     public static FeatureOptionBuilder Create(string id, string name) =>
-        new(id, name, ImmutableDictionary<string, Value>.Empty);
+        new(id, name, null, ImmutableDictionary<string, Value>.Empty);
 
     public FeatureOptionBuilder Attribute(string key, Value value) =>
         this with { Attributes = Attributes.Add(key, value) };
