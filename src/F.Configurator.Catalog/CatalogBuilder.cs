@@ -16,6 +16,12 @@ public record CatalogBuilder(string CatalogName, IReadOnlyList<Feature> Features
         return this with { Features = [.. Features.Append(feature)] };
     }
 
+    public CatalogBuilder Boolean(string name)
+    {
+        var feature = BooleanFeatureBuilder.Create(name).Build();
+        return this with { Features = [.. Features.Append(feature)] };
+    }
+
     public Catalog Build() => new(CatalogName, Features);
 }
 
@@ -57,4 +63,12 @@ public sealed record NumberFeatureBuilder(
     public NumberFeatureBuilder Min(decimal min) => this with { MinValue = min };
     public NumberFeatureBuilder Max(decimal max) => this with { MaxValue = max };
     public NumberFeature Build() => new(Name, StepValue, MinValue, MaxValue, UnitName);
+}
+
+public sealed record BooleanFeature(string Name) : Feature(Name);
+
+public sealed record BooleanFeatureBuilder(string Name)
+{
+    public static BooleanFeatureBuilder Create(string name) => new(name);
+    public BooleanFeature Build() => new(Name);
 }
