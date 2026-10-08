@@ -57,10 +57,8 @@ public sealed record FeatureOptionBuilder(
     ImmutableDictionary<string, Value> Attributes,
     string? SymbolValue = null)
 {
-    public static FeatureOptionBuilder Create(string id,
-        string name,
-        string? symbol = null) =>
-        new(id, name, ImmutableDictionary<string, Value>.Empty, symbol);
+    public static FeatureOptionBuilder Create(string id, string name) =>
+        new(id, name, ImmutableDictionary<string, Value>.Empty);
 
     public FeatureOptionBuilder Attribute(string key, Value value) =>
         this with { Attributes = Attributes.Add(key, value) };
