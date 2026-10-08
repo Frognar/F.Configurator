@@ -27,7 +27,16 @@ public record CatalogBuilder(
     public CatalogBuilder Table(string name, Table table) =>
         this with { Tables = Tables.Add(name, table) };
 
-    private CatalogBuilder AddFeature(Feature feature) => this with { Features = Features.Add(feature) };
+    private CatalogBuilder AddFeature(Feature feature)
+    {
+        if (Features.Any(f => f.Name == feature.Name))
+        {
+            throw new ArgumentException($"Feature with name '{feature.Name}' already exists.");
+        }
+
+        return this with { Features = Features.Add(feature) };
+    }
+
 
     public Catalog Build() => new(CatalogName, Features, Tables);
 }
