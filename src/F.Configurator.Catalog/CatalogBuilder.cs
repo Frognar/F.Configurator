@@ -56,7 +56,7 @@ public sealed record FeatureOptionBuilder(
     string Id,
     string Name,
     ImmutableDictionary<string, Value> Attributes,
-    string? Symbol = null)
+    string? SymbolValue = null)
 {
     public static FeatureOptionBuilder Create(string id,
         string name,
@@ -66,7 +66,9 @@ public sealed record FeatureOptionBuilder(
     public FeatureOptionBuilder Attribute(string key, Value value) =>
         this with { Attributes = Attributes.Add(key, value) };
 
-    public FeatureOption Build() => new(Id, Name, Attributes, Symbol ?? Id);
+    public FeatureOptionBuilder Symbol(string symbol) => this with { SymbolValue = symbol };
+
+    public FeatureOption Build() => new(Id, Name, Attributes, SymbolValue ?? Id);
 }
 
 public sealed record NumberFeature(
