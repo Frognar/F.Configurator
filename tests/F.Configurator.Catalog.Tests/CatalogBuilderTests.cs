@@ -14,4 +14,13 @@ public class CatalogBuilderTests
         Assert.Equal("Kierunek", kierunek.Name);
         Assert.Equal(["L", "P"], kierunek.Options.Select(option => option.Id));
     }
+
+    // Grammar 4.1: `katalog "Drzwi wewnętrzne"` names the catalog.
+    [Fact]
+    public void Builder_keeps_the_catalog_name()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi wewnętrzne").Build();
+
+        Assert.Equal("Drzwi wewnętrzne", catalog.Name);
+    }
 }
