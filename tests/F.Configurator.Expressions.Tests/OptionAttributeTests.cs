@@ -19,4 +19,16 @@ public class OptionAttributeTests
 
         Assert.Equal(Value.Number(44m), value);
     }
+
+    // Grammar 6.4: nothing chosen yet, so the attribute has no value.
+    [Fact]
+    public void Option_attribute_is_missing_when_no_option_is_chosen()
+    {
+        var gruboscMM = new Dictionary<string, Value> { ["PORTA"] = Value.Number(40m) };
+        var expression = Expression.OptionAttribute(Expression.Reference("Model"), gruboscMM);
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Missing, value);
+    }
 }
