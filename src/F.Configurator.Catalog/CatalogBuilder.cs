@@ -3,9 +3,12 @@ using F.Configurator.Expressions;
 
 namespace F.Configurator.Catalog;
 
-public record CatalogBuilder(string CatalogName, IReadOnlyList<Feature> Features)
+public record CatalogBuilder(
+    string CatalogName,
+    IReadOnlyList<Feature> Features,
+    IReadOnlyDictionary<string, Table> Tables)
 {
-    public static CatalogBuilder Create(string name) => new(name, []);
+    public static CatalogBuilder Create(string name) => new(name, [], new Dictionary<string, Table>());
 
     public CatalogBuilder Choice(string name, Func<ChoiceFeatureBuilder, ChoiceFeatureBuilder> setupFeature) =>
         AddFeature(setupFeature(ChoiceFeatureBuilder.Create(name)).Build());
@@ -20,12 +23,15 @@ public record CatalogBuilder(string CatalogName, IReadOnlyList<Feature> Features
     public CatalogBuilder Computed(string name, Expression expression) =>
         AddFeature(ComputedFeatureBuilder.Create(name, expression).Build());
 
+    public CatalogBuilder Table(string name, Table table) =>
+        this with { Tables = new Dictionary<string, Table>(Tables) { { name, table } } };
+
     private CatalogBuilder AddFeature(Feature feature) => this with { Features = [.. Features.Append(feature)] };
 
-    public Catalog Build() => new(CatalogName, Features);
+    public Catalog Build() => new(CatalogName, Features, Tables);
 }
 
-public sealed record Catalog(string Name, IReadOnlyList<Feature> Features);
+public sealed record Catalog(string Name, IReadOnlyList<Feature> Features, IReadOnlyDictionary<string, Table> Tables);
 
 public abstract record Feature(string Name);
 
