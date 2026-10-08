@@ -21,15 +21,14 @@ public record CatalogBuilder(
     public CatalogBuilder Number(string name, Func<NumberFeatureBuilder, NumberFeatureBuilder> setupFeature) =>
         AddFeature(setupFeature(NumberFeatureBuilder.Create(name)).Build());
 
-    public CatalogBuilder Boolean(string name) => AddFeature(BooleanFeatureBuilder.Create(name).Build());
+    public CatalogBuilder Boolean(string name) => AddFeature(new BooleanFeature(name));
 
-    public CatalogBuilder Text(string name) => AddFeature(TextFeatureBuilder.Create(name).Build());
+    public CatalogBuilder Text(string name) => AddFeature(new TextFeature(name));
 
     public CatalogBuilder Computed(string name, Expression expression) =>
-        AddFeature(ComputedFeatureBuilder.Create(name, expression).Build());
+        AddFeature(new ComputedFeature(name, expression));
 
-    public CatalogBuilder Table(string name, Table table) =>
-        this with { Tables = Tables.Add(name, table) };
+    public CatalogBuilder Table(string name, Table table) => this with { Tables = Tables.Add(name, table) };
 
     public CatalogBuilder Collection(string name, Func<CollectionBuilder, CollectionBuilder> setupCollection) =>
         this with { Collections = Collections.Add(setupCollection(CollectionBuilder.Create(name)).Build()) };
@@ -147,24 +146,6 @@ public sealed record NumberFeatureBuilder(
 
 public sealed record BooleanFeature(string Name) : Feature(Name);
 
-public sealed record BooleanFeatureBuilder(string Name)
-{
-    public static BooleanFeatureBuilder Create(string name) => new(name);
-    public BooleanFeature Build() => new(Name);
-}
-
 public sealed record TextFeature(string Name) : Feature(Name);
 
-public sealed record TextFeatureBuilder(string Name)
-{
-    public static TextFeatureBuilder Create(string name) => new(name);
-    public TextFeature Build() => new(Name);
-}
-
 public sealed record ComputedFeature(string Name, Expression Expression) : Feature(Name);
-
-public sealed record ComputedFeatureBuilder(string Name, Expression Expression)
-{
-    public static ComputedFeatureBuilder Create(string name, Expression expression) => new(name, expression);
-    public ComputedFeature Build() => new(Name, Expression);
-}
