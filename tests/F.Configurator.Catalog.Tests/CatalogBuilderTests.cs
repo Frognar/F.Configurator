@@ -84,4 +84,17 @@ public class CatalogBuilderTests
         var szerokosc = Assert.IsType<NumberFeature>(Assert.Single(catalog.Features));
         Assert.Equal(1m, szerokosc.Step);
     }
+
+    // Grammar 4.2: `min` and `maks` are fixed bounds; bounds that depend on other features are rules.
+    [Fact]
+    public void Number_feature_keeps_its_bounds()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Number("SzerokoscMM", feature => feature.Min(600m).Max(1200m))
+            .Build();
+
+        var szerokosc = Assert.IsType<NumberFeature>(Assert.Single(catalog.Features));
+        Assert.Equal(600m, szerokosc.Min);
+        Assert.Equal(1200m, szerokosc.Max);
+    }
 }
