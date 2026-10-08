@@ -37,12 +37,24 @@ public sealed record ChoiceFeatureBuilder(string Name, IReadOnlyList<FeatureOpti
     public ChoiceFeature Build() => new(Name, Options);
 }
 
-public sealed record NumberFeature(string Name, decimal? Step, string? Unit) : Feature(Name);
+public sealed record NumberFeature(
+    string Name,
+    decimal? Step,
+    decimal? Min,
+    decimal? Max,
+    string? Unit) : Feature(Name);
 
-public sealed record NumberFeatureBuilder(string Name, decimal? StepValue, string? UnitName)
+public sealed record NumberFeatureBuilder(
+    string Name,
+    decimal? StepValue = null,
+    decimal? MinValue = null,
+    decimal? MaxValue = null,
+    string? UnitName = null)
 {
-    public static NumberFeatureBuilder Create(string name) => new(name, null, null);
+    public static NumberFeatureBuilder Create(string name) => new(name);
     public NumberFeatureBuilder Unit(string unit) => this with { UnitName = unit };
     public NumberFeatureBuilder Step(decimal step) => this with { StepValue = step };
-    public NumberFeature Build() => new(Name, StepValue, UnitName);
+    public NumberFeatureBuilder Min(decimal min) => this with { MinValue = min };
+    public NumberFeatureBuilder Max(decimal max) => this with { MaxValue = max };
+    public NumberFeature Build() => new(Name, StepValue, MinValue, MaxValue, UnitName);
 }
