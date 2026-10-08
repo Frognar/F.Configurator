@@ -37,11 +37,11 @@ public sealed record ChoiceFeatureBuilder(string Name, IReadOnlyList<FeatureOpti
     public ChoiceFeature Build() => new(Name, Options);
 }
 
-public sealed record NumberFeature(string Name, string Unit) : Feature(Name);
+public sealed record NumberFeature(string Name, string? Unit) : Feature(Name);
 
-public sealed record NumberFeatureBuilder(string Name, string UnitName)
+public sealed record NumberFeatureBuilder(string Name, string? UnitName)
 {
-    public static NumberFeatureBuilder Create(string name) => new(name, string.Empty);
+    public static NumberFeatureBuilder Create(string name) => new(name, null);
     public NumberFeatureBuilder Unit(string unit) => this with { UnitName = unit };
     public NumberFeature Build() => new(Name, UnitName);
 }
