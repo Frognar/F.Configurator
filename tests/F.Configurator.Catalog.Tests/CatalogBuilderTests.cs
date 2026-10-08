@@ -164,4 +164,14 @@ public class CatalogBuilderTests
 
         Assert.Same(wymiary, catalog.Tables["Wymiary"]);
     }
+
+    // The builder does not validate catalogs (that is the validator's job), but two features
+    // with one name is a programmer error in code that builds the catalog.
+    [Fact]
+    public void Builder_rejects_a_second_feature_with_the_same_name()
+    {
+        var builder = CatalogBuilder.Create("Drzwi").Text("Uwagi");
+
+        Assert.Throws<ArgumentException>(() => builder.Boolean("Uwagi"));
+    }
 }
