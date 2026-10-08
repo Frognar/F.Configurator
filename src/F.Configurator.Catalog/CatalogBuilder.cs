@@ -163,15 +163,22 @@ public enum CollectionMode
     Independent
 }
 
-public sealed record CollectionBuilder(string Name, IReadOnlyList<Stage> Stages, CollectionMode Mode)
+public sealed class CollectionBuilder
 {
+    private readonly string _name;
+    private readonly IReadOnlyList<Stage> _stages;
+    private readonly CollectionMode _mode;
+
+    private CollectionBuilder(string name, IReadOnlyList<Stage> stages, CollectionMode mode) =>
+        (_name, _stages, _mode) = (name, stages, mode);
+
     public static CollectionBuilder Create(string name) => new(name, [], CollectionMode.Sequential);
 
     public CollectionBuilder Stage(string stageName, string feature, params IEnumerable<string> features)
-        => this with { Stages = [.. Stages.Append(new Stage(stageName, [.. features.Prepend(feature)]))] };
+        => new(_name, [.. _stages.Append(new Stage(stageName, [.. features.Prepend(feature)]))], _mode);
 
     public CollectionBuilder Independent()
-        => this with { Mode = CollectionMode.Independent };
+        => new(_name, _stages, CollectionMode.Independent);
 
-    public Collection Build() => new(Name, Stages, Mode);
+    public Collection Build() => new(_name, _stages, _mode);
 }
