@@ -9,7 +9,11 @@ public abstract record Value
     public static Value Range(decimal min, decimal max) => new RangeValue(min, max);
 }
 
-public sealed record NumberValue(decimal Value) : Value;
+public sealed record NumberValue(decimal Amount) : Value
+{
+    public Value RoundTo(NumberValue step) =>
+        Number(Math.Round(Amount / step.Amount, MidpointRounding.AwayFromZero) * step.Amount);
+}
 
 public sealed record BooleanValue(bool Value) : Value
 {
@@ -18,5 +22,7 @@ public sealed record BooleanValue(bool Value) : Value
 }
 
 public sealed record RangeValue(decimal Min, decimal Max) : Value;
+
 public sealed record TextValue(string Value) : Value;
+
 public sealed record MissingValue : Value;
