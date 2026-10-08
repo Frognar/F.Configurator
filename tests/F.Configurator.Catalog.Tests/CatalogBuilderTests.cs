@@ -1,3 +1,5 @@
+using F.Configurator.Expressions;
+
 namespace F.Configurator.Catalog.Tests;
 
 // Grammar 4.2: a catalog declares features; a choice feature lists its options.
@@ -118,5 +120,18 @@ public class CatalogBuilderTests
 
         var uwagi = Assert.IsType<TextFeature>(Assert.Single(catalog.Features));
         Assert.Equal("Uwagi", uwagi.Name);
+    }
+
+    [Fact]
+    public void Option_keeps_its_attributes()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Choice("Model", feature => feature
+                .Option("PORTA", "Porta", option => option.Attribute("GruboscMM", new NumberValue(40m))))
+            .Build();
+
+        var model = Assert.IsType<ChoiceFeature>(Assert.Single(catalog.Features));
+        var porta = Assert.Single(model.Options);
+        Assert.Equal(new NumberValue(40m), porta.Attributes["GruboscMM"]);
     }
 }
