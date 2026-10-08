@@ -149,4 +149,19 @@ public class CatalogBuilderTests
         Assert.Equal("SzerokoscOscieznicyMM", oscieznica.Name);
         Assert.Same(formula, oscieznica.Expression);
     }
+
+    // Grammar 4.4: a catalog declares named tables; expressions read them as `Wymiary[Norma].SzerokoscMM`.
+    [Fact]
+    public void Builder_keeps_a_named_table()
+    {
+        var wymiary = new Table(
+            ["Norma"],
+            [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
+
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Table("Wymiary", wymiary)
+            .Build();
+
+        Assert.Same(wymiary, catalog.Tables["Wymiary"]);
+    }
 }
