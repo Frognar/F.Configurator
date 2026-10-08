@@ -24,4 +24,7 @@ public sealed record ChoiceFeature(string Name, IReadOnlyList<FeatureOption> Opt
     }
 }
 
-public sealed record FeatureOption(string Id, string Name);
+public sealed record FeatureOption(string Id, string Name, string? Symbol = null)
+{
+    public string Symbol { get; } = Symbol ?? Id;
+}
