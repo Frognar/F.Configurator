@@ -108,4 +108,15 @@ public class CatalogBuilderTests
         var prog = Assert.IsType<BooleanFeature>(Assert.Single(catalog.Features));
         Assert.Equal("Prog", prog.Name);
     }
+
+    [Fact]
+    public void Builder_creates_a_text_feature()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Text("Uwagi")
+            .Build();
+
+        var uwagi = Assert.IsType<TextFeature>(Assert.Single(catalog.Features));
+        Assert.Equal("Uwagi", uwagi.Name);
+    }
 }
