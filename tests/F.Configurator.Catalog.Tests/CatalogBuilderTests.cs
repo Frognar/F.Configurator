@@ -134,4 +134,19 @@ public class CatalogBuilderTests
         var porta = Assert.Single(model.Options);
         Assert.Equal(new NumberValue(40m), porta.Attributes["GruboscMM"]);
     }
+
+    // A computed feature has no input from the user; its value comes from an expression.
+    [Fact]
+    public void Builder_creates_a_computed_feature_with_its_expression()
+    {
+        var formula = Expression.Add(Expression.Reference("SzerokoscMM"), Expression.Number(60m));
+
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Computed("SzerokoscOscieznicyMM", formula)
+            .Build();
+
+        var oscieznica = Assert.IsType<ComputedFeature>(Assert.Single(catalog.Features));
+        Assert.Equal("SzerokoscOscieznicyMM", oscieznica.Name);
+        Assert.Same(formula, oscieznica.Expression);
+    }
 }
