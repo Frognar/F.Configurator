@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace F.Configurator.Expressions;
 
 public abstract record Expression
@@ -279,26 +277,16 @@ public sealed record Length(Expression Operand) : Expression
 public sealed record Pad(Expression ValueText, Expression TotalWidth, Expression PaddingChar) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        (AsText(ValueText.Evaluate(values)), TotalWidth.Evaluate(values), PaddingChar.Evaluate(values)) switch
+        (ValueText.Evaluate(values).AsText(), TotalWidth.Evaluate(values), PaddingChar.Evaluate(values)) switch
         {
             (
                 TextValue { Value: var text },
                 NumberValue { Amount: var width and >= 0 },
-                TextValue { Value: [var c] }) =>
+                TextValue { Value: [var c] }
+                ) =>
                 Value.Text(text.PadLeft(decimal.ToInt32(width), c)),
             _ => Value.Missing,
         };
-
-    private static Value AsText(Value value) =>
-        value switch
-        {
-            NumberValue { Amount: var number } => Value.Text(Format(number)),
-            TextValue => value,
-            _ => Value.Missing,
-        };
-
-    private static string Format(decimal number) =>
-        number.ToString("0.############################", CultureInfo.InvariantCulture);
 }
 
 public sealed record Round(Expression Input, Expression Step) : Expression
@@ -317,5 +305,19 @@ public sealed record TableLookup(Table Table, IReadOnlyList<Expression> Keys, st
     {
         var evaluatedKeys = Keys.Select(k => k.Evaluate(values)).ToArray();
         return Table.Lookup(evaluatedKeys, ValueKey);
+    }
+}
+
+file static class ValueExtensions
+{
+    extension(Value value)
+    {
+        public Value AsText() =>
+            value switch
+            {
+                NumberValue number => number.AsText(),
+                TextValue text => text,
+                _ => Value.Missing,
+            };
     }
 }
