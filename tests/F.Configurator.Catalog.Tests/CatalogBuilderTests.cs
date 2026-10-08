@@ -35,4 +35,16 @@ public class CatalogBuilderTests
         var option = Assert.Single(Assert.IsType<ChoiceFeature>(Assert.Single(catalog.Features)).Options);
         Assert.Equal("Lewe", option.Name);
     }
+
+    // Grammar 4.2: without `symbol` the option's index symbol is its id.
+    [Fact]
+    public void Option_symbol_defaults_to_its_id()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Choice("Kierunek", feature => feature.Option("L", "Lewe"))
+            .Build();
+
+        var option = Assert.Single(Assert.IsType<ChoiceFeature>(Assert.Single(catalog.Features)).Options);
+        Assert.Equal("L", option.Symbol);
+    }
 }
