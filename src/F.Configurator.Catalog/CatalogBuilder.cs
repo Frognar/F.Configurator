@@ -1,3 +1,6 @@
+using System.Collections.Immutable;
+using F.Configurator.Expressions;
+
 namespace F.Configurator.Catalog;
 
 public record CatalogBuilder(string CatalogName, IReadOnlyList<Feature> Features)
@@ -25,16 +28,45 @@ public abstract record Feature(string Name);
 
 public sealed record ChoiceFeature(string Name, IReadOnlyList<FeatureOption> Options) : Feature(Name);
 
-public sealed record FeatureOption(string Id, string Name, string Symbol);
-
 public sealed record ChoiceFeatureBuilder(string Name, IReadOnlyList<FeatureOption> Options)
 {
     public static ChoiceFeatureBuilder Create(string name) => new(name, []);
 
-    public ChoiceFeatureBuilder Option(string id, string name, string? symbol = null) =>
-        this with { Options = [.. Options.Append(new FeatureOption(id, name, symbol ?? id))] };
+    public ChoiceFeatureBuilder Option(
+        string id,
+        string name,
+        Func<FeatureOptionBuilder, FeatureOptionBuilder>? setupOption = null,
+        string? symbol = null)
+    {
+        var builder = FeatureOptionBuilder.Create(id, name, symbol);
+        if (setupOption is not null) builder = setupOption(builder);
+        return this with { Options = [.. Options.Append(builder.Build())] };
+    }
 
     public ChoiceFeature Build() => new(Name, Options);
+}
+
+public sealed record FeatureOption(
+    string Id,
+    string Name,
+    IReadOnlyDictionary<string, Value> Attributes,
+    string Symbol);
+
+public sealed record FeatureOptionBuilder(
+    string Id,
+    string Name,
+    ImmutableDictionary<string, Value> Attributes,
+    string? Symbol = null)
+{
+    public static FeatureOptionBuilder Create(string id,
+        string name,
+        string? symbol = null) =>
+        new(id, name, ImmutableDictionary<string, Value>.Empty, symbol);
+
+    public FeatureOptionBuilder Attribute(string key, Value value) =>
+        this with { Attributes = Attributes.Add(key, value) };
+
+    public FeatureOption Build() => new(Id, Name, Attributes, Symbol ?? Id);
 }
 
 public sealed record NumberFeature(
