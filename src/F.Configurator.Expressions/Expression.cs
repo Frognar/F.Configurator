@@ -10,8 +10,8 @@ public abstract record Expression
     public static Expression Text(string name) => new Text(name);
     public static Expression Option(string id) => new Option(id);
 
-    public static Expression OptionAttribute(Expression name, IReadOnlyDictionary<string, Value> values) =>
-        new OptionAttribute(name, values);
+    public static Expression OptionAttribute(Expression choice, IReadOnlyDictionary<string, Value> values) =>
+        new OptionAttribute(choice, values);
 
     public static Expression Add(Expression left, Expression right) => new Add(left, right);
     public static Expression Subtract(Expression left, Expression right) => new Subtract(left, right);
@@ -80,10 +80,10 @@ public sealed record Option(string Id) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => Value.Option(Id);
 }
 
-public sealed record OptionAttribute(Expression Opt, IReadOnlyDictionary<string, Value> Values) : Expression
+public sealed record OptionAttribute(Expression Choice, IReadOnlyDictionary<string, Value> Values) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        Opt.Evaluate(values) switch
+        Choice.Evaluate(values) switch
         {
             OptionValue option => Values[option.Id],
             _ => Value.Missing,
