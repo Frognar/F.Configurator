@@ -113,4 +113,15 @@ public class ComparisonTests
 
         Assert.Equal(Value.Boolean(true), value);
     }
+
+    // An option and a text with the same spelling are different values: `Kraj = PL` is not `Kraj = "PL"`.
+    [Fact]
+    public void Option_is_not_equal_to_text_with_the_same_spelling()
+    {
+        var expression = Expression.Equal(Expression.Option("PL"), Expression.Text("PL"));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Boolean(false), value);
+    }
 }
