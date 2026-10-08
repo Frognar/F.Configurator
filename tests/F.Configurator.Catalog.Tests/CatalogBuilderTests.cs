@@ -72,4 +72,16 @@ public class CatalogBuilderTests
         Assert.Equal("SzerokoscMM", szerokosc.Name);
         Assert.Equal("mm", szerokosc.Unit);
     }
+
+    // Grammar 4.2: `krok 1` sets the step of a number feature.
+    [Fact]
+    public void Number_feature_keeps_its_step()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Number("SzerokoscMM", feature => feature.Step(1m))
+            .Build();
+
+        var szerokosc = Assert.IsType<NumberFeature>(Assert.Single(catalog.Features));
+        Assert.Equal(1m, szerokosc.Step);
+    }
 }
