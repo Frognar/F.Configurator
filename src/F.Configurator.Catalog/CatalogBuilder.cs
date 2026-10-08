@@ -18,9 +18,9 @@ public sealed record Catalog(string Name, IReadOnlyList<ChoiceFeature> Features)
 
 public sealed record ChoiceFeature(string Name, IReadOnlyList<FeatureOption> Options)
 {
-    public ChoiceFeature Option(string id, string name)
+    public ChoiceFeature Option(string id, string name, string? symbol = null)
     {
-        return this with { Options = [.. Options.Append(new FeatureOption(id, name))] };
+        return this with { Options = [.. Options.Append(new FeatureOption(id, name, symbol))] };
     }
 }
 
