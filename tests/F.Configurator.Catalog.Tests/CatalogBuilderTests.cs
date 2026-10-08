@@ -55,7 +55,7 @@ public class CatalogBuilderTests
     public void Option_uses_the_given_symbol()
     {
         var catalog = CatalogBuilder.Create("Drzwi")
-            .Choice("ZamekDolny", feature => feature.Option("KLUCZ", "Na klucz", symbol: "K"))
+            .Choice("ZamekDolny", feature => feature.Option("KLUCZ", "Na klucz", option => option.Symbol("K")))
             .Build();
 
         var option = Assert.Single(Assert.IsType<ChoiceFeature>(Assert.Single(catalog.Features)).Options);
