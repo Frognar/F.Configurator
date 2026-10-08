@@ -35,10 +35,9 @@ public sealed record ChoiceFeatureBuilder(string Name, IReadOnlyList<FeatureOpti
     public ChoiceFeatureBuilder Option(
         string id,
         string name,
-        Func<FeatureOptionBuilder, FeatureOptionBuilder>? setupOption = null,
-        string? symbol = null)
+        Func<FeatureOptionBuilder, FeatureOptionBuilder>? setupOption = null)
     {
-        var builder = FeatureOptionBuilder.Create(id, name, symbol);
+        var builder = FeatureOptionBuilder.Create(id, name);
         if (setupOption is not null) builder = setupOption(builder);
         return this with { Options = [.. Options.Append(builder.Build())] };
     }
