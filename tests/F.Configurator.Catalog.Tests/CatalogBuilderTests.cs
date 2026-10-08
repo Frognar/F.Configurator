@@ -47,4 +47,16 @@ public class CatalogBuilderTests
         var option = Assert.Single(Assert.IsType<ChoiceFeature>(Assert.Single(catalog.Features)).Options);
         Assert.Equal("L", option.Symbol);
     }
+
+    // Grammar 4.2: `opcja KLUCZ "Na klucz"` with `symbol "K"` puts K in the index instead of the id.
+    [Fact]
+    public void Option_uses_the_given_symbol()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Choice("ZamekDolny", feature => feature.Option("KLUCZ", "Na klucz", symbol: "K"))
+            .Build();
+
+        var option = Assert.Single(Assert.IsType<ChoiceFeature>(Assert.Single(catalog.Features)).Options);
+        Assert.Equal("K", option.Symbol);
+    }
 }
