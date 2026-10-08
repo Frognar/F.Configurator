@@ -4,29 +4,17 @@ public record CatalogBuilder(string CatalogName, IReadOnlyList<Feature> Features
 {
     public static CatalogBuilder Create(string name) => new(name, []);
 
-    public CatalogBuilder Choice(string name, Func<ChoiceFeatureBuilder, ChoiceFeatureBuilder> setupFeature)
-    {
-        var feature = setupFeature(ChoiceFeatureBuilder.Create(name)).Build();
-        return this with { Features = [.. Features.Append(feature)] };
-    }
+    public CatalogBuilder Choice(string name, Func<ChoiceFeatureBuilder, ChoiceFeatureBuilder> setupFeature) =>
+        AddFeature(setupFeature(ChoiceFeatureBuilder.Create(name)).Build());
 
-    public CatalogBuilder Number(string name, Func<NumberFeatureBuilder, NumberFeatureBuilder> setupFeature)
-    {
-        var feature = setupFeature(NumberFeatureBuilder.Create(name)).Build();
-        return this with { Features = [.. Features.Append(feature)] };
-    }
+    public CatalogBuilder Number(string name, Func<NumberFeatureBuilder, NumberFeatureBuilder> setupFeature) =>
+        AddFeature(setupFeature(NumberFeatureBuilder.Create(name)).Build());
 
-    public CatalogBuilder Boolean(string name)
-    {
-        var feature = BooleanFeatureBuilder.Create(name).Build();
-        return this with { Features = [.. Features.Append(feature)] };
-    }
+    public CatalogBuilder Boolean(string name) => AddFeature(BooleanFeatureBuilder.Create(name).Build());
 
-    public CatalogBuilder Text(string name)
-    {
-        var feature = TextFeatureBuilder.Create(name).Build();
-        return this with { Features = [.. Features.Append(feature)] };
-    }
+    public CatalogBuilder Text(string name) => AddFeature(TextFeatureBuilder.Create(name).Build());
+
+    private CatalogBuilder AddFeature(Feature feature) => this with { Features = [.. Features.Append(feature)] };
 
     public Catalog Build() => new(CatalogName, Features);
 }
