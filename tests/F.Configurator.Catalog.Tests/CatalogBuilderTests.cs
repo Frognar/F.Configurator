@@ -97,4 +97,15 @@ public class CatalogBuilderTests
         Assert.Equal(600m, szerokosc.Min);
         Assert.Equal(1200m, szerokosc.Max);
     }
+
+    [Fact]
+    public void Builder_creates_a_boolean_feature()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Boolean("Prog")
+            .Build();
+
+        var prog = Assert.IsType<BooleanFeature>(Assert.Single(catalog.Features));
+        Assert.Equal("Prog", prog.Name);
+    }
 }
