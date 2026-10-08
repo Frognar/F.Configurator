@@ -2,6 +2,7 @@ namespace F.Configurator.Expressions.Tests;
 
 // Grammar 4.4 and 6.3: `Tabela[k1, k2].Kolumna` reads a value column from the row matching the keys.
 // The node holds the table itself; the catalog compiler resolves the table name.
+// Key cells hold options of a choice feature (`Norma` is a choice: PL, DE, CZ, SK).
 public class TableTests
 {
     [Fact]
@@ -9,9 +10,9 @@ public class TableTests
     {
         var table = new Table(
             ["Norma"],
-            [new TableRow([[Value.Text("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
+            [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
         var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "SzerokoscMM");
-        var values = new Dictionary<string, Value> { ["Norma"] = Value.Text("PL") };
+        var values = new Dictionary<string, Value> { ["Norma"] = Value.Option("PL") };
 
         var value = expression.Evaluate(values);
 
@@ -24,9 +25,9 @@ public class TableTests
     {
         var table = new Table(
             ["Norma"],
-            [new TableRow([[Value.Text("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
+            [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
         var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "SzerokoscMM");
-        var values = new Dictionary<string, Value> { ["Norma"] = Value.Text("DE") };
+        var values = new Dictionary<string, Value> { ["Norma"] = Value.Option("DE") };
 
         var value = expression.Evaluate(values);
 
@@ -39,9 +40,9 @@ public class TableTests
     {
         var table = new Table(
             ["Norma"],
-            [new TableRow([[Value.Text("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
+            [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
         var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "WysokoscMM");
-        var values = new Dictionary<string, Value> { ["Norma"] = Value.Text("PL") };
+        var values = new Dictionary<string, Value> { ["Norma"] = Value.Option("PL") };
 
         var value = expression.Evaluate(values);
 
@@ -56,9 +57,9 @@ public class TableTests
     {
         var table = new Table(
             ["Norma"],
-            [new TableRow([[Value.Text("CZ"), Value.Text("SK")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(830m) })]);
+            [new TableRow([[Value.Option("CZ"), Value.Option("SK")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(830m) })]);
         var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "SzerokoscMM");
-        var values = new Dictionary<string, Value> { ["Norma"] = Value.Text(norma) };
+        var values = new Dictionary<string, Value> { ["Norma"] = Value.Option(norma) };
 
         var value = expression.Evaluate(values);
 
@@ -71,12 +72,12 @@ public class TableTests
     {
         var table = new Table(
             ["Norma", "Szerokosc"],
-            [new TableRow([[Value.Text("PL")], []], new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(2030m) })]);
+            [new TableRow([[Value.Option("PL")], []], new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(2030m) })]);
         var expression = Expression.TableLookup(
             table,
             [Expression.Reference("Norma"), Expression.Reference("Szerokosc")],
             "WysokoscMM");
-        var values = new Dictionary<string, Value> { ["Norma"] = Value.Text("PL"), ["Szerokosc"] = Value.Number(90m) };
+        var values = new Dictionary<string, Value> { ["Norma"] = Value.Option("PL"), ["Szerokosc"] = Value.Number(90m) };
 
         var value = expression.Evaluate(values);
 
@@ -89,12 +90,12 @@ public class TableTests
     {
         var table = new Table(
             ["Norma", "Szerokosc"],
-            [new TableRow([[Value.Text("PL")], []], new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(2030m) })]);
+            [new TableRow([[Value.Option("PL")], []], new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(2030m) })]);
         var expression = Expression.TableLookup(
             table,
             [Expression.Reference("Norma"), Expression.Reference("Szerokosc")],
             "WysokoscMM");
-        var values = new Dictionary<string, Value> { ["Norma"] = Value.Text("PL") };
+        var values = new Dictionary<string, Value> { ["Norma"] = Value.Option("PL") };
 
         var value = expression.Evaluate(values);
 
