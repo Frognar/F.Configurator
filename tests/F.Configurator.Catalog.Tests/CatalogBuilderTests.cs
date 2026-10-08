@@ -59,4 +59,17 @@ public class CatalogBuilderTests
         var option = Assert.Single(Assert.IsType<ChoiceFeature>(Assert.Single(catalog.Features)).Options);
         Assert.Equal("K", option.Symbol);
     }
+
+    // Grammar 4.2: `cecha SzerokoscMM : liczba` with `jednostka mm`.
+    [Fact]
+    public void Builder_creates_a_number_feature_with_its_unit()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Number("SzerokoscMM", feature => feature.Unit("mm"))
+            .Build();
+
+        var szerokosc = Assert.IsType<NumberFeature>(Assert.Single(catalog.Features));
+        Assert.Equal("SzerokoscMM", szerokosc.Name);
+        Assert.Equal("mm", szerokosc.Unit);
+    }
 }
