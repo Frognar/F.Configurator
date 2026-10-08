@@ -17,6 +17,9 @@ public record CatalogBuilder(string CatalogName, IReadOnlyList<Feature> Features
 
     public CatalogBuilder Text(string name) => AddFeature(TextFeatureBuilder.Create(name).Build());
 
+    public CatalogBuilder Computed(string name, Expression expression) =>
+        AddFeature(ComputedFeatureBuilder.Create(name, expression).Build());
+
     private CatalogBuilder AddFeature(Feature feature) => this with { Features = [.. Features.Append(feature)] };
 
     public Catalog Build() => new(CatalogName, Features);
@@ -104,4 +107,12 @@ public sealed record TextFeatureBuilder(string Name)
 {
     public static TextFeatureBuilder Create(string name) => new(name);
     public TextFeature Build() => new(Name);
+}
+
+public sealed record ComputedFeature(string Name, Expression Expression) : Feature(Name);
+
+public sealed record ComputedFeatureBuilder(string Name, Expression Expression)
+{
+    public static ComputedFeatureBuilder Create(string name, Expression expression) => new(name, expression);
+    public ComputedFeature Build() => new(Name, Expression);
 }
