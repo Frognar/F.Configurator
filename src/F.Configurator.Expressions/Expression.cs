@@ -8,6 +8,7 @@ public abstract record Expression
     public static Expression Reference(string name) => new Reference(name);
     public static Expression Range(decimal min, decimal max) => new Range(min, max);
     public static Expression Text(string name) => new Text(name);
+    public static Expression Option(string id) => new Option(id);
 
     public static Expression Add(Expression left, Expression right) => new Add(left, right);
     public static Expression Subtract(Expression left, Expression right) => new Subtract(left, right);
@@ -69,6 +70,11 @@ public sealed record Range(decimal MinValue, decimal MaxValue) : Expression
 public sealed record Text(string TextValue) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => Value.Text(TextValue);
+}
+
+public sealed record Option(string Id) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => Value.Option(Id);
 }
 
 public abstract record BinaryArithmetic(Expression Left, Expression Right) : Expression

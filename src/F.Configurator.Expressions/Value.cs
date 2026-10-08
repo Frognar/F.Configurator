@@ -8,6 +8,7 @@ public abstract record Value
     public static Value Number(decimal number) => new NumberValue(number);
     public static Value Boolean(bool boolean) => new BooleanValue(boolean);
     public static Value Text(string text) => new TextValue(text);
+    public static Value Option(string id) => new OptionValue(id);
     public static Value Range(decimal min, decimal max) => new RangeValue(min, max);
 }
 
@@ -29,5 +30,7 @@ public sealed record BooleanValue(bool Value) : Value
 public sealed record RangeValue(decimal Min, decimal Max) : Value;
 
 public sealed record TextValue(string Value) : Value;
+
+public sealed record OptionValue(string Id) : Value;
 
 public sealed record MissingValue : Value;
