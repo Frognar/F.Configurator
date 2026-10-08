@@ -6,10 +6,14 @@ namespace F.Configurator.Catalog;
 public record CatalogBuilder(
     string CatalogName,
     ImmutableList<Feature> Features,
+    ImmutableList<Collection> Collections,
     ImmutableDictionary<string, Table> Tables)
 {
     public static CatalogBuilder Create(string name) =>
-        new(name, ImmutableList<Feature>.Empty, ImmutableDictionary<string, Table>.Empty);
+        new(name,
+            ImmutableList<Feature>.Empty,
+            ImmutableList<Collection>.Empty,
+            ImmutableDictionary<string, Table>.Empty);
 
     public CatalogBuilder Choice(string name, Func<ChoiceFeatureBuilder, ChoiceFeatureBuilder> setupFeature) =>
         AddFeature(setupFeature(ChoiceFeatureBuilder.Create(name)).Build());
@@ -27,6 +31,9 @@ public record CatalogBuilder(
     public CatalogBuilder Table(string name, Table table) =>
         this with { Tables = Tables.Add(name, table) };
 
+    public CatalogBuilder Collection(string name, Func<CollectionBuilder, CollectionBuilder> setupCollection) =>
+        this with { Collections = Collections.Add(setupCollection(CollectionBuilder.Create(name)).Build()) };
+
     private CatalogBuilder AddFeature(Feature feature)
     {
         if (Features.Any(f => f.Name == feature.Name))
@@ -37,11 +44,40 @@ public record CatalogBuilder(
         return this with { Features = Features.Add(feature) };
     }
 
-
-    public Catalog Build() => new(CatalogName, Features, Tables);
+    public Catalog Build() => new(CatalogName, Features, Collections, Tables);
 }
 
-public sealed record Catalog(string Name, IReadOnlyList<Feature> Features, IReadOnlyDictionary<string, Table> Tables);
+public sealed record Catalog(
+    string Name,
+    IReadOnlyList<Feature> Features,
+    IReadOnlyList<Collection> Collections,
+    IReadOnlyDictionary<string, Table> Tables);
+
+public enum CollectionMode
+{
+    Sequential,
+    Independent
+}
+
+public sealed record Collection(string Name, IReadOnlyList<Stage> Stages, CollectionMode Mode)
+{
+    public IReadOnlyList<string> Features => [.. Stages.SelectMany(s => s.Features)];
+}
+
+public sealed record CollectionBuilder(string Name, IReadOnlyList<Stage> Stages, CollectionMode Mode)
+{
+    public static CollectionBuilder Create(string name) => new(name, [], CollectionMode.Sequential);
+
+    public CollectionBuilder Stage(string stageName, string feature, params IEnumerable<string> features)
+        => this with { Stages = [.. Stages.Append(new Stage(stageName, [.. features.Prepend(feature)]))] };
+
+    public CollectionBuilder Independent()
+        => this with { Mode = CollectionMode.Independent };
+
+    public Collection Build() => new(Name, Stages, Mode);
+}
+
+public sealed record Stage(string Name, IReadOnlyList<string> Features);
 
 public abstract record Feature(string Name);
 
