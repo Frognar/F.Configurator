@@ -317,11 +317,12 @@ public sealed record TableLookup(Table Table, IReadOnlyList<Expression> Keys, st
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values)
     {
         var evaluatedKeys = Keys.Select(k => k.Evaluate(values)).ToArray();
-        var row = Table.Rows
-            .FirstOrDefault(r => r.Keys
-                .Zip(evaluatedKeys)
-                .All(p => p.First.Contains(p.Second) || p.First.Count == 0 && p.Second is not MissingValue));
-
+        var row = Table.Rows.FirstOrDefault(r => r.Keys.Zip(evaluatedKeys).All(Matches));
         return row is not null && row.Values.TryGetValue(ValueKey, out var value) ? value : Value.Missing;
+    }
+
+    private static bool Matches((IReadOnlyList<Value> keys, Value value) pair)
+    {
+        return pair.value is not MissingValue && (pair.keys.Count == 0 || pair.keys.Contains(pair.value));
     }
 }
