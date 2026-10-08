@@ -4,10 +4,9 @@ public record CatalogBuilder(string CatalogName, IReadOnlyList<Feature> Features
 {
     public static CatalogBuilder Create(string name) => new(name, []);
 
-    public CatalogBuilder Choice(string name, Func<ChoiceFeature, ChoiceFeature> setupFeature)
+    public CatalogBuilder Choice(string name, Func<ChoiceFeatureBuilder, ChoiceFeatureBuilder> setupFeature)
     {
-        ChoiceFeature feature = new(name, []);
-        feature = setupFeature(feature);
+        var feature = setupFeature(ChoiceFeatureBuilder.Create(name)).Build();
         return this with { Features = [.. Features.Append(feature)] };
     }
 
@@ -24,18 +23,21 @@ public sealed record Catalog(string Name, IReadOnlyList<Feature> Features);
 
 public abstract record Feature(string Name);
 
-public sealed record ChoiceFeature(string Name, IReadOnlyList<FeatureOption> Options) : Feature(Name)
+public sealed record ChoiceFeature(string Name, IReadOnlyList<FeatureOption> Options) : Feature(Name);
+
+public sealed record FeatureOption(string Id, string Name, string Symbol);
+
+public sealed record ChoiceFeatureBuilder(string Name, IReadOnlyList<FeatureOption> Options)
 {
-    public ChoiceFeature Option(string id, string name, string? symbol = null)
-    {
-        return this with { Options = [.. Options.Append(new FeatureOption(id, name, symbol))] };
-    }
+    public static ChoiceFeatureBuilder Create(string name) => new(name, []);
+
+    public ChoiceFeatureBuilder Option(string id, string name, string? symbol = null) =>
+        this with { Options = [.. Options.Append(new FeatureOption(id, name, symbol ?? id))] };
+
+    public ChoiceFeature Build() => new(Name, Options);
 }
 
-public sealed record FeatureOption(string Id, string Name, string? Symbol = null)
-{
-    public string Symbol { get; } = Symbol ?? Id;
-}
+public sealed record NumberFeature(string Name, string Unit) : Feature(Name);
 
 public sealed record NumberFeatureBuilder(string Name, string UnitName)
 {
@@ -43,5 +45,3 @@ public sealed record NumberFeatureBuilder(string Name, string UnitName)
     public NumberFeatureBuilder Unit(string unit) => this with { UnitName = unit };
     public NumberFeature Build() => new(Name, UnitName);
 }
-
-public sealed record NumberFeature(string Name, string Unit) : Feature(Name);
