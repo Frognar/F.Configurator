@@ -248,13 +248,7 @@ public sealed record In(Expression Left, Expression Right) : Expression
 public sealed record NotIn(Expression Left, Expression Right) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        (Left.Evaluate(values), Right.Evaluate(values)) switch
-        {
-            (MissingValue, _) => BooleanValue.True,
-            (NumberValue n, RangeValue r) => Value.Boolean(n.Amount < r.Min || n.Amount > r.Max),
-            ({ } n, ListValue l) => Value.Boolean(!l.Values.Contains(n)),
-            _ => BooleanValue.True,
-        };
+        new Not(new In(Left, Right)).Evaluate(values);
 }
 
 public sealed record And(Expression Left, Expression Right) : Expression
