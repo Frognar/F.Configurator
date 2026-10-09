@@ -139,4 +139,15 @@ public class MembershipTests
 
         Assert.Equal(Value.Boolean(true), value);
     }
+
+    // Grammar 6.4: a missing value matches nothing, not even a list item that is itself missing.
+    [Fact]
+    public void Missing_value_is_not_in_a_list_with_a_missing_item()
+    {
+        var list = Expression.List(Expression.Option("CZ"), Expression.Reference("Brak"));
+        var empty = new Dictionary<string, Value>();
+
+        Assert.Equal(Value.Boolean(false), Expression.In(Expression.Reference("Norma"), list).Evaluate(empty));
+        Assert.Equal(Value.Boolean(true), Expression.NotIn(Expression.Reference("Norma"), list).Evaluate(empty));
+    }
 }
