@@ -203,6 +203,12 @@ public sealed class RuleBuilder
     public RuleBuilder Lock(string feature, params IEnumerable<string> features) =>
         new(_rule with { Effects = _rule.Effects.Add(new LockEffect([feature, .. features])) });
 
+    public RuleBuilder Only(string feature, params IEnumerable<string> options) =>
+        new(_rule with { Effects = _rule.Effects.Add(new OnlyEffect(feature, [.. options])) });
+
+    public RuleBuilder Forbid(string feature, params IEnumerable<string> options) =>
+        new(_rule with { Effects = _rule.Effects.Add(new ForbidEffect(feature, [.. options])) });
+
     public Rule Build() => _rule;
 }
 
@@ -211,3 +217,7 @@ public abstract record Effect(ImmutableList<string> Features);
 public sealed record HideEffect(ImmutableList<string> Features) : Effect(Features);
 
 public sealed record LockEffect(ImmutableList<string> Features) : Effect(Features);
+
+public sealed record OnlyEffect(string Feature, ImmutableList<string> Options) : Effect([Feature]);
+
+public sealed record ForbidEffect(string Feature, ImmutableList<string> Options) : Effect([Feature]);
