@@ -177,7 +177,8 @@ public sealed record Rule(
     int Priority,
     ImmutableList<string> Collections,
     Expression? Condition,
-    ImmutableList<Effect> Effects);
+    ImmutableList<Effect> Effects,
+    Violation? Violation);
 
 public sealed class RuleBuilder
 {
@@ -186,7 +187,7 @@ public sealed class RuleBuilder
     private RuleBuilder(Rule rule) => _rule = rule;
 
     public static RuleBuilder Create(string name) =>
-        new(new Rule(name, 0, ImmutableList<string>.Empty, null, ImmutableList<Effect>.Empty));
+        new(new Rule(name, 0, ImmutableList<string>.Empty, null, ImmutableList<Effect>.Empty, null));
 
     public RuleBuilder When(Expression condition) => new(_rule with { Condition = condition });
 
@@ -222,6 +223,9 @@ public sealed class RuleBuilder
     public RuleBuilder Forbid(string feature, params IEnumerable<string> options) =>
         new(_rule with { Effects = _rule.Effects.Add(new ForbidEffect(feature, [.. options])) });
 
+    public RuleBuilder OnViolation(Reaction reaction, string message) =>
+        new(_rule with { Violation = new Violation(reaction, message) });
+
     public RuleBuilder Warn(string message) =>
         new(_rule with { Effects = _rule.Effects.Add(new MessageEffect(Severity.Warning, message)) });
 
@@ -253,4 +257,11 @@ public sealed record MessageEffect(Severity Severity, string Text) : Effect;
 public enum Severity
 {
     Warning
+}
+
+public sealed record Violation(Reaction Reaction, string Message);
+
+public enum Reaction
+{
+    Correct
 }
