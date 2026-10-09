@@ -50,8 +50,8 @@ public abstract record Expression
     public static Expression Round(Expression operand) => new Round(operand, Number(1));
     public static Expression Round(Expression operand, Expression step) => new Round(operand, step);
 
-    public static Expression TableLookup(Table table, List<Expression> keys, string value) =>
-        new TableLookup(table, [.. keys], value);
+    public static Expression TableLookup(Table table, IEnumerable<Expression> keys, string column) =>
+        new TableLookup(table, [.. keys], column);
 
     public static Expression List(Expression expression, params IEnumerable<Expression> expressions) =>
         new ListExpression([expression, .. expressions]);
@@ -342,12 +342,12 @@ public sealed record Round(Expression Input, Expression Step) : Expression
     }
 }
 
-public sealed record TableLookup(Table Table, EquatableList<Expression> Keys, string ValueKey) : Expression
+public sealed record TableLookup(Table Table, EquatableList<Expression> Keys, string Column) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values)
     {
         var evaluatedKeys = Keys.Select(k => k.Evaluate(values)).ToArray();
-        return Table.Lookup(evaluatedKeys, ValueKey);
+        return Table.Lookup(evaluatedKeys, Column);
     }
 }
 
