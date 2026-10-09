@@ -4,6 +4,11 @@ public sealed record Table(IReadOnlyList<string> KeyColumns, IReadOnlyList<Table
 {
     public Value Lookup(IReadOnlyList<Value> keys, string valueKey)
     {
+        if (KeyColumns.Count != keys.Count)
+        {
+            return Value.Missing;
+        }
+
         var row = Rows.FirstOrDefault(r => r.Keys.Zip(keys).All(Matches));
         return row is not null && row.Values.TryGetValue(valueKey, out var value) ? value : Value.Missing;
     }
