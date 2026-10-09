@@ -95,10 +95,10 @@ public class RuleBuilderTests
         var effects = Assert.Single(catalog.Rules).Effects;
         var only = Assert.IsType<OnlyEffect>(effects[0]);
         Assert.Equal("Norma", only.Feature);
-        Assert.Equal(["PL", "CZ"], only.Options);
+        Assert.Equal([new OptionValue("PL"), new OptionValue("CZ")], only.Options);
         var forbid = Assert.IsType<ForbidEffect>(effects[1]);
         Assert.Equal("Kolor", forbid.Feature);
-        Assert.Equal(["BIALY"], forbid.Options);
+        Assert.Equal([new OptionValue("BIALY")], forbid.Options);
     }
 
     // Grammar 4.7: `min`, `maks`, `krok`; the right-hand side is an expression.
