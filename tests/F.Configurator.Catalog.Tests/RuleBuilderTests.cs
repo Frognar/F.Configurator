@@ -166,4 +166,63 @@ public class RuleBuilderTests
         Assert.Equal("Maksymalna szerokość to {maks} mm. Zmieniono wartość.", violation.Message);
         Assert.Null(catalog.Rules[1].Violation);
     }
+
+    // Grammar 4.7: `błąd "…"` and `informuj "…"` next to `ostrzeż "…"`.
+    [Fact]
+    public void Rule_keeps_error_and_information_messages()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Rule("Komunikaty", rule => rule
+                .Error("Ta kombinacja nie jest produkowana.")
+                .Inform("Termin realizacji wydłuża się o tydzień."))
+            .Build();
+
+        var effects = Assert.Single(catalog.Rules).Effects;
+        Assert.Equal(new MessageEffect(Severity.Error, "Ta kombinacja nie jest produkowana."), effects[0]);
+        Assert.Equal(new MessageEffect(Severity.Information, "Termin realizacji wydłuża się o tydzień."), effects[1]);
+    }
+
+    // Analysis 2.5 (N5): `przy naruszeniu koryguj | błąd | ostrzeż`.
+    [Theory]
+    [InlineData(Reaction.Correct)]
+    [InlineData(Reaction.Error)]
+    [InlineData(Reaction.Warn)]
+    public void Rule_keeps_every_kind_of_reaction(Reaction reaction)
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Rule("MaxSzer", rule => rule
+                .Max("SzerokoscMM", Expression.Number(1044m))
+                .OnViolation(reaction, "Za szeroko."))
+            .Build();
+
+        Assert.Equal(reaction, Assert.Single(catalog.Rules).Violation?.Reaction);
+    }
+
+    // Grammar 4.4: `wtedy domyślnie SzerokoscMM, WysokoscMM z WymiaryDomyslne` (columns matched by name).
+    [Fact]
+    public void Rule_keeps_defaults_from_a_table()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Rule("WymiaryZTabeli", rule => rule.DefaultsFrom("WymiaryDomyslne", "SzerokoscMM", "WysokoscMM"))
+            .Build();
+
+        var effect = Assert.IsType<DefaultsFromTableEffect>(Assert.Single(Assert.Single(catalog.Rules).Effects));
+        Assert.Equal("WymiaryDomyslne", effect.Table);
+        Assert.Equal(["SzerokoscMM", "WysokoscMM"], effect.Features);
+    }
+
+    // Grammar G18: `tylko Uchwyt z DozwoloneUchwyt`.
+    [Fact]
+    public void Rule_keeps_allowed_options_from_a_combinations_table()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Rule("Zaleznosci", rule => rule
+                .OnlyFrom("Model", "DozwoloneModel")
+                .OnlyFrom("Uchwyt", "DozwoloneUchwyt"))
+            .Build();
+
+        var effects = Assert.Single(catalog.Rules).Effects;
+        Assert.Equal(new OnlyFromTableEffect("Model", "DozwoloneModel"), effects[0]);
+        Assert.Equal(new OnlyFromTableEffect("Uchwyt", "DozwoloneUchwyt"), effects[1]);
+    }
 }
