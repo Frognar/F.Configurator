@@ -17,17 +17,11 @@ public sealed class AllowedCombinationsTableBuilder
 
     private AllowedCombinationsTableBuilder(AllowedCombinationsTable table) => _table = table;
 
-    public static AllowedCombinationsTableBuilder Create() =>
+    public static AllowedCombinationsTableBuilder Create(IEnumerable<string> key, string allowed) =>
         new(new AllowedCombinationsTable(
-            EquatableList<string>.Empty,
-            string.Empty,
+            [..key],
+            allowed,
             EquatableDictionary<EquatableList<Value>, EquatableList<Value>>.Empty));
-
-    public AllowedCombinationsTableBuilder Key(string key, params IEnumerable<string> keys) =>
-        new(_table with { KeyColumns = _table.KeyColumns.Add(key).AddRange(keys) });
-
-    public AllowedCombinationsTableBuilder Allowed(string feature) =>
-        new(_table with { AllowedFeature = feature });
 
     public AllowedCombinationsTableBuilder Row(string cell, params IReadOnlyList<string> cells)
     {
@@ -41,7 +35,9 @@ public sealed class AllowedCombinationsTableBuilder
         EquatableList<Value> key = [.. all.SkipLast(1).Select(Value.Option)];
         var value = Value.Option(all[^1]);
         var allowed = _table.Rows.GetValueOrDefault(key, []);
-        return new AllowedCombinationsTableBuilder(_table with { Rows = _table.Rows.SetItem(key, allowed.Add(value)) });
+        return allowed.Contains(value)
+            ? this
+            : new AllowedCombinationsTableBuilder(_table with { Rows = _table.Rows.SetItem(key, allowed.Add(value)) });
     }
 
     public AllowedCombinationsTableBuilder Row(Value cell, params IReadOnlyList<Value> cells)
@@ -56,7 +52,9 @@ public sealed class AllowedCombinationsTableBuilder
         EquatableList<Value> key = [.. all.SkipLast(1)];
         var value = all[^1];
         var allowed = _table.Rows.GetValueOrDefault(key, []);
-        return new AllowedCombinationsTableBuilder(_table with { Rows = _table.Rows.SetItem(key, allowed.Add(value)) });
+        return allowed.Contains(value)
+            ? this
+            : new AllowedCombinationsTableBuilder(_table with { Rows = _table.Rows.SetItem(key, allowed.Add(value)) });
     }
 
     public AllowedCombinationsTable Build() => _table;

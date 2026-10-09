@@ -81,14 +81,18 @@ public sealed class CatalogBuilder
             ? throw Duplicate("Table", name)
             : new CatalogBuilder(_catalog with { Tables = _catalog.Tables.Add(name, table) });
 
-    public CatalogBuilder AllowedCombinations(string name,
+    public CatalogBuilder AllowedCombinations(
+        string name,
+        IEnumerable<string> key,
+        string allowed,
         Func<AllowedCombinationsTableBuilder, AllowedCombinationsTableBuilder> setupTable) =>
         TableExists(name)
             ? throw Duplicate("Table", name)
             : new CatalogBuilder(_catalog with
             {
                 AllowedCombinations =
-                _catalog.AllowedCombinations.Add(name, setupTable(AllowedCombinationsTableBuilder.Create()).Build())
+                _catalog.AllowedCombinations.Add(name, setupTable(
+                    AllowedCombinationsTableBuilder.Create(key, allowed)).Build())
             });
 
     private bool TableExists(string name) =>
