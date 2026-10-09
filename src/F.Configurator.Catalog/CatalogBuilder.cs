@@ -184,7 +184,11 @@ public sealed class RuleBuilder
 
     public RuleBuilder When(Expression condition) => new(_rule with { Condition = condition });
 
+    public RuleBuilder Priority(int priority) => new(_rule with { Priority = priority });
+
     public RuleBuilder Hide(string feature) => this;
+
+    public RuleBuilder Max(string feature, Expression limit) => this;
 
     public Rule Build() => _rule;
 }
