@@ -222,6 +222,9 @@ public sealed class RuleBuilder
     public RuleBuilder Forbid(string feature, params IEnumerable<string> options) =>
         new(_rule with { Effects = _rule.Effects.Add(new ForbidEffect(feature, [.. options])) });
 
+    public RuleBuilder Warn(string message) =>
+        new(_rule with { Effects = _rule.Effects.Add(new MessageEffect(Severity.Warning, message)) });
+
     public Rule Build() => _rule;
 }
 
@@ -244,3 +247,10 @@ public sealed record LockEffect(ImmutableList<string> Features) : Effect;
 public sealed record OnlyEffect(string Feature, ImmutableList<string> Options) : Effect;
 
 public sealed record ForbidEffect(string Feature, ImmutableList<string> Options) : Effect;
+
+public sealed record MessageEffect(Severity Severity, string Text) : Effect;
+
+public enum Severity
+{
+    Warning
+}
