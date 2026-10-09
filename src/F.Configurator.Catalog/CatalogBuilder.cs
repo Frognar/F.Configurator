@@ -324,21 +324,41 @@ public sealed class AllowedCombinationsTableBuilder
 
     private const string KeySeparator = "\\u001F";
 
-    public AllowedCombinationsTableBuilder Row(string key1, string key2, string allowedValue)
+    public AllowedCombinationsTableBuilder Row(string key, string keyOrValue, params IEnumerable<string> keysAndOrValue)
     {
-        Key key = new(key1 + KeySeparator + key2);
-        if (_table.Rows.TryGetValue(key, out var allowed))
+        Key trueKey = PrepareKey(key, keyOrValue, keysAndOrValue);
+        Value value = ExtractValue(keyOrValue, keysAndOrValue);
+        if (_table.Rows.TryGetValue(trueKey, out var allowed))
         {
             return new AllowedCombinationsTableBuilder(_table with
             {
-                Rows = _table.Rows.SetItem(key, allowed.Add(Value.Option(allowedValue)))
+                Rows = _table.Rows.SetItem(trueKey, allowed.Add(value))
             });
         }
 
         return new AllowedCombinationsTableBuilder(_table with
         {
-            Rows = _table.Rows.Add(key, ImmutableList.Create(Value.Option(allowedValue)))
+            Rows = _table.Rows.Add(trueKey, ImmutableList.Create(value))
         });
+    }
+
+    private Key PrepareKey(string key, string keyOrValue, params IEnumerable<string> keysAndOrValue)
+    {
+        return _table.KeyColumns.Count switch
+        {
+            1 => new Key(key),
+            2 => new Key(key + KeySeparator + keyOrValue),
+            _ => new Key(string.Join(KeySeparator, key, keyOrValue, keysAndOrValue.SkipLast(1)))
+        };
+    }
+
+    private Value ExtractValue(string ketOrValue, params IEnumerable<string> keysAndOrValue)
+    {
+        return _table.KeyColumns.Count switch
+        {
+            1 => Value.Option(ketOrValue),
+            _ => Value.Option(keysAndOrValue.Last())
+        };
     }
 
     public AllowedCombinationsTable Build() => _table;
