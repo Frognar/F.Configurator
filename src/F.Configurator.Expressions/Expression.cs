@@ -7,11 +7,11 @@ public abstract record Expression
     public static Expression Number(decimal number) => new Number(number);
     public static Expression Reference(string name) => new Reference(name);
     public static Expression Range(decimal min, decimal max) => new Range(min, max);
-    public static Expression Text(string name) => new Text(name);
+    public static Expression Text(string text) => new Text(text);
     public static Expression Option(string id) => new Option(id);
 
-    public static Expression OptionAttribute(Expression choice, EquatableDictionary<string, Value> values) =>
-        new OptionAttribute(choice, values);
+    public static Expression OptionAttribute(Expression selected, EquatableDictionary<string, Value> valuesByOption) =>
+        new OptionAttribute(selected, valuesByOption);
 
     public static Expression Add(Expression left, Expression right) => new Add(left, right);
     public static Expression Subtract(Expression left, Expression right) => new Subtract(left, right);
@@ -42,10 +42,11 @@ public abstract record Expression
         => new If(condition, then, otherwise);
 
     public static Expression Length(Expression operand) => new Length(operand);
-    public static Expression Pad(Expression value, Expression totalWidth) => new Pad(value, totalWidth, Text("0"));
+    public static Expression Pad(Expression operand, Expression totalWidth) =>
+        new Pad(operand, totalWidth, Text("0"));
 
-    public static Expression Pad(Expression value, Expression totalWidth, Expression paddingChar) =>
-        new Pad(value, totalWidth, paddingChar);
+    public static Expression Pad(Expression operand, Expression totalWidth, Expression paddingChar) =>
+        new Pad(operand, totalWidth, paddingChar);
 
     public static Expression Round(Expression operand) => new Round(operand, Number(1));
     public static Expression Round(Expression operand, Expression step) => new Round(operand, step);
@@ -68,14 +69,14 @@ public sealed record Reference(string Name) : Expression
         values.TryGetValue(Name, out var value) ? value : Value.Missing;
 }
 
-public sealed record Range(decimal MinValue, decimal MaxValue) : Expression
+public sealed record Range(decimal Lower, decimal Upper) : Expression
 {
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => Value.Range(MinValue, MaxValue);
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => Value.Range(Lower, Upper);
 }
 
-public sealed record Text(string TextValue) : Expression
+public sealed record Text(string Content) : Expression
 {
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => Value.Text(TextValue);
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => Value.Text(Content);
 }
 
 public sealed record Option(string Id) : Expression
@@ -83,12 +84,14 @@ public sealed record Option(string Id) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => Value.Option(Id);
 }
 
-public sealed record OptionAttribute(Expression Choice, EquatableDictionary<string, Value> Values) : Expression
+public sealed record OptionAttribute(
+    Expression Selected,
+    EquatableDictionary<string, Value> ValuesByOption) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        Choice.Evaluate(values) switch
+        Selected.Evaluate(values) switch
         {
-            OptionValue option => Values.TryGetValue(option.Id, out var value) ? value : Value.Missing,
+            OptionValue option => ValuesByOption.TryGetValue(option.Id, out var value) ? value : Value.Missing,
             _ => Value.Missing,
         };
 }
@@ -242,7 +245,7 @@ public sealed record In(Expression Left, Expression Right) : Expression
         {
             (MissingValue, _) => BooleanValue.False,
             (NumberValue n, RangeValue r) => Value.Boolean(n.Amount >= r.Min && n.Amount <= r.Max),
-            ({ } n, ListValue l) => Value.Boolean(l.Values.Contains(n)),
+            ({ } item, ListValue list) => Value.Boolean(list.Values.Contains(item)),
             _ => BooleanValue.False,
         };
 }
@@ -303,12 +306,12 @@ public sealed record Length(Expression Operand) : Expression
         };
 }
 
-public sealed record Pad(Expression ValueText, Expression TotalWidth, Expression PaddingChar) : Expression
+public sealed record Pad(Expression Operand, Expression TotalWidth, Expression PaddingChar) : Expression
 {
     private const decimal MaxWidth = 1000;
 
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        (ValueText.Evaluate(values).AsText(), TotalWidth.Evaluate(values), PaddingChar.Evaluate(values)) switch
+        (Operand.Evaluate(values).AsText(), TotalWidth.Evaluate(values), PaddingChar.Evaluate(values)) switch
         {
             (
                 TextValue { Value: var text },
@@ -320,10 +323,10 @@ public sealed record Pad(Expression ValueText, Expression TotalWidth, Expression
         };
 }
 
-public sealed record Round(Expression Input, Expression Step) : Expression
+public sealed record Round(Expression Operand, Expression Step) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        (Input.Evaluate(values), Step.Evaluate(values)) switch
+        (Operand.Evaluate(values), Step.Evaluate(values)) switch
         {
             (NumberValue number, NumberValue { Amount: > 0 } step) => SafeRound(number, step),
             _ => Value.Missing,
