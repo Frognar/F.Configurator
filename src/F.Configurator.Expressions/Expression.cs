@@ -6,7 +6,7 @@ public abstract record Expression
 
     public static Expression Number(decimal number) => new Number(number);
     public static Expression Reference(string name) => new Reference(name);
-    public static Expression Range(decimal min, decimal max) => new Range(min, max);
+    public static Expression Range(decimal lower, decimal upper) => new Range(lower, upper);
     public static Expression Text(string text) => new Text(text);
     public static Expression Option(string id) => new Option(id);
 
