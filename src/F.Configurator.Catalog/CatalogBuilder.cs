@@ -287,7 +287,20 @@ public enum Reaction
     Error,
 }
 
-public sealed record AllowedCombinationsTable(ImmutableList<string> KeyColumns, string AllowedFeature);
+public sealed record AllowedCombinationsTable(
+    ImmutableList<string> KeyColumns,
+    string AllowedFeature,
+    ImmutableDictionary<Key, ImmutableList<Value>> Rows)
+{
+    public ImmutableList<Value> AllowedFor(ImmutableList<Value> key) =>
+        Rows.TryGetValue(
+            new Key(string.Join("\\u001F", key.Cast<OptionValue>().Select(o => o.Id)))
+            , out var allowed)
+            ? allowed
+            : ImmutableList<Value>.Empty;
+}
+
+public sealed record Key(string Value);
 
 public sealed class AllowedCombinationsTableBuilder
 {
@@ -296,13 +309,35 @@ public sealed class AllowedCombinationsTableBuilder
     private AllowedCombinationsTableBuilder(AllowedCombinationsTable table) => _table = table;
 
     public static AllowedCombinationsTableBuilder Create() =>
-        new(new AllowedCombinationsTable(ImmutableList<string>.Empty, string.Empty));
+        new(new AllowedCombinationsTable(
+            ImmutableList<string>.Empty,
+            string.Empty,
+            ImmutableDictionary<Key, ImmutableList<Value>>.Empty));
 
     public AllowedCombinationsTableBuilder Key(string key, params IEnumerable<string> keys) =>
         new(_table with { KeyColumns = _table.KeyColumns.Add(key).AddRange(keys) });
 
     public AllowedCombinationsTableBuilder Allowed(string feature) =>
         new(_table with { AllowedFeature = feature });
+
+    private const string KeySeparator = "\\u001F";
+
+    public AllowedCombinationsTableBuilder Row(string key1, string key2, string allowedValue)
+    {
+        Key key = new(key1 + KeySeparator + key2);
+        if (_table.Rows.TryGetValue(key, out var allowed))
+        {
+            return new AllowedCombinationsTableBuilder(_table with
+            {
+                Rows = _table.Rows.SetItem(key, allowed.Add(Value.Option(allowedValue)))
+            });
+        }
+
+        return new AllowedCombinationsTableBuilder(_table with
+        {
+            Rows = _table.Rows.Add(key, ImmutableList.Create(Value.Option(allowedValue)))
+        });
+    }
 
     public AllowedCombinationsTable Build() => _table;
 }
