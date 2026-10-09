@@ -313,12 +313,14 @@ public sealed record Length(Expression Operand) : Expression
 
 public sealed record Pad(Expression ValueText, Expression TotalWidth, Expression PaddingChar) : Expression
 {
+    private const decimal MaxWidth = 1000;
+
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         (ValueText.Evaluate(values).AsText(), TotalWidth.Evaluate(values), PaddingChar.Evaluate(values)) switch
         {
             (
                 TextValue { Value: var text },
-                NumberValue { Amount: var width and >= 0 },
+                NumberValue { Amount: var width and >= 0 and <= MaxWidth },
                 TextValue { Value: [var c] }
                 ) =>
                 Value.Text(text.PadLeft(decimal.ToInt32(width), c)),
