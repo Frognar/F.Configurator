@@ -54,7 +54,9 @@ public sealed class CatalogBuilder
     public CatalogBuilder Table(string name, Table table) =>
         _catalog.Tables.ContainsKey(name)
             ? throw new ArgumentException($"Table with name '{name}' already exists.")
-            : new CatalogBuilder(_catalog with { Tables = _catalog.Tables.Add(name, table) });
+            : _catalog.AllowedCombinations.ContainsKey(name)
+                ? throw new ArgumentException($"Table with name '{name}' already exists.")
+                : new CatalogBuilder(_catalog with { Tables = _catalog.Tables.Add(name, table) });
 
     public CatalogBuilder AllowedCombinations(string name,
         Func<AllowedCombinationsTableBuilder, AllowedCombinationsTableBuilder> setupTable) =>
