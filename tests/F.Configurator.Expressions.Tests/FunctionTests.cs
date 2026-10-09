@@ -181,4 +181,40 @@ public class FunctionTests
 
         Assert.Equal(Value.Missing, value);
     }
+
+    // The E2 rule "an expression never throws": rounding to a step that pushes the quotient beyond
+    // the decimal range has no value.
+    [Fact]
+    public void Round_beyond_the_decimal_range_evaluates_to_missing()
+    {
+        var expression = Expression.Round(Expression.Number(decimal.MaxValue), Expression.Number(0.1m));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Missing, value);
+    }
+
+    // Indexes are tens of characters long, so `dopełnij` is capped at 1000 characters (agreed 2026-10-09).
+    // A wider pad has no value instead of overflowing int or allocating a huge string.
+    [Theory]
+    [InlineData(1001)]
+    [InlineData(100000000000000000000.0)]
+    public void Pad_wider_than_the_limit_evaluates_to_missing(double width)
+    {
+        var expression = Expression.Pad(Expression.Text("12"), Expression.Number((decimal)width));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Missing, value);
+    }
+
+    [Fact]
+    public void Pad_up_to_the_limit_is_allowed()
+    {
+        var expression = Expression.Pad(Expression.Text("12"), Expression.Number(1000m));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Text("12".PadLeft(1000, '0')), value);
+    }
 }
