@@ -125,13 +125,13 @@ public class AllowedCombinationsTests
     // Each row is the key cells followed by one allowed option; any other cell count is a typo in
     // code that builds the catalog.
     [Theory]
-    [InlineData(new[] { "PORTA" })]
-    [InlineData(new[] { "PORTA", "PELNE", "SZYBA" })]
-    public void Row_with_a_wrong_number_of_cells_is_rejected(string[] cells)
+    [InlineData("PORTA")]
+    [InlineData("PORTA", "PELNE", "SZYBA")]
+    public void Row_with_a_wrong_number_of_cells_is_rejected(string cell, params string[] cells)
     {
         var builder = AllowedCombinationsTableBuilder.Create().Key("Model").Allowed("Typ");
 
-        Assert.Throws<ArgumentException>(() => builder.Row(cells[0], cells[1..]));
+        Assert.Throws<ArgumentException>(() => builder.Row(cell, cells));
     }
 }
 
