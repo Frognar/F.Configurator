@@ -8,6 +8,7 @@ namespace F.Configurator.Expressions;
 [CollectionBuilder(typeof(EquatableList), nameof(EquatableList.Create))]
 public sealed class EquatableList<T> : IReadOnlyList<T>, IEquatable<EquatableList<T>>
 {
+    public static readonly EquatableList<T> Empty = new(ImmutableList<T>.Empty);
     private readonly ImmutableList<T> _items;
 
     internal EquatableList(ImmutableList<T> items) => _items = items;
@@ -33,6 +34,9 @@ public sealed class EquatableList<T> : IReadOnlyList<T>, IEquatable<EquatableLis
     }
 
     public override string ToString() => $"[{string.Join(", ", _items)}]";
+
+    public EquatableList<T> Add(T item) => new(_items.Add(item));
+    public EquatableList<T> AddRange(IEnumerable<T> items) => new(_items.AddRange(items));
 }
 
 public static class EquatableList
