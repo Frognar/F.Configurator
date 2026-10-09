@@ -7,6 +7,7 @@ public sealed record Catalog(
     string Name,
     string? Version,
     Reaction? DefaultReaction,
+    ImmutableDictionary<string, Context> Contexts,
     ImmutableList<Feature> Features,
     ImmutableList<Collection> Collections,
     ImmutableList<Rule> Rules,
@@ -23,6 +24,7 @@ public sealed class CatalogBuilder
         new(new Catalog(name,
             null,
             null,
+            ImmutableDictionary<string, Context>.Empty,
             ImmutableList<Feature>.Empty,
             ImmutableList<Collection>.Empty,
             ImmutableList<Rule>.Empty,
@@ -32,6 +34,12 @@ public sealed class CatalogBuilder
     public CatalogBuilder Version(string version) => new(_catalog with { Version = version });
 
     public CatalogBuilder DefaultReaction(Reaction reaction) => new(_catalog with { DefaultReaction = reaction });
+
+    public CatalogBuilder Context(string name, Func<ContextBuilder, ContextBuilder> setupContext) =>
+        new(_catalog with
+        {
+            Contexts = _catalog.Contexts.Add(name, setupContext(ContextBuilder.Create(name)).Build())
+        });
 
     private CatalogBuilder AddFeature(Feature feature) =>
         _catalog.Features.Any(f => f.Name == feature.Name)
@@ -89,4 +97,27 @@ public sealed class CatalogBuilder
         new($"{kind} with name '{name}' already exists.");
 
     public Catalog Build() => _catalog;
+}
+
+public sealed record Context(string Name, ImmutableList<AttributeDeclaration> Attributes);
+
+public sealed record AttributeDeclaration(string Name, AttributeType Type, object? Value);
+
+public enum AttributeType
+{
+    Text
+}
+
+public sealed class ContextBuilder
+{
+    private readonly Context _context;
+    private ContextBuilder(Context context) => _context = context;
+
+    public static ContextBuilder Create(string name) =>
+        new(new Context(name, ImmutableList<AttributeDeclaration>.Empty));
+
+    public ContextBuilder Attribute(string name, AttributeType type) =>
+        new(_context with { Attributes = _context.Attributes.Add(new AttributeDeclaration(name, type, null)) });
+
+    public Context Build() => _context;
 }
