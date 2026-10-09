@@ -244,6 +244,7 @@ public sealed record NotIn(Expression Left, Expression Right) : Expression
         (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
             (NumberValue n, RangeValue r) => Value.Boolean(n.Amount < r.Min || n.Amount > r.Max),
+            ({ } n, ListValue l) => Value.Boolean(!l.Values.Contains(n)),
             (MissingValue, _) => BooleanValue.True,
             _ => BooleanValue.False,
         };
