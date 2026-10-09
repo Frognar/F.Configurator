@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using F.Configurator.Expressions;
 
 namespace F.Configurator.Catalog;
@@ -10,19 +9,6 @@ public sealed record AllowedCombinationsTable(
 {
     public EquatableList<Value>? AllowedFor(EquatableList<Value> key) =>
         key.Any(k => k is MissingValue) ? null : Rows.GetValueOrDefault(key, []);
-}
-
-internal sealed class SequenceComparer : IEqualityComparer<ImmutableList<Value>>
-{
-    public static readonly SequenceComparer Instance = new();
-    public bool Equals(ImmutableList<Value>? x, ImmutableList<Value>? y) => x!.SequenceEqual(y!);
-
-    public int GetHashCode(ImmutableList<Value> key) =>
-        key.Aggregate(new HashCode(), (h, v) =>
-        {
-            h.Add(v);
-            return h;
-        }).ToHashCode();
 }
 
 public sealed class AllowedCombinationsTableBuilder
