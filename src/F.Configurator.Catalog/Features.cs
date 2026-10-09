@@ -37,8 +37,8 @@ public sealed class ChoiceFeatureBuilder
 public sealed record FeatureOption(
     string Id,
     string Name,
-    EquatableDictionary<string, Value> Attributes,
-    string Symbol);
+    string Symbol,
+    EquatableDictionary<string, Value> Attributes);
 
 public sealed class FeatureOptionBuilder
 {
@@ -47,7 +47,7 @@ public sealed class FeatureOptionBuilder
     private FeatureOptionBuilder(FeatureOption option) => _option = option;
 
     public static FeatureOptionBuilder Create(string id, string name) =>
-        new(new FeatureOption(id, name, EquatableDictionary<string, Value>.Empty, id));
+        new(new FeatureOption(id, name, id, EquatableDictionary<string, Value>.Empty));
 
     public FeatureOptionBuilder Attribute(string key, Value value) =>
         new(_option with { Attributes = _option.Attributes.Add(key, value) });
@@ -59,10 +59,10 @@ public sealed class FeatureOptionBuilder
 
 public sealed record NumberFeature(
     string Name,
-    decimal? Step,
+    string? Unit,
     decimal? Min,
     decimal? Max,
-    string? Unit) : Feature(Name);
+    decimal? Step) : Feature(Name);
 
 public sealed class NumberFeatureBuilder
 {
