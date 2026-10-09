@@ -91,4 +91,27 @@ public class LogicalTests
 
         Assert.Equal(Value.Boolean(true), value);
     }
+
+    // Agreed 2026-10-09: `i`, `lub` and `jeśli` treat any value other than true as false, so `nie`
+    // negates that view: `nie x` is true for everything except true. The validator rejects such
+    // operands; this keeps runtime behaviour consistent.
+    [Fact]
+    public void Not_of_a_number_is_true()
+    {
+        var expression = Expression.Not(Expression.Number(5m));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Boolean(true), value);
+    }
+
+    [Fact]
+    public void Not_of_a_text_is_true()
+    {
+        var expression = Expression.Not(Expression.Text("krowa"));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Boolean(true), value);
+    }
 }
