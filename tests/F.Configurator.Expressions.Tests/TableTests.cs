@@ -101,4 +101,36 @@ public class TableTests
 
         Assert.Equal(Value.Missing, value);
     }
+
+    // Every key column needs a key; a lookup with fewer keys must not match on the columns it has.
+    [Fact]
+    public void Lookup_with_fewer_keys_than_key_columns_evaluates_to_missing()
+    {
+        var table = new Table(
+            ["Norma", "Szerokosc"],
+            [new TableRow([[Value.Option("PL")], [Value.Number(90m)]], new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(2030m) })]);
+        var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "WysokoscMM");
+        var values = new Dictionary<string, Value> { ["Norma"] = Value.Option("PL") };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Missing, value);
+    }
+
+    [Fact]
+    public void Lookup_with_more_keys_than_key_columns_evaluates_to_missing()
+    {
+        var table = new Table(
+            ["Norma"],
+            [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
+        var expression = Expression.TableLookup(
+            table,
+            [Expression.Reference("Norma"), Expression.Reference("Szerokosc")],
+            "SzerokoscMM");
+        var values = new Dictionary<string, Value> { ["Norma"] = Value.Option("PL"), ["Szerokosc"] = Value.Number(90m) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Missing, value);
+    }
 }
