@@ -195,6 +195,12 @@ public sealed class RuleBuilder
     public RuleBuilder AppliesTo(string collection, params IEnumerable<string> collections) =>
         new(_rule with { Collections = _rule.Collections.Add(collection).AddRange(collections) });
 
+    public RuleBuilder Default(string feature, Expression value) =>
+        new(_rule with { Effects = _rule.Effects.Add(new DefaultEffect(feature, value)) });
+
+    public RuleBuilder Set(string feature, Expression value) =>
+        new(_rule with { Effects = _rule.Effects.Add(new SetEffect(feature, value)) });
+
     public RuleBuilder Hide(string feature) =>
         new(_rule with { Effects = _rule.Effects.Add(new HideEffect(ImmutableList.Create(feature))) });
 
@@ -220,6 +226,10 @@ public sealed class RuleBuilder
 }
 
 public abstract record Effect;
+
+public sealed record DefaultEffect(string Feature, Expression Value) : Effect;
+
+public sealed record SetEffect(string Feature, Expression Value) : Effect;
 
 public sealed record HideEffect(ImmutableList<string> Features) : Effect;
 
