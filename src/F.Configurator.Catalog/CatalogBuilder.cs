@@ -220,7 +220,9 @@ public sealed class RuleBuilder
 
     public RuleBuilder Step(string feature, Expression value) => AddEffect(new StepEffect(feature, value));
 
+    public RuleBuilder Inform(string message) => AddEffect(new MessageEffect(Severity.Information, message));
     public RuleBuilder Warn(string message) => AddEffect(new MessageEffect(Severity.Warning, message));
+    public RuleBuilder Error(string message) => AddEffect(new MessageEffect(Severity.Error, message));
 
     public RuleBuilder OnViolation(Reaction reaction, string message) =>
         new(_rule with { Violation = new Violation(reaction, message) });
@@ -252,7 +254,9 @@ public sealed record MessageEffect(Severity Severity, string Text) : Effect;
 
 public enum Severity
 {
-    Warning
+    Information,
+    Warning,
+    Error,
 }
 
 public sealed record Violation(Reaction Reaction, string Message);
