@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace F.Configurator.Expressions;
 
 public abstract record Expression
@@ -8,6 +10,10 @@ public abstract record Expression
     public static Expression Reference(string name) => new Reference(name);
     public static Expression Range(decimal min, decimal max) => new Range(min, max);
     public static Expression Text(string name) => new Text(name);
+    public static Expression Option(string id) => new Option(id);
+
+    public static Expression OptionAttribute(Expression choice, IReadOnlyDictionary<string, Value> values) =>
+        new OptionAttribute(choice, values);
 
     public static Expression Add(Expression left, Expression right) => new Add(left, right);
     public static Expression Subtract(Expression left, Expression right) => new Subtract(left, right);
@@ -48,6 +54,9 @@ public abstract record Expression
 
     public static Expression TableLookup(Table table, List<Expression> keys, string value) =>
         new TableLookup(table, keys, value);
+
+    public static Expression List(Expression expression, params IEnumerable<Expression> expressions) =>
+        new ListExpression([expression, .. expressions]);
 }
 
 public sealed record Number(decimal Amount) : Expression
@@ -69,6 +78,21 @@ public sealed record Range(decimal MinValue, decimal MaxValue) : Expression
 public sealed record Text(string TextValue) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => Value.Text(TextValue);
+}
+
+public sealed record Option(string Id) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => Value.Option(Id);
+}
+
+public sealed record OptionAttribute(Expression Choice, IReadOnlyDictionary<string, Value> Values) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
+        Choice.Evaluate(values) switch
+        {
+            OptionValue option => Values.TryGetValue(option.Id, out var value) ? value : Value.Missing,
+            _ => Value.Missing,
+        };
 }
 
 public abstract record BinaryArithmetic(Expression Left, Expression Right) : Expression
@@ -208,7 +232,9 @@ public sealed record In(Expression Left, Expression Right) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
+            (MissingValue, _) => BooleanValue.False,
             (NumberValue n, RangeValue r) => Value.Boolean(n.Amount >= r.Min && n.Amount <= r.Max),
+            ({ } n, ListValue l) => Value.Boolean(l.Values.Contains(n)),
             _ => BooleanValue.False,
         };
 }
@@ -218,8 +244,9 @@ public sealed record NotIn(Expression Left, Expression Right) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
-            (NumberValue n, RangeValue r) => Value.Boolean(n.Amount < r.Min || n.Amount > r.Max),
             (MissingValue, _) => BooleanValue.True,
+            (NumberValue n, RangeValue r) => Value.Boolean(n.Amount < r.Min || n.Amount > r.Max),
+            ({ } n, ListValue l) => Value.Boolean(!l.Values.Contains(n)),
             _ => BooleanValue.False,
         };
 }
@@ -306,6 +333,12 @@ public sealed record TableLookup(Table Table, IReadOnlyList<Expression> Keys, st
         var evaluatedKeys = Keys.Select(k => k.Evaluate(values)).ToArray();
         return Table.Lookup(evaluatedKeys, ValueKey);
     }
+}
+
+public sealed record ListExpression(ImmutableList<Expression> Expressions) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
+        Value.List(Expressions.Select(e => e.Evaluate(values)));
 }
 
 file static class ValueExtensions

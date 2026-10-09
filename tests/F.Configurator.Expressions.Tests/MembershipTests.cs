@@ -64,4 +64,90 @@ public class MembershipTests
 
         Assert.Equal(Value.Boolean(true), value);
     }
+
+    // Grammar 6.1: `Kolekcja w [Brilliant, Basic]`.
+    [Theory]
+    [InlineData("Basic", true)]
+    [InlineData("Brilliant", true)]
+    [InlineData("Contrast", false)]
+    public void Option_is_in_a_list_when_the_list_names_it(string kolekcja, bool expected)
+    {
+        var expression = Expression.In(
+            Expression.Reference("Kolekcja"),
+            Expression.List(Expression.Option("Brilliant"), Expression.Option("Basic")));
+        var values = new Dictionary<string, Value> { ["Kolekcja"] = Value.Option(kolekcja) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Boolean(expected), value);
+    }
+
+    [Fact]
+    public void Number_can_be_in_a_list_of_numbers()
+    {
+        var expression = Expression.In(
+            Expression.Reference("Szerokosc"),
+            Expression.List(Expression.Number(80m), Expression.Number(90m)));
+        var values = new Dictionary<string, Value> { ["Szerokosc"] = Value.Number(90m) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Boolean(true), value);
+    }
+
+    // Grammar 2.4: `Model nie w [ANATOLIA, STANDARD_02]`.
+    [Theory]
+    [InlineData("PORTA", true)]
+    [InlineData("ANATOLIA", false)]
+    public void Option_is_not_in_a_list_that_does_not_name_it(string model, bool expected)
+    {
+        var expression = Expression.NotIn(
+            Expression.Reference("Model"),
+            Expression.List(Expression.Option("ANATOLIA"), Expression.Option("STANDARD_02")));
+        var values = new Dictionary<string, Value> { ["Model"] = Value.Option(model) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Boolean(expected), value);
+    }
+
+    // Grammar 6.4: nothing chosen is not in a list, and "is not in" holds.
+    [Fact]
+    public void Missing_value_is_not_in_a_list()
+    {
+        var list = Expression.List(Expression.Option("CZ"), Expression.Option("SK"));
+        var empty = new Dictionary<string, Value>();
+
+        Assert.Equal(Value.Boolean(false), Expression.In(Expression.Reference("Norma"), list).Evaluate(empty));
+        Assert.Equal(Value.Boolean(true), Expression.NotIn(Expression.Reference("Norma"), list).Evaluate(empty));
+    }
+
+    // Items are expressions, so a list may hold a reference; a missing item matches nothing.
+    [Fact]
+    public void List_items_are_evaluated()
+    {
+        var expression = Expression.In(
+            Expression.Reference("SzerokoscMM"),
+            Expression.List(Expression.Reference("SzerokoscDomyslnaMM"), Expression.Reference("Brak")));
+        var values = new Dictionary<string, Value>
+        {
+            ["SzerokoscMM"] = Value.Number(844m),
+            ["SzerokoscDomyslnaMM"] = Value.Number(844m),
+        };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Boolean(true), value);
+    }
+
+    // Grammar 6.4: a missing value matches nothing, not even a list item that is itself missing.
+    [Fact]
+    public void Missing_value_is_not_in_a_list_with_a_missing_item()
+    {
+        var list = Expression.List(Expression.Option("CZ"), Expression.Reference("Brak"));
+        var empty = new Dictionary<string, Value>();
+
+        Assert.Equal(Value.Boolean(false), Expression.In(Expression.Reference("Norma"), list).Evaluate(empty));
+        Assert.Equal(Value.Boolean(true), Expression.NotIn(Expression.Reference("Norma"), list).Evaluate(empty));
+    }
 }

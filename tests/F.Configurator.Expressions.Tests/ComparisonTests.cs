@@ -101,4 +101,27 @@ public class ComparisonTests
 
         Assert.Equal(Value.Boolean(true), value);
     }
+
+    // Grammar 4.2: a choice feature's value is one of its options, written by id (`Kraj = PL`).
+    [Fact]
+    public void Equal_options_compare_as_equal()
+    {
+        var expression = Expression.Equal(Expression.Reference("Kraj"), Expression.Option("PL"));
+        var values = new Dictionary<string, Value> { ["Kraj"] = Value.Option("PL") };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(Value.Boolean(true), value);
+    }
+
+    // An option and a text with the same spelling are different values: `Kraj = PL` is not `Kraj = "PL"`.
+    [Fact]
+    public void Option_is_not_equal_to_text_with_the_same_spelling()
+    {
+        var expression = Expression.Equal(Expression.Option("PL"), Expression.Text("PL"));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Boolean(false), value);
+    }
 }
