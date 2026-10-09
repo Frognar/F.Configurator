@@ -73,4 +73,52 @@ public class AllowedCombinationsTests
         Assert.Equal(2, catalog.AllowedCombinations.Count);
         Assert.Equal("Typ", catalog.AllowedCombinations["DozwoloneTyp"].AllowedFeature);
     }
+
+    // Basic: 10 of 32 tables have three or more key columns (kolor-zawiasu has seven).
+    [Fact]
+    public void Lookup_works_with_three_key_columns()
+    {
+        var table = CatalogBuilder.Create("Drzwi")
+            .AllowedCombinations("DozwoloneUchwyt", t => t
+                .Key("Model", "Dwuskrzydlowe", "ZamekDolny")
+                .Allowed("Uchwyt")
+                .Row("PORTA", "NIE", "KLUCZ", "KLAMKA")
+                .Row("PORTA", "TAK", "KLUCZ", "GALKA"))
+            .Build()
+            .AllowedCombinations["DozwoloneUchwyt"];
+
+        var allowed = table.AllowedFor([Value.Option("PORTA"), Value.Option("NIE"), Value.Option("KLUCZ")]);
+
+        Assert.Equal([Value.Option("KLAMKA")], allowed);
+    }
+
+    // Basic: DozwoloneModel (model.csv) has no key column, every row is just an allowed option.
+    [Fact]
+    public void Table_without_key_columns_allows_its_rows_unconditionally()
+    {
+        var table = CatalogBuilder.Create("Drzwi")
+            .AllowedCombinations("DozwoloneModel", t => t
+                .Allowed("Model")
+                .Row("PORTA")
+                .Row("VERTE"))
+            .Build()
+            .AllowedCombinations["DozwoloneModel"];
+
+        var allowed = table.AllowedFor([]);
+
+        Assert.Equal([Value.Option("PORTA"), Value.Option("VERTE")], allowed);
+    }
+
+    // Key values come from the configuration and may be any value, e.g. a number for Szerokosc
+    // (a key column in 5 Basic tables). An unknown key allows nothing; it must not throw.
+    [Fact]
+    public void Non_option_key_value_finds_no_row_instead_of_throwing()
+    {
+        var table = CatalogWithUchwyt().AllowedCombinations["DozwoloneUchwyt"];
+
+        var allowed = table.AllowedFor([Value.Number(80), Value.Text("KLUCZ")]);
+
+        Assert.NotNull(allowed);
+        Assert.Empty(allowed);
+    }
 }
