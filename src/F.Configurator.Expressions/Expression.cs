@@ -167,20 +167,22 @@ public abstract record Extremum(EquatableList<Expression> Expressions) : Express
             .OfType<NumberValue>()
             .ToList();
 
-        return evaluated.Count == Expressions.Count ? Pick(evaluated) ?? Value.Missing : Value.Missing;
+        return evaluated.Count == Expressions.Count
+            ? Value.Number(Pick(evaluated.Select(v => v.Amount)))
+            : Value.Missing;
     }
 
-    protected abstract Value? Pick(IReadOnlyList<NumberValue> evaluated);
+    protected abstract decimal Pick(IEnumerable<decimal> amounts);
 }
 
 public sealed record Min(EquatableList<Expression> Expressions) : Extremum(Expressions)
 {
-    protected override Value? Pick(IReadOnlyList<NumberValue> evaluated) => evaluated.MinBy(v => v.Amount);
+    protected override decimal Pick(IEnumerable<decimal> amounts) => amounts.Min();
 }
 
 public sealed record Max(EquatableList<Expression> Expressions) : Extremum(Expressions)
 {
-    protected override Value? Pick(IReadOnlyList<NumberValue> evaluated) => evaluated.MaxBy(v => v.Amount);
+    protected override decimal Pick(IEnumerable<decimal> amounts) => amounts.Max();
 }
 
 public sealed record Equal(Expression Left, Expression Right) : Expression
