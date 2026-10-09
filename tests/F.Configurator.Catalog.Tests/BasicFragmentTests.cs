@@ -13,21 +13,21 @@ public class BasicFragmentTests
         [
             new TableRow(
                 [[Value.Option("PL")], [Value.Option("80")]],
-                new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m), ["WysokoscMM"] = Value.Number(2030m) }),
+                new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m), ["WysokoscMM"] = Value.Number(2030m) }.ToEquatableDictionary()),
         ]);
 
-    private static readonly Dictionary<string, Value> Seria = new()
+    private static readonly EquatableDictionary<string, Value> Seria = new Dictionary<string, Value>
     {
         ["STANDARD_01"] = Value.Text("STANDARD"),
         ["ASTORIA_01"] = Value.Text("ASTORIA"),
-    };
+    }.ToEquatableDictionary();
 
     private static Catalog Basic() =>
         CatalogBuilder.Create("Drzwi wewnętrzne")
             .Number("SzerokoscMM", feature => feature.Unit("mm"))
             .Number("WysokoscMM", feature => feature.Unit("mm"))
             .Table("WymiaryDomyslne", WymiaryDomyslne)
-            .Rule("WymiaryZTabeli", rule => rule.AppliesTo("Basic").DefaultsFrom("WymiaryDomyslne", "SzerokoscMM", "WysokoscMM"))
+            .Rule("WymiaryZTabeli", rule => rule.AppliesTo("Basic").DefaultsFrom(["SzerokoscMM", "WysokoscMM"], "WymiaryDomyslne"))
             .Rule("ZamekBrak", rule => rule.AppliesTo("Basic")
                 .When(Equal(Reference("ZamekDolny"), Option("BRAK")))
                 .Hide("ZmianaPolozeniaZamka"))
@@ -90,5 +90,17 @@ public class BasicFragmentTests
         };
 
         Assert.Equal(Value.Boolean(expected), niskaWysokosc.Condition!.Evaluate(values));
+    }
+
+    // The DSL compiler (E5) will be tested by comparing whole catalogs, so every record in the catalog
+    // compares by content: features, options, rules, effects, collections, stages and tables.
+    [Fact]
+    public void Catalogs_built_the_same_way_are_equal()
+    {
+        var first = Basic();
+        var second = Basic();
+
+        Assert.Equal(first, second);
+        Assert.Equal(first.GetHashCode(), second.GetHashCode());
     }
 }

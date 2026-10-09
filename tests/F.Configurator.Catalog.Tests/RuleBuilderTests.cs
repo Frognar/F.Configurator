@@ -186,7 +186,7 @@ public class RuleBuilderTests
     [Theory]
     [InlineData(Reaction.Correct)]
     [InlineData(Reaction.Error)]
-    [InlineData(Reaction.Warn)]
+    [InlineData(Reaction.Warning)]
     public void Rule_keeps_every_kind_of_reaction(Reaction reaction)
     {
         var catalog = CatalogBuilder.Create("Drzwi")
@@ -199,16 +199,16 @@ public class RuleBuilderTests
     }
 
     // Grammar 4.4: `wtedy domyślnie SzerokoscMM, WysokoscMM z WymiaryDomyslne` (columns matched by name).
+    // Features come first and the table last, as in the grammar and in `OnlyFrom` (`tylko X z T`).
     [Fact]
     public void Rule_keeps_defaults_from_a_table()
     {
         var catalog = CatalogBuilder.Create("Drzwi")
-            .Rule("WymiaryZTabeli", rule => rule.DefaultsFrom("WymiaryDomyslne", "SzerokoscMM", "WysokoscMM"))
+            .Rule("WymiaryZTabeli", rule => rule.DefaultsFrom(["SzerokoscMM", "WysokoscMM"], "WymiaryDomyslne"))
             .Build();
 
-        var effect = Assert.IsType<DefaultsFromTableEffect>(Assert.Single(Assert.Single(catalog.Rules).Effects));
-        Assert.Equal("WymiaryDomyslne", effect.Table);
-        Assert.Equal(["SzerokoscMM", "WysokoscMM"], effect.Features);
+        var effect = Assert.Single(Assert.Single(catalog.Rules).Effects);
+        Assert.Equal(new DefaultsFromTableEffect(["SzerokoscMM", "WysokoscMM"], "WymiaryDomyslne"), effect);
     }
 
     // Grammar G18: `tylko Uchwyt z DozwoloneUchwyt`.

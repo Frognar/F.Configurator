@@ -4,14 +4,13 @@ namespace F.Configurator.Catalog.Tests;
 
 // Grammar G18 (analysis/basic/NOTATKA.md, 5): `tabela T klucz A, B dozwolone C` lists allowed options
 // of C for each combination of key values; one key may have many rows. Basic has ~257k rows in 32
-// tables, so the lookup goes by key, not by scanning rows.
+// tables, so the lookup goes by key, not by scanning rows. Key columns and the allowed feature are
+// the table header (`klucz A, B dozwolone C`), so they are fixed before any row is added.
 public class AllowedCombinationsTests
 {
     private static Catalog CatalogWithUchwyt() =>
         CatalogBuilder.Create("Drzwi")
-            .AllowedCombinations("DozwoloneUchwyt", table => table
-                .Key("Model", "ZamekDolny")
-                .Allowed("Uchwyt")
+            .AllowedCombinations("DozwoloneUchwyt", ["Model", "ZamekDolny"], "Uchwyt", table => table
                 .Row("PORTA", "KLUCZ", "KLAMKA")
                 .Row("PORTA", "KLUCZ", "GALKA")
                 .Row("PORTA", "BRAK", "GALKA")
@@ -66,8 +65,8 @@ public class AllowedCombinationsTests
     public void Catalog_keeps_several_allowed_combinations_tables()
     {
         var catalog = CatalogBuilder.Create("Drzwi")
-            .AllowedCombinations("DozwoloneModel", table => table.Key("Kolekcja").Allowed("Model").Row("Basic", "PORTA"))
-            .AllowedCombinations("DozwoloneTyp", table => table.Key("Model").Allowed("Typ").Row("PORTA", "PELNE"))
+            .AllowedCombinations("DozwoloneModel", ["Kolekcja"], "Model", table => table.Row("Basic", "PORTA"))
+            .AllowedCombinations("DozwoloneTyp", ["Model"], "Typ", table => table.Row("PORTA", "PELNE"))
             .Build();
 
         Assert.Equal(2, catalog.AllowedCombinations.Count);
@@ -79,9 +78,7 @@ public class AllowedCombinationsTests
     public void Lookup_works_with_three_key_columns()
     {
         var table = CatalogBuilder.Create("Drzwi")
-            .AllowedCombinations("DozwoloneUchwyt", t => t
-                .Key("Model", "Dwuskrzydlowe", "ZamekDolny")
-                .Allowed("Uchwyt")
+            .AllowedCombinations("DozwoloneUchwyt", ["Model", "Dwuskrzydlowe", "ZamekDolny"], "Uchwyt", t => t
                 .Row("PORTA", "NIE", "KLUCZ", "KLAMKA")
                 .Row("PORTA", "TAK", "KLUCZ", "GALKA"))
             .Build()
@@ -97,8 +94,7 @@ public class AllowedCombinationsTests
     public void Table_without_key_columns_allows_its_rows_unconditionally()
     {
         var table = CatalogBuilder.Create("Drzwi")
-            .AllowedCombinations("DozwoloneModel", t => t
-                .Allowed("Model")
+            .AllowedCombinations("DozwoloneModel", [], "Model", t => t
                 .Row("PORTA")
                 .Row("VERTE"))
             .Build()
@@ -129,7 +125,7 @@ public class AllowedCombinationsTests
     [InlineData("PORTA", "PELNE", "SZYBA")]
     public void Row_with_a_wrong_number_of_cells_is_rejected(string cell, params string[] cells)
     {
-        var builder = AllowedCombinationsTableBuilder.Create().Key("Model").Allowed("Typ");
+        var builder = AllowedCombinationsTableBuilder.Create(["Model"], "Typ");
 
         Assert.Throws<ArgumentException>(() => builder.Row(cell, cells));
     }
@@ -140,9 +136,7 @@ public class AllowedCombinationsTests
     public void Number_key_cells_match_number_values()
     {
         var table = CatalogBuilder.Create("Drzwi")
-            .AllowedCombinations("DozwoloneModel", t => t
-                .Key("Szerokosc")
-                .Allowed("Model")
+            .AllowedCombinations("DozwoloneModel", ["Szerokosc"], "Model", t => t
                 .Row(Value.Number(80m), Value.Option("PORTA"))
                 .Row(Value.Number(90m), Value.Option("VERTE")))
             .Build()
@@ -156,8 +150,36 @@ public class AllowedCombinationsTests
     [Fact]
     public void Row_of_values_with_a_wrong_number_of_cells_is_rejected()
     {
-        var builder = AllowedCombinationsTableBuilder.Create().Key("Szerokosc").Allowed("Model");
+        var builder = AllowedCombinationsTableBuilder.Create(["Szerokosc"], "Model");
 
         Assert.Throws<ArgumentException>(() => builder.Row(Value.Number(80m)));
+    }
+
+    [Fact]
+    public void Allowed_combinations_tables_built_the_same_way_are_equal()
+    {
+        var first = CatalogWithUchwyt().AllowedCombinations["DozwoloneUchwyt"];
+        var second = CatalogWithUchwyt().AllowedCombinations["DozwoloneUchwyt"];
+
+        Assert.Equal(first, second);
+        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+    }
+
+    // A repeated row (e.g. a duplicated line in a CSV export) allows its option once, so the engine
+    // never sees duplicates in the allowed list.
+    [Fact]
+    public void Repeated_row_allows_its_option_once()
+    {
+        var table = CatalogBuilder.Create("Drzwi")
+            .AllowedCombinations("DozwoloneUchwyt", ["Model"], "Uchwyt", t => t
+                .Row("PORTA", "KLAMKA")
+                .Row("PORTA", "KLAMKA")
+                .Row("PORTA", "GALKA"))
+            .Build()
+            .AllowedCombinations["DozwoloneUchwyt"];
+
+        var allowed = table.AllowedFor([Value.Option("PORTA")]);
+
+        Assert.Equal([Value.Option("KLAMKA"), Value.Option("GALKA")], allowed);
     }
 }

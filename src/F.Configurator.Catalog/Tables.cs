@@ -1,28 +1,14 @@
-using System.Collections.Immutable;
 using F.Configurator.Expressions;
 
 namespace F.Configurator.Catalog;
 
 public sealed record AllowedCombinationsTable(
-    ImmutableList<string> KeyColumns,
+    EquatableList<string> KeyColumns,
     string AllowedFeature,
-    ImmutableDictionary<ImmutableList<Value>, ImmutableList<Value>> Rows)
+    EquatableDictionary<EquatableList<Value>, EquatableList<Value>> Rows)
 {
-    public ImmutableList<Value>? AllowedFor(ImmutableList<Value> key) =>
+    public EquatableList<Value>? AllowedFor(EquatableList<Value> key) =>
         key.Any(k => k is MissingValue) ? null : Rows.GetValueOrDefault(key, []);
-}
-
-internal sealed class SequenceComparer : IEqualityComparer<ImmutableList<Value>>
-{
-    public static readonly SequenceComparer Instance = new();
-    public bool Equals(ImmutableList<Value>? x, ImmutableList<Value>? y) => x!.SequenceEqual(y!);
-
-    public int GetHashCode(ImmutableList<Value> key) =>
-        key.Aggregate(new HashCode(), (h, v) =>
-        {
-            h.Add(v);
-            return h;
-        }).ToHashCode();
 }
 
 public sealed class AllowedCombinationsTableBuilder
@@ -31,32 +17,14 @@ public sealed class AllowedCombinationsTableBuilder
 
     private AllowedCombinationsTableBuilder(AllowedCombinationsTable table) => _table = table;
 
-    public static AllowedCombinationsTableBuilder Create() =>
+    public static AllowedCombinationsTableBuilder Create(IEnumerable<string> key, string allowed) =>
         new(new AllowedCombinationsTable(
-            ImmutableList<string>.Empty,
-            string.Empty,
-            ImmutableDictionary.Create<ImmutableList<Value>, ImmutableList<Value>>(SequenceComparer.Instance)));
-
-    public AllowedCombinationsTableBuilder Key(string key, params IEnumerable<string> keys) =>
-        new(_table with { KeyColumns = _table.KeyColumns.Add(key).AddRange(keys) });
-
-    public AllowedCombinationsTableBuilder Allowed(string feature) =>
-        new(_table with { AllowedFeature = feature });
+            [.. key],
+            allowed,
+            EquatableDictionary<EquatableList<Value>, EquatableList<Value>>.Empty));
 
     public AllowedCombinationsTableBuilder Row(string cell, params IReadOnlyList<string> cells)
-    {
-        string[] all = [cell, .. cells];
-        if (all.Length - _table.KeyColumns.Count != 1)
-        {
-            throw new ArgumentException(
-                $"Row for '{_table.AllowedFeature}' needs {_table.KeyColumns.Count + 1} cells (keys + allowed option), got {all.Length}.");
-        }
-
-        ImmutableList<Value> key = [.. all.SkipLast(1).Select(Value.Option)];
-        var value = Value.Option(all[^1]);
-        var allowed = _table.Rows.GetValueOrDefault(key, []);
-        return new AllowedCombinationsTableBuilder(_table with { Rows = _table.Rows.SetItem(key, allowed.Add(value)) });
-    }
+        => Row(Value.Option(cell), [.. cells.Select(Value.Option)]);
 
     public AllowedCombinationsTableBuilder Row(Value cell, params IReadOnlyList<Value> cells)
     {
@@ -67,10 +35,12 @@ public sealed class AllowedCombinationsTableBuilder
                 $"Row for '{_table.AllowedFeature}' needs {_table.KeyColumns.Count + 1} cells (keys + allowed option), got {all.Length}.");
         }
 
-        ImmutableList<Value> key = [.. all.SkipLast(1)];
+        EquatableList<Value> key = [.. all.SkipLast(1)];
         var value = all[^1];
         var allowed = _table.Rows.GetValueOrDefault(key, []);
-        return new AllowedCombinationsTableBuilder(_table with { Rows = _table.Rows.SetItem(key, allowed.Add(value)) });
+        return allowed.Contains(value)
+            ? this
+            : new AllowedCombinationsTableBuilder(_table with { Rows = _table.Rows.SetItem(key, allowed.Add(value)) });
     }
 
     public AllowedCombinationsTable Build() => _table;

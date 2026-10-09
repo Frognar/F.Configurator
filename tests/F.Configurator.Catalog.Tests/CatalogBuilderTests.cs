@@ -100,6 +100,29 @@ public class CatalogBuilderTests
         Assert.Equal(1200m, szerokosc.Max);
     }
 
+    // Record fields follow the grammar order: `jednostka`, `min`, `maks`, `krok`.
+    [Fact]
+    public void Number_feature_fields_follow_the_grammar_order()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Number("SzerokoscMM", feature => feature.Step(10m).Max(1200m).Min(600m).Unit("mm"))
+            .Build();
+
+        Assert.Equal(new NumberFeature("SzerokoscMM", "mm", 600m, 1200m, 10m), Assert.Single(catalog.Features));
+    }
+
+    // Record fields read like grammar 4.2: id, name, symbol, then attribute values.
+    [Fact]
+    public void Option_fields_put_the_symbol_next_to_the_id_and_name()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Choice("ZamekDolny", feature => feature.Option("KLUCZ", "Na klucz", option => option.Symbol("K")))
+            .Build();
+
+        var option = Assert.Single(Assert.IsType<ChoiceFeature>(Assert.Single(catalog.Features)).Options);
+        Assert.Equal(new FeatureOption("KLUCZ", "Na klucz", "K", EquatableDictionary<string, Value>.Empty), option);
+    }
+
     [Fact]
     public void Builder_creates_a_boolean_feature()
     {
@@ -156,7 +179,7 @@ public class CatalogBuilderTests
     {
         var wymiary = new Table(
             ["Norma"],
-            [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
+            [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) }.ToEquatableDictionary())]);
 
         var catalog = CatalogBuilder.Create("Drzwi")
             .Table("Wymiary", wymiary)
@@ -179,7 +202,7 @@ public class CatalogBuilderTests
     // is a programmer error, reported with the name. Rules are left to the validator.
     private static readonly Table Wymiary = new(
         ["Norma"],
-        [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
+        [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) }.ToEquatableDictionary())]);
 
     [Fact]
     public void Builder_rejects_a_second_table_with_the_same_name()
@@ -197,7 +220,7 @@ public class CatalogBuilderTests
         var builder = CatalogBuilder.Create("Drzwi").Table("Wymiary", Wymiary);
 
         var error = Assert.Throws<ArgumentException>(() =>
-            builder.AllowedCombinations("Wymiary", table => table.Allowed("Model").Row("PORTA")));
+            builder.AllowedCombinations("Wymiary", [], "Model", table => table.Row("PORTA")));
         Assert.Contains("'Wymiary'", error.Message);
     }
 
@@ -205,7 +228,7 @@ public class CatalogBuilderTests
     public void Allowed_combinations_table_and_value_table_share_one_namespace()
     {
         var builder = CatalogBuilder.Create("Drzwi")
-            .AllowedCombinations("Wymiary", table => table.Allowed("Model").Row("PORTA"));
+            .AllowedCombinations("Wymiary", [], "Model", table => table.Row("PORTA"));
 
         var error = Assert.Throws<ArgumentException>(() => builder.Table("Wymiary", Wymiary));
         Assert.Contains("'Wymiary'", error.Message);
@@ -224,10 +247,10 @@ public class CatalogBuilderTests
     public void Builder_rejects_a_second_allowed_combinations_table_with_the_same_name()
     {
         var builder = CatalogBuilder.Create("Drzwi")
-            .AllowedCombinations("DozwoloneModel", table => table.Allowed("Model").Row("PORTA"));
+            .AllowedCombinations("DozwoloneModel", [], "Model", table => table.Row("PORTA"));
 
         var error = Assert.Throws<ArgumentException>(() =>
-            builder.AllowedCombinations("DozwoloneModel", table => table.Allowed("Model").Row("VERTE")));
+            builder.AllowedCombinations("DozwoloneModel", [], "Model", table => table.Row("VERTE")));
         Assert.Contains("'DozwoloneModel'", error.Message);
     }
 

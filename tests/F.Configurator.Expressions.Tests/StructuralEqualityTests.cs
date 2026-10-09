@@ -33,4 +33,59 @@ public class StructuralEqualityTests
         Assert.Equal(first, second);
         Assert.Equal(first.GetHashCode(), second.GetHashCode());
     }
+
+    private static Table Wymiary() => new(
+        ["Norma"],
+        [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) }.ToEquatableDictionary())]);
+
+    private static EquatableDictionary<string, Value> GruboscMM() => new Dictionary<string, Value>
+    {
+        ["PORTA"] = Value.Number(40m),
+        ["VERTE"] = Value.Number(44m),
+    }.ToEquatableDictionary();
+
+    [Fact]
+    public void Tables_built_the_same_way_are_equal()
+    {
+        var first = Wymiary();
+        var second = Wymiary();
+
+        Assert.Equal(first, second);
+        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+    }
+
+    [Fact]
+    public void Table_lookups_built_the_same_way_are_equal()
+    {
+        var first = Expression.TableLookup(Wymiary(), [Expression.Reference("Norma")], "SzerokoscMM");
+        var second = Expression.TableLookup(Wymiary(), [Expression.Reference("Norma")], "SzerokoscMM");
+
+        Assert.Equal(first, second);
+        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+    }
+
+    [Fact]
+    public void Option_attributes_built_the_same_way_are_equal()
+    {
+        var first = Expression.OptionAttribute(Expression.Reference("Model"), GruboscMM());
+        var second = Expression.OptionAttribute(Expression.Reference("Model"), GruboscMM());
+
+        Assert.Equal(first, second);
+        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+    }
+
+    // Dictionaries compare by content, not by insertion order.
+    [Fact]
+    public void Option_attributes_with_values_added_in_a_different_order_are_equal()
+    {
+        var first = Expression.OptionAttribute(
+            Expression.Reference("Model"),
+            new Dictionary<string, Value> { ["PORTA"] = Value.Number(40m), ["VERTE"] = Value.Number(44m) }.ToEquatableDictionary());
+        var second = Expression.OptionAttribute(
+            Expression.Reference("Model"),
+            new Dictionary<string, Value> { ["VERTE"] = Value.Number(44m), ["PORTA"] = Value.Number(40m) }.ToEquatableDictionary());
+
+        Assert.Equal(first, second);
+        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+    }
 }
