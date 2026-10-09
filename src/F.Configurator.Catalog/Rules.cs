@@ -50,8 +50,8 @@ public sealed class RuleBuilder
 
     public RuleBuilder Step(string feature, Expression value) => AddEffect(new StepEffect(feature, value));
 
-    public RuleBuilder DefaultsFrom(string table, string feature, params IEnumerable<string> features) =>
-        AddEffect(new DefaultsFromTableEffect(table, [feature, .. features]));
+    public RuleBuilder DefaultsFrom(IEnumerable<string> features, string table) =>
+        AddEffect(new DefaultsFromTableEffect([.. features], table));
 
     public RuleBuilder OnlyFrom(string feature, string table) => AddEffect(new OnlyFromTableEffect(feature, table));
 
@@ -85,7 +85,7 @@ public sealed record MaxEffect(string Feature, Expression Value) : Effect;
 
 public sealed record StepEffect(string Feature, Expression Value) : Effect;
 
-public sealed record DefaultsFromTableEffect(string Table, EquatableList<string> Features) : Effect;
+public sealed record DefaultsFromTableEffect(EquatableList<string> Features, string Table) : Effect;
 
 public sealed record OnlyFromTableEffect(string Feature, string Table) : Effect;
 
@@ -103,6 +103,6 @@ public sealed record Violation(Reaction Reaction, string Message);
 public enum Reaction
 {
     Correct,
-    Warn,
+    Warning,
     Error,
 }
