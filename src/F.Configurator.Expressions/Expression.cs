@@ -128,7 +128,7 @@ public sealed record Add(Expression Left, Expression Right) : BinaryArithmetic(L
     protected override Value Combine(Value left, Value right) =>
         (left, right) switch
         {
-            (TextValue l, TextValue r) => Value.Text(l.Value + r.Value),
+            (TextValue l, TextValue r) => Value.Text(l.Content + r.Content),
             _ => base.Combine(left, right),
         };
 
@@ -261,7 +261,7 @@ public sealed record And(Expression Left, Expression Right) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
-            (BooleanValue { Value: true }, BooleanValue { Value: true }) => BooleanValue.True,
+            (BooleanValue { IsTrue: true }, BooleanValue { IsTrue: true }) => BooleanValue.True,
             _ => BooleanValue.False,
         };
 }
@@ -271,7 +271,7 @@ public sealed record Or(Expression Left, Expression Right) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
-            (BooleanValue { Value: true }, _) or (_, BooleanValue { Value: true }) => BooleanValue.True,
+            (BooleanValue { IsTrue: true }, _) or (_, BooleanValue { IsTrue: true }) => BooleanValue.True,
             _ => BooleanValue.False,
         };
 }
@@ -281,7 +281,7 @@ public sealed record Not(Expression Operand) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         Operand.Evaluate(values) switch
         {
-            BooleanValue { Value: true } => BooleanValue.False,
+            BooleanValue { IsTrue: true } => BooleanValue.False,
             _ => BooleanValue.True,
         };
 }
@@ -291,7 +291,7 @@ public sealed record If(Expression Condition, Expression Then, Expression Otherw
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         Condition.Evaluate(values) switch
         {
-            BooleanValue { Value: true } => Then.Evaluate(values),
+            BooleanValue { IsTrue: true } => Then.Evaluate(values),
             _ => Otherwise.Evaluate(values),
         };
 }
@@ -301,7 +301,7 @@ public sealed record Length(Expression Operand) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         Operand.Evaluate(values) switch
         {
-            TextValue { Value: var str } => Value.Number(str.Length),
+            TextValue { Content: var str } => Value.Number(str.Length),
             _ => Value.Missing,
         };
 }
@@ -314,9 +314,9 @@ public sealed record Pad(Expression Operand, Expression TotalWidth, Expression P
         (Operand.Evaluate(values).AsText(), TotalWidth.Evaluate(values), PaddingChar.Evaluate(values)) switch
         {
             (
-                TextValue { Value: var text },
+                TextValue { Content: var text },
                 NumberValue { Amount: var width and >= 0 and <= MaxWidth },
-                TextValue { Value: [var c] }
+                TextValue { Content: [var c] }
                 ) =>
                 Value.Text(text.PadLeft(decimal.ToInt32(width), c)),
             _ => Value.Missing,
