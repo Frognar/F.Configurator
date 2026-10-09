@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace F.Configurator.Expressions;
 
 public abstract record Expression
@@ -52,6 +54,9 @@ public abstract record Expression
 
     public static Expression TableLookup(Table table, List<Expression> keys, string value) =>
         new TableLookup(table, keys, value);
+
+    public static Expression List(Expression expression, params IEnumerable<Expression> expressions) =>
+        new ListExpression([expression, .. expressions]);
 }
 
 public sealed record Number(decimal Amount) : Expression
@@ -325,6 +330,12 @@ public sealed record TableLookup(Table Table, IReadOnlyList<Expression> Keys, st
         var evaluatedKeys = Keys.Select(k => k.Evaluate(values)).ToArray();
         return Table.Lookup(evaluatedKeys, ValueKey);
     }
+}
+
+public sealed record ListExpression(ImmutableList<Expression> Expressions) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
+        Value.List(Expressions.Select(e => e.Evaluate(values)));
 }
 
 file static class ValueExtensions

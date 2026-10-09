@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Globalization;
 
 namespace F.Configurator.Expressions;
@@ -10,6 +11,7 @@ public abstract record Value
     public static Value Text(string text) => new TextValue(text);
     public static Value Option(string id) => new OptionValue(id);
     public static Value Range(decimal min, decimal max) => new RangeValue(min, max);
+    public static Value List(params IEnumerable<Value> values) => new ListValue([.. values]);
 }
 
 public sealed record NumberValue(decimal Amount) : Value
@@ -34,3 +36,5 @@ public sealed record TextValue(string Value) : Value;
 public sealed record OptionValue(string Id) : Value;
 
 public sealed record MissingValue : Value;
+
+public sealed record ListValue(ImmutableList<Value> Values) : Value;
