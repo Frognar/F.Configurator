@@ -60,11 +60,13 @@ public sealed class CatalogBuilder
 
     public CatalogBuilder AllowedCombinations(string name,
         Func<AllowedCombinationsTableBuilder, AllowedCombinationsTableBuilder> setupTable) =>
-        new(_catalog with
-        {
-            AllowedCombinations =
-            _catalog.AllowedCombinations.Add(name, setupTable(AllowedCombinationsTableBuilder.Create()).Build())
-        });
+        _catalog.Tables.ContainsKey(name)
+            ? throw new ArgumentException($"Table with name '{name}' already exists.")
+            : new CatalogBuilder(_catalog with
+            {
+                AllowedCombinations =
+                _catalog.AllowedCombinations.Add(name, setupTable(AllowedCombinationsTableBuilder.Create()).Build())
+            });
 
     public Catalog Build() => _catalog;
 }
