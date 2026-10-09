@@ -286,8 +286,8 @@ public sealed record Not(Expression Operand) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         Operand.Evaluate(values) switch
         {
-            BooleanValue { Value: false } or MissingValue => BooleanValue.True,
-            _ => BooleanValue.False,
+            BooleanValue { Value: true } => BooleanValue.False,
+            _ => BooleanValue.True,
         };
 }
 
