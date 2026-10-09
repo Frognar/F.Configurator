@@ -101,9 +101,21 @@ public abstract record BinaryArithmetic(Expression Left, Expression Right) : Exp
     protected virtual Value Combine(Value left, Value right) =>
         (left, right) switch
         {
-            (NumberValue l, NumberValue r) => Apply(l.Amount, r.Amount),
+            (NumberValue l, NumberValue r) => SafeApply(l.Amount, r.Amount),
             _ => Value.Missing,
         };
+
+    private Value SafeApply(decimal left, decimal right)
+    {
+        try
+        {
+            return Apply(left, right);
+        }
+        catch (OverflowException)
+        {
+            return Value.Missing;
+        }
+    }
 
     protected abstract Value Apply(decimal left, decimal right);
 }
