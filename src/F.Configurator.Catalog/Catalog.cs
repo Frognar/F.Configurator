@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using F.Configurator.Expressions;
 
 namespace F.Configurator.Catalog;
@@ -7,12 +6,12 @@ public sealed record Catalog(
     string Name,
     string? Version,
     Reaction? DefaultReaction,
-    ImmutableDictionary<string, Context> Contexts,
-    ImmutableList<Feature> Features,
-    ImmutableList<Collection> Collections,
-    ImmutableList<Rule> Rules,
-    ImmutableDictionary<string, Table> Tables,
-    ImmutableDictionary<string, AllowedCombinationsTable> AllowedCombinations);
+    EquatableDictionary<string, Context> Contexts,
+    EquatableList<Feature> Features,
+    EquatableList<Collection> Collections,
+    EquatableList<Rule> Rules,
+    EquatableDictionary<string, Table> Tables,
+    EquatableDictionary<string, AllowedCombinationsTable> AllowedCombinations);
 
 public sealed class CatalogBuilder
 {
@@ -24,12 +23,12 @@ public sealed class CatalogBuilder
         new(new Catalog(name,
             null,
             null,
-            ImmutableDictionary<string, Context>.Empty,
-            ImmutableList<Feature>.Empty,
-            ImmutableList<Collection>.Empty,
-            ImmutableList<Rule>.Empty,
-            ImmutableDictionary<string, Table>.Empty,
-            ImmutableDictionary<string, AllowedCombinationsTable>.Empty));
+            EquatableDictionary<string, Context>.Empty,
+            EquatableList<Feature>.Empty,
+            EquatableList<Collection>.Empty,
+            EquatableList<Rule>.Empty,
+            EquatableDictionary<string, Table>.Empty,
+            EquatableDictionary<string, AllowedCombinationsTable>.Empty));
 
     public CatalogBuilder Version(string version) => new(_catalog with { Version = version });
 
@@ -101,7 +100,7 @@ public sealed class CatalogBuilder
     public Catalog Build() => _catalog;
 }
 
-public sealed record Context(string Name, ImmutableList<AttributeDeclaration> Attributes);
+public sealed record Context(string Name, EquatableList<AttributeDeclaration> Attributes);
 
 public sealed record AttributeDeclaration(string Name, AttributeType Type, Value? Value);
 
@@ -118,7 +117,7 @@ public sealed class ContextBuilder
     private ContextBuilder(Context context) => _context = context;
 
     public static ContextBuilder Create(string name) =>
-        new(new Context(name, ImmutableList<AttributeDeclaration>.Empty));
+        new(new Context(name, EquatableList<AttributeDeclaration>.Empty));
 
     public ContextBuilder Attribute(string name, AttributeType type) =>
         new(_context with { Attributes = _context.Attributes.Add(new AttributeDeclaration(name, type, null)) });

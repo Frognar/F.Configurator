@@ -4,11 +4,11 @@ using F.Configurator.Expressions;
 namespace F.Configurator.Catalog;
 
 public sealed record AllowedCombinationsTable(
-    ImmutableList<string> KeyColumns,
+    EquatableList<string> KeyColumns,
     string AllowedFeature,
-    ImmutableDictionary<ImmutableList<Value>, ImmutableList<Value>> Rows)
+    EquatableDictionary<EquatableList<Value>, EquatableList<Value>> Rows)
 {
-    public ImmutableList<Value>? AllowedFor(ImmutableList<Value> key) =>
+    public EquatableList<Value>? AllowedFor(EquatableList<Value> key) =>
         key.Any(k => k is MissingValue) ? null : Rows.GetValueOrDefault(key, []);
 }
 
@@ -33,9 +33,9 @@ public sealed class AllowedCombinationsTableBuilder
 
     public static AllowedCombinationsTableBuilder Create() =>
         new(new AllowedCombinationsTable(
-            ImmutableList<string>.Empty,
+            EquatableList<string>.Empty,
             string.Empty,
-            ImmutableDictionary.Create<ImmutableList<Value>, ImmutableList<Value>>(SequenceComparer.Instance)));
+            EquatableDictionary<EquatableList<Value>, EquatableList<Value>>.Empty));
 
     public AllowedCombinationsTableBuilder Key(string key, params IEnumerable<string> keys) =>
         new(_table with { KeyColumns = _table.KeyColumns.Add(key).AddRange(keys) });
@@ -52,7 +52,7 @@ public sealed class AllowedCombinationsTableBuilder
                 $"Row for '{_table.AllowedFeature}' needs {_table.KeyColumns.Count + 1} cells (keys + allowed option), got {all.Length}.");
         }
 
-        ImmutableList<Value> key = [.. all.SkipLast(1).Select(Value.Option)];
+        EquatableList<Value> key = [.. all.SkipLast(1).Select(Value.Option)];
         var value = Value.Option(all[^1]);
         var allowed = _table.Rows.GetValueOrDefault(key, []);
         return new AllowedCombinationsTableBuilder(_table with { Rows = _table.Rows.SetItem(key, allowed.Add(value)) });
@@ -67,7 +67,7 @@ public sealed class AllowedCombinationsTableBuilder
                 $"Row for '{_table.AllowedFeature}' needs {_table.KeyColumns.Count + 1} cells (keys + allowed option), got {all.Length}.");
         }
 
-        ImmutableList<Value> key = [.. all.SkipLast(1)];
+        EquatableList<Value> key = [.. all.SkipLast(1)];
         var value = all[^1];
         var allowed = _table.Rows.GetValueOrDefault(key, []);
         return new AllowedCombinationsTableBuilder(_table with { Rows = _table.Rows.SetItem(key, allowed.Add(value)) });

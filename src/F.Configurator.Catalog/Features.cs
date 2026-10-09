@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using F.Configurator.Expressions;
 
 namespace F.Configurator.Catalog;
@@ -7,8 +6,8 @@ public abstract record Feature(string Name);
 
 public sealed record ChoiceFeature(
     string Name,
-    ImmutableList<FeatureOption> Options,
-    ImmutableList<AttributeDeclaration> Attributes) : Feature(Name);
+    EquatableList<FeatureOption> Options,
+    EquatableList<AttributeDeclaration> Attributes) : Feature(Name);
 
 public sealed class ChoiceFeatureBuilder
 {
@@ -17,7 +16,7 @@ public sealed class ChoiceFeatureBuilder
     private ChoiceFeatureBuilder(ChoiceFeature feature) => _feature = feature;
 
     public static ChoiceFeatureBuilder Create(string name) =>
-        new(new ChoiceFeature(name, ImmutableList<FeatureOption>.Empty, ImmutableList<AttributeDeclaration>.Empty));
+        new(new ChoiceFeature(name, EquatableList<FeatureOption>.Empty, EquatableList<AttributeDeclaration>.Empty));
 
     public ChoiceFeatureBuilder Option(
         string id,
@@ -38,7 +37,7 @@ public sealed class ChoiceFeatureBuilder
 public sealed record FeatureOption(
     string Id,
     string Name,
-    ImmutableDictionary<string, Value> Attributes,
+    EquatableDictionary<string, Value> Attributes,
     string Symbol);
 
 public sealed class FeatureOptionBuilder
@@ -48,7 +47,7 @@ public sealed class FeatureOptionBuilder
     private FeatureOptionBuilder(FeatureOption option) => _option = option;
 
     public static FeatureOptionBuilder Create(string id, string name) =>
-        new(new FeatureOption(id, name, ImmutableDictionary<string, Value>.Empty, id));
+        new(new FeatureOption(id, name, EquatableDictionary<string, Value>.Empty, id));
 
     public FeatureOptionBuilder Attribute(string key, Value value) =>
         new(_option with { Attributes = _option.Attributes.Add(key, value) });

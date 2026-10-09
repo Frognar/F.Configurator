@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using F.Configurator.Expressions;
 
 namespace F.Configurator.Catalog;
@@ -6,9 +5,9 @@ namespace F.Configurator.Catalog;
 public sealed record Rule(
     string Name,
     int Priority,
-    ImmutableList<string> Collections,
+    EquatableList<string> Collections,
     Expression? Condition,
-    ImmutableList<Effect> Effects,
+    EquatableList<Effect> Effects,
     Violation? Violation);
 
 public sealed class RuleBuilder
@@ -18,7 +17,7 @@ public sealed class RuleBuilder
     private RuleBuilder(Rule rule) => _rule = rule;
 
     public static RuleBuilder Create(string name) =>
-        new(new Rule(name, 0, ImmutableList<string>.Empty, null, ImmutableList<Effect>.Empty, null));
+        new(new Rule(name, 0, EquatableList<string>.Empty, null, EquatableList<Effect>.Empty, null));
 
     public RuleBuilder When(Expression condition) => new(_rule with { Condition = condition });
 
@@ -72,13 +71,13 @@ public sealed record DefaultEffect(string Feature, Expression Value) : Effect;
 
 public sealed record SetEffect(string Feature, Expression Value) : Effect;
 
-public sealed record HideEffect(ImmutableList<string> Features) : Effect;
+public sealed record HideEffect(EquatableList<string> Features) : Effect;
 
-public sealed record LockEffect(ImmutableList<string> Features) : Effect;
+public sealed record LockEffect(EquatableList<string> Features) : Effect;
 
-public sealed record OnlyEffect(string Feature, ImmutableList<Value> Options) : Effect;
+public sealed record OnlyEffect(string Feature, EquatableList<Value> Options) : Effect;
 
-public sealed record ForbidEffect(string Feature, ImmutableList<Value> Options) : Effect;
+public sealed record ForbidEffect(string Feature, EquatableList<Value> Options) : Effect;
 
 public sealed record MinEffect(string Feature, Expression Value) : Effect;
 
@@ -86,7 +85,7 @@ public sealed record MaxEffect(string Feature, Expression Value) : Effect;
 
 public sealed record StepEffect(string Feature, Expression Value) : Effect;
 
-public sealed record DefaultsFromTableEffect(string Table, ImmutableList<string> Features) : Effect;
+public sealed record DefaultsFromTableEffect(string Table, EquatableList<string> Features) : Effect;
 
 public sealed record OnlyFromTableEffect(string Feature, string Table) : Effect;
 

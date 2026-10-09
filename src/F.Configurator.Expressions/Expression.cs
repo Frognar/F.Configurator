@@ -10,7 +10,7 @@ public abstract record Expression
     public static Expression Text(string name) => new Text(name);
     public static Expression Option(string id) => new Option(id);
 
-    public static Expression OptionAttribute(Expression choice, IReadOnlyDictionary<string, Value> values) =>
+    public static Expression OptionAttribute(Expression choice, EquatableDictionary<string, Value> values) =>
         new OptionAttribute(choice, values);
 
     public static Expression Add(Expression left, Expression right) => new Add(left, right);
@@ -83,7 +83,7 @@ public sealed record Option(string Id) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => Value.Option(Id);
 }
 
-public sealed record OptionAttribute(Expression Choice, IReadOnlyDictionary<string, Value> Values) : Expression
+public sealed record OptionAttribute(Expression Choice, EquatableDictionary<string, Value> Values) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         Choice.Evaluate(values) switch
@@ -346,8 +346,8 @@ public sealed record TableLookup(Table Table, EquatableList<Expression> Keys, st
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values)
     {
-        var evaluatedKeys = Keys.Select(k => k.Evaluate(values)).ToArray();
-        return Table.Lookup(evaluatedKeys, Column);
+        var evaluatedKeys = Keys.Select(k => k.Evaluate(values));
+        return Table.Lookup([.. evaluatedKeys], Column);
     }
 }
 
