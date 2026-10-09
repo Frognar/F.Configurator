@@ -257,7 +257,7 @@ public sealed record NotIn(Expression Left, Expression Right) : Expression
             (MissingValue, _) => BooleanValue.True,
             (NumberValue n, RangeValue r) => Value.Boolean(n.Amount < r.Min || n.Amount > r.Max),
             ({ } n, ListValue l) => Value.Boolean(!l.Values.Contains(n)),
-            _ => BooleanValue.False,
+            _ => BooleanValue.True,
         };
 }
 
