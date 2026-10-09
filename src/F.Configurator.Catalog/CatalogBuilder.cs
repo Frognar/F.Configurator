@@ -172,7 +172,12 @@ public sealed class CollectionBuilder
     public Collection Build() => _collection;
 }
 
-public sealed record Rule(string Name, int Priority, ImmutableList<string> Collections, Expression? Condition);
+public sealed record Rule(
+    string Name,
+    int Priority,
+    ImmutableList<string> Collections,
+    Expression? Condition,
+    ImmutableList<Effect> Effects);
 
 public sealed class RuleBuilder
 {
@@ -181,7 +186,7 @@ public sealed class RuleBuilder
     private RuleBuilder(Rule rule) => _rule = rule;
 
     public static RuleBuilder Create(string name) =>
-        new(new Rule(name, 0, ImmutableList<string>.Empty, null));
+        new(new Rule(name, 0, ImmutableList<string>.Empty, null, ImmutableList<Effect>.Empty));
 
     public RuleBuilder When(Expression condition) => new(_rule with { Condition = condition });
 
@@ -190,9 +195,19 @@ public sealed class RuleBuilder
     public RuleBuilder AppliesTo(string collection, params IEnumerable<string> collections) =>
         new(_rule with { Collections = _rule.Collections.Add(collection).AddRange(collections) });
 
-    public RuleBuilder Hide(string feature) => this;
+    public RuleBuilder Hide(string feature) =>
+        new(_rule with { Effects = _rule.Effects.Add(new HideEffect(ImmutableList.Create(feature))) });
 
     public RuleBuilder Max(string feature, Expression limit) => this;
 
+    public RuleBuilder Lock(string feature, params IEnumerable<string> features) =>
+        new(_rule with { Effects = _rule.Effects.Add(new LockEffect([feature, .. features])) });
+
     public Rule Build() => _rule;
 }
+
+public abstract record Effect(ImmutableList<string> Features);
+
+public sealed record HideEffect(ImmutableList<string> Features) : Effect(Features);
+
+public sealed record LockEffect(ImmutableList<string> Features) : Effect(Features);
