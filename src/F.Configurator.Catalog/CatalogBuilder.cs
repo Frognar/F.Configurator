@@ -38,10 +38,12 @@ public sealed class CatalogBuilder
         AddFeature(new ComputedFeature(name, expression));
 
     public CatalogBuilder Collection(string name, Func<CollectionBuilder, CollectionBuilder> setupCollection) =>
-        new(_catalog with
-        {
-            Collections = _catalog.Collections.Add(setupCollection(CollectionBuilder.Create(name)).Build())
-        });
+        _catalog.Collections.Any(c => c.Name == name)
+            ? throw new ArgumentException($"Collection with name '{name}' already exists.")
+            : new CatalogBuilder(_catalog with
+            {
+                Collections = _catalog.Collections.Add(setupCollection(CollectionBuilder.Create(name)).Build())
+            });
 
     public CatalogBuilder Rule(string name, Func<RuleBuilder, RuleBuilder> setupRule) =>
         new(_catalog with
