@@ -197,7 +197,7 @@ public class CatalogBuilderTests
         var builder = CatalogBuilder.Create("Drzwi").Table("Wymiary", Wymiary);
 
         var error = Assert.Throws<ArgumentException>(() =>
-            builder.AllowedCombinations("Wymiary", table => table.Allowed("Model").Row("PORTA")));
+            builder.AllowedCombinations("Wymiary", [], "Model", table => table.Row("PORTA")));
         Assert.Contains("'Wymiary'", error.Message);
     }
 
@@ -205,7 +205,7 @@ public class CatalogBuilderTests
     public void Allowed_combinations_table_and_value_table_share_one_namespace()
     {
         var builder = CatalogBuilder.Create("Drzwi")
-            .AllowedCombinations("Wymiary", table => table.Allowed("Model").Row("PORTA"));
+            .AllowedCombinations("Wymiary", [], "Model", table => table.Row("PORTA"));
 
         var error = Assert.Throws<ArgumentException>(() => builder.Table("Wymiary", Wymiary));
         Assert.Contains("'Wymiary'", error.Message);
@@ -224,10 +224,10 @@ public class CatalogBuilderTests
     public void Builder_rejects_a_second_allowed_combinations_table_with_the_same_name()
     {
         var builder = CatalogBuilder.Create("Drzwi")
-            .AllowedCombinations("DozwoloneModel", table => table.Allowed("Model").Row("PORTA"));
+            .AllowedCombinations("DozwoloneModel", [], "Model", table => table.Row("PORTA"));
 
         var error = Assert.Throws<ArgumentException>(() =>
-            builder.AllowedCombinations("DozwoloneModel", table => table.Allowed("Model").Row("VERTE")));
+            builder.AllowedCombinations("DozwoloneModel", [], "Model", table => table.Row("VERTE")));
         Assert.Contains("'DozwoloneModel'", error.Message);
     }
 
