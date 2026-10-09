@@ -13,6 +13,7 @@ public sealed class CatalogBuilder
         new(new Catalog(name,
             ImmutableList<Feature>.Empty,
             ImmutableList<Collection>.Empty,
+            ImmutableList<Rule>.Empty,
             ImmutableDictionary<string, Table>.Empty));
 
     private CatalogBuilder AddFeature(Feature feature) =>
@@ -41,6 +42,12 @@ public sealed class CatalogBuilder
             Collections = _catalog.Collections.Add(setupCollection(CollectionBuilder.Create(name)).Build())
         });
 
+    public CatalogBuilder Rule(string name, Func<RuleBuilder, RuleBuilder> setupRule) =>
+        new(_catalog with
+        {
+            Rules = _catalog.Rules.Add(setupRule(RuleBuilder.Create(name)).Build())
+        });
+
     public CatalogBuilder Table(string name, Table table) =>
         new(_catalog with { Tables = _catalog.Tables.Add(name, table) });
 
@@ -51,6 +58,7 @@ public sealed record Catalog(
     string Name,
     ImmutableList<Feature> Features,
     ImmutableList<Collection> Collections,
+    ImmutableList<Rule> Rules,
     ImmutableDictionary<string, Table> Tables);
 
 public abstract record Feature(string Name);
@@ -162,4 +170,21 @@ public sealed class CollectionBuilder
         => new(_collection with { Mode = CollectionMode.Independent });
 
     public Collection Build() => _collection;
+}
+
+public sealed record Rule(string Name, Expression? Condition);
+
+public sealed class RuleBuilder
+{
+    private readonly Rule _rule;
+
+    private RuleBuilder(Rule rule) => _rule = rule;
+
+    public static RuleBuilder Create(string name) => new(new Rule(name, null));
+
+    public RuleBuilder When(Expression condition) => new(_rule with { Condition = condition });
+
+    public RuleBuilder Hide(string feature) => this;
+
+    public Rule Build() => _rule;
 }
