@@ -219,10 +219,10 @@ public sealed class RuleBuilder
         AddEffect(new LockEffect([feature, .. features]));
 
     public RuleBuilder Only(string feature, string option, params IEnumerable<string> options) =>
-        AddEffect(new OnlyEffect(feature, [option, .. options]));
+        AddEffect(new OnlyEffect(feature, [Value.Option(option), .. options.Select(Value.Option)]));
 
     public RuleBuilder Forbid(string feature, string option, params IEnumerable<string> options) =>
-        AddEffect(new ForbidEffect(feature, [option, .. options]));
+        AddEffect(new ForbidEffect(feature, [Value.Option(option), .. options.Select(Value.Option)]));
 
     public RuleBuilder Min(string feature, Expression value) => AddEffect(new MinEffect(feature, value));
 
@@ -255,9 +255,9 @@ public sealed record HideEffect(ImmutableList<string> Features) : Effect;
 
 public sealed record LockEffect(ImmutableList<string> Features) : Effect;
 
-public sealed record OnlyEffect(string Feature, ImmutableList<string> Options) : Effect;
+public sealed record OnlyEffect(string Feature, ImmutableList<Value> Options) : Effect;
 
-public sealed record ForbidEffect(string Feature, ImmutableList<string> Options) : Effect;
+public sealed record ForbidEffect(string Feature, ImmutableList<Value> Options) : Effect;
 
 public sealed record MinEffect(string Feature, Expression Value) : Effect;
 
