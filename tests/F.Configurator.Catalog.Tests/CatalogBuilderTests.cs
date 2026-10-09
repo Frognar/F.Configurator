@@ -219,4 +219,15 @@ public class CatalogBuilderTests
         var error = Assert.Throws<ArgumentException>(() => builder.Collection("Basic", c => c.Stage("Model", "Model")));
         Assert.Contains("'Basic'", error.Message);
     }
+
+    [Fact]
+    public void Builder_rejects_a_second_allowed_combinations_table_with_the_same_name()
+    {
+        var builder = CatalogBuilder.Create("Drzwi")
+            .AllowedCombinations("DozwoloneModel", table => table.Allowed("Model").Row("PORTA"));
+
+        var error = Assert.Throws<ArgumentException>(() =>
+            builder.AllowedCombinations("DozwoloneModel", table => table.Allowed("Model").Row("VERTE")));
+        Assert.Contains("'DozwoloneModel'", error.Message);
+    }
 }
