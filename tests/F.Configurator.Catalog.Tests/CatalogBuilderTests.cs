@@ -156,7 +156,7 @@ public class CatalogBuilderTests
     {
         var wymiary = new Table(
             ["Norma"],
-            [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
+            [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) }.ToEquatableDictionary())]);
 
         var catalog = CatalogBuilder.Create("Drzwi")
             .Table("Wymiary", wymiary)
@@ -179,7 +179,7 @@ public class CatalogBuilderTests
     // is a programmer error, reported with the name. Rules are left to the validator.
     private static readonly Table Wymiary = new(
         ["Norma"],
-        [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) })]);
+        [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) }.ToEquatableDictionary())]);
 
     [Fact]
     public void Builder_rejects_a_second_table_with_the_same_name()

@@ -13,14 +13,14 @@ public class BasicFragmentTests
         [
             new TableRow(
                 [[Value.Option("PL")], [Value.Option("80")]],
-                new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m), ["WysokoscMM"] = Value.Number(2030m) }),
+                new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m), ["WysokoscMM"] = Value.Number(2030m) }.ToEquatableDictionary()),
         ]);
 
-    private static readonly Dictionary<string, Value> Seria = new()
+    private static readonly EquatableDictionary<string, Value> Seria = new Dictionary<string, Value>
     {
         ["STANDARD_01"] = Value.Text("STANDARD"),
         ["ASTORIA_01"] = Value.Text("ASTORIA"),
-    };
+    }.ToEquatableDictionary();
 
     private static Catalog Basic() =>
         CatalogBuilder.Create("Drzwi wewnętrzne")
