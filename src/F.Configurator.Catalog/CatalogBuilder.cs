@@ -198,7 +198,14 @@ public sealed class RuleBuilder
     public RuleBuilder Hide(string feature) =>
         new(_rule with { Effects = _rule.Effects.Add(new HideEffect(ImmutableList.Create(feature))) });
 
-    public RuleBuilder Max(string feature, Expression limit) => this;
+    public RuleBuilder Min(string feature, Expression value) =>
+        new(_rule with { Effects = _rule.Effects.Add(new MinEffect(feature, value)) });
+
+    public RuleBuilder Max(string feature, Expression value) =>
+        new(_rule with { Effects = _rule.Effects.Add(new MaxEffect(feature, value)) });
+
+    public RuleBuilder Step(string feature, Expression value) =>
+        new(_rule with { Effects = _rule.Effects.Add(new StepEffect(feature, value)) });
 
     public RuleBuilder Lock(string feature, params IEnumerable<string> features) =>
         new(_rule with { Effects = _rule.Effects.Add(new LockEffect([feature, .. features])) });
@@ -212,12 +219,18 @@ public sealed class RuleBuilder
     public Rule Build() => _rule;
 }
 
-public abstract record Effect(ImmutableList<string> Features);
+public abstract record Effect;
 
-public sealed record HideEffect(ImmutableList<string> Features) : Effect(Features);
+public sealed record HideEffect(ImmutableList<string> Features) : Effect;
 
-public sealed record LockEffect(ImmutableList<string> Features) : Effect(Features);
+public sealed record MinEffect(string Feature, Expression Value) : Effect;
 
-public sealed record OnlyEffect(string Feature, ImmutableList<string> Options) : Effect([Feature]);
+public sealed record MaxEffect(string Feature, Expression Value) : Effect;
 
-public sealed record ForbidEffect(string Feature, ImmutableList<string> Options) : Effect([Feature]);
+public sealed record StepEffect(string Feature, Expression Value) : Effect;
+
+public sealed record LockEffect(ImmutableList<string> Features) : Effect;
+
+public sealed record OnlyEffect(string Feature, ImmutableList<string> Options) : Effect;
+
+public sealed record ForbidEffect(string Feature, ImmutableList<string> Options) : Effect;
