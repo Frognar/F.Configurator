@@ -292,12 +292,14 @@ public sealed record AllowedCombinationsTable(
     string AllowedFeature,
     ImmutableDictionary<Key, ImmutableList<Value>> Rows)
 {
-    public ImmutableList<Value> AllowedFor(ImmutableList<Value> key) =>
-        Rows.TryGetValue(
-            new Key(string.Join("\\u001F", key.Cast<OptionValue>().Select(o => o.Id)))
-            , out var allowed)
-            ? allowed
-            : ImmutableList<Value>.Empty;
+    public ImmutableList<Value>? AllowedFor(ImmutableList<Value> key) =>
+        key.Any(k => k is MissingValue)
+            ? null
+            : Rows.TryGetValue(
+                new Key(string.Join("\\u001F", key.Cast<OptionValue>().Select(o => o.Id)))
+                , out var allowed)
+                ? allowed
+                : ImmutableList<Value>.Empty;
 }
 
 public sealed record Key(string Value);
