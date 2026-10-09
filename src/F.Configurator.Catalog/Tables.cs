@@ -24,21 +24,7 @@ public sealed class AllowedCombinationsTableBuilder
             EquatableDictionary<EquatableList<Value>, EquatableList<Value>>.Empty));
 
     public AllowedCombinationsTableBuilder Row(string cell, params IReadOnlyList<string> cells)
-    {
-        string[] all = [cell, .. cells];
-        if (all.Length - _table.KeyColumns.Count != 1)
-        {
-            throw new ArgumentException(
-                $"Row for '{_table.AllowedFeature}' needs {_table.KeyColumns.Count + 1} cells (keys + allowed option), got {all.Length}.");
-        }
-
-        EquatableList<Value> key = [.. all.SkipLast(1).Select(Value.Option)];
-        var value = Value.Option(all[^1]);
-        var allowed = _table.Rows.GetValueOrDefault(key, []);
-        return allowed.Contains(value)
-            ? this
-            : new AllowedCombinationsTableBuilder(_table with { Rows = _table.Rows.SetItem(key, allowed.Add(value)) });
-    }
+        => Row(Value.Option(cell), [.. cells.Select(Value.Option)]);
 
     public AllowedCombinationsTableBuilder Row(Value cell, params IReadOnlyList<Value> cells)
     {
