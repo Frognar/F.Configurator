@@ -220,6 +220,9 @@ public sealed class RuleBuilder
 
     public RuleBuilder Step(string feature, Expression value) => AddEffect(new StepEffect(feature, value));
 
+    public RuleBuilder DefaultsFrom(string table, string feature, params IEnumerable<string> features) =>
+        AddEffect(new DefaultsFromTableEffect(table, [feature, .. features]));
+
     public RuleBuilder Inform(string message) => AddEffect(new MessageEffect(Severity.Information, message));
     public RuleBuilder Warn(string message) => AddEffect(new MessageEffect(Severity.Warning, message));
     public RuleBuilder Error(string message) => AddEffect(new MessageEffect(Severity.Error, message));
@@ -249,6 +252,8 @@ public sealed record MinEffect(string Feature, Expression Value) : Effect;
 public sealed record MaxEffect(string Feature, Expression Value) : Effect;
 
 public sealed record StepEffect(string Feature, Expression Value) : Effect;
+
+public sealed record DefaultsFromTableEffect(string Table, ImmutableList<string> Features) : Effect;
 
 public sealed record MessageEffect(Severity Severity, string Text) : Effect;
 
