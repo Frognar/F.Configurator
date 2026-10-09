@@ -14,7 +14,8 @@ public sealed class CatalogBuilder
             ImmutableList<Feature>.Empty,
             ImmutableList<Collection>.Empty,
             ImmutableList<Rule>.Empty,
-            ImmutableDictionary<string, Table>.Empty));
+            ImmutableDictionary<string, Table>.Empty,
+            ImmutableDictionary<string, AllowedCombinationsTable>.Empty));
 
     private CatalogBuilder AddFeature(Feature feature) =>
         _catalog.Features.Any(f => f.Name == feature.Name)
@@ -51,6 +52,14 @@ public sealed class CatalogBuilder
     public CatalogBuilder Table(string name, Table table) =>
         new(_catalog with { Tables = _catalog.Tables.Add(name, table) });
 
+    public CatalogBuilder AllowedCombinations(string name,
+        Func<AllowedCombinationsTableBuilder, AllowedCombinationsTableBuilder> setupTable) =>
+        new(_catalog with
+        {
+            AllowedCombinations =
+            _catalog.AllowedCombinations.Add(name, setupTable(AllowedCombinationsTableBuilder.Create()).Build())
+        });
+
     public Catalog Build() => _catalog;
 }
 
@@ -59,7 +68,8 @@ public sealed record Catalog(
     ImmutableList<Feature> Features,
     ImmutableList<Collection> Collections,
     ImmutableList<Rule> Rules,
-    ImmutableDictionary<string, Table> Tables);
+    ImmutableDictionary<string, Table> Tables,
+    ImmutableDictionary<string, AllowedCombinationsTable> AllowedCombinations);
 
 public abstract record Feature(string Name);
 
@@ -275,4 +285,24 @@ public enum Reaction
     Correct,
     Warn,
     Error,
+}
+
+public sealed record AllowedCombinationsTable(ImmutableList<string> KeyColumns, string AllowedFeature);
+
+public sealed class AllowedCombinationsTableBuilder
+{
+    private readonly AllowedCombinationsTable _table;
+
+    private AllowedCombinationsTableBuilder(AllowedCombinationsTable table) => _table = table;
+
+    public static AllowedCombinationsTableBuilder Create() =>
+        new(new AllowedCombinationsTable(ImmutableList<string>.Empty, string.Empty));
+
+    public AllowedCombinationsTableBuilder Key(string key, params IEnumerable<string> keys) =>
+        new(_table with { KeyColumns = _table.KeyColumns.Add(key).AddRange(keys) });
+
+    public AllowedCombinationsTableBuilder Allowed(string feature) =>
+        new(_table with { AllowedFeature = feature });
+
+    public AllowedCombinationsTable Build() => _table;
 }
