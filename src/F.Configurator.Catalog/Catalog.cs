@@ -36,10 +36,12 @@ public sealed class CatalogBuilder
     public CatalogBuilder DefaultReaction(Reaction reaction) => new(_catalog with { DefaultReaction = reaction });
 
     public CatalogBuilder Context(string name, Func<ContextBuilder, ContextBuilder> setupContext) =>
-        new(_catalog with
-        {
-            Contexts = _catalog.Contexts.Add(name, setupContext(ContextBuilder.Create(name)).Build())
-        });
+        _catalog.Contexts.ContainsKey(name)
+            ? throw Duplicate("Context", name)
+            : new CatalogBuilder(_catalog with
+            {
+                Contexts = _catalog.Contexts.Add(name, setupContext(ContextBuilder.Create(name)).Build())
+            });
 
     private CatalogBuilder AddFeature(Feature feature) =>
         _catalog.Features.Any(f => f.Name == feature.Name)
