@@ -196,38 +196,34 @@ public sealed class RuleBuilder
     public RuleBuilder AppliesTo(string collection, params IEnumerable<string> collections) =>
         new(_rule with { Collections = _rule.Collections.Add(collection).AddRange(collections) });
 
-    public RuleBuilder Default(string feature, Expression value) =>
-        new(_rule with { Effects = _rule.Effects.Add(new DefaultEffect(feature, value)) });
+    private RuleBuilder AddEffect(Effect effect) => new(_rule with { Effects = _rule.Effects.Add(effect) });
 
-    public RuleBuilder Set(string feature, Expression value) =>
-        new(_rule with { Effects = _rule.Effects.Add(new SetEffect(feature, value)) });
+    public RuleBuilder Default(string feature, Expression value) => AddEffect(new DefaultEffect(feature, value));
 
-    public RuleBuilder Hide(string feature) =>
-        new(_rule with { Effects = _rule.Effects.Add(new HideEffect(ImmutableList.Create(feature))) });
+    public RuleBuilder Set(string feature, Expression value) => AddEffect(new SetEffect(feature, value));
 
-    public RuleBuilder Min(string feature, Expression value) =>
-        new(_rule with { Effects = _rule.Effects.Add(new MinEffect(feature, value)) });
-
-    public RuleBuilder Max(string feature, Expression value) =>
-        new(_rule with { Effects = _rule.Effects.Add(new MaxEffect(feature, value)) });
-
-    public RuleBuilder Step(string feature, Expression value) =>
-        new(_rule with { Effects = _rule.Effects.Add(new StepEffect(feature, value)) });
+    public RuleBuilder Hide(string feature, params IEnumerable<string> features) =>
+        AddEffect(new HideEffect([feature, .. features]));
 
     public RuleBuilder Lock(string feature, params IEnumerable<string> features) =>
-        new(_rule with { Effects = _rule.Effects.Add(new LockEffect([feature, .. features])) });
+        AddEffect(new LockEffect([feature, .. features]));
 
-    public RuleBuilder Only(string feature, params IEnumerable<string> options) =>
-        new(_rule with { Effects = _rule.Effects.Add(new OnlyEffect(feature, [.. options])) });
+    public RuleBuilder Only(string feature, string option, params IEnumerable<string> options) =>
+        AddEffect(new OnlyEffect(feature, [option, .. options]));
 
-    public RuleBuilder Forbid(string feature, params IEnumerable<string> options) =>
-        new(_rule with { Effects = _rule.Effects.Add(new ForbidEffect(feature, [.. options])) });
+    public RuleBuilder Forbid(string feature, string option, params IEnumerable<string> options) =>
+        AddEffect(new ForbidEffect(feature, [option, .. options]));
+
+    public RuleBuilder Min(string feature, Expression value) => AddEffect(new MinEffect(feature, value));
+
+    public RuleBuilder Max(string feature, Expression value) => AddEffect(new MaxEffect(feature, value));
+
+    public RuleBuilder Step(string feature, Expression value) => AddEffect(new StepEffect(feature, value));
+
+    public RuleBuilder Warn(string message) => AddEffect(new MessageEffect(Severity.Warning, message));
 
     public RuleBuilder OnViolation(Reaction reaction, string message) =>
         new(_rule with { Violation = new Violation(reaction, message) });
-
-    public RuleBuilder Warn(string message) =>
-        new(_rule with { Effects = _rule.Effects.Add(new MessageEffect(Severity.Warning, message)) });
 
     public Rule Build() => _rule;
 }
@@ -240,17 +236,17 @@ public sealed record SetEffect(string Feature, Expression Value) : Effect;
 
 public sealed record HideEffect(ImmutableList<string> Features) : Effect;
 
-public sealed record MinEffect(string Feature, Expression Value) : Effect;
-
-public sealed record MaxEffect(string Feature, Expression Value) : Effect;
-
-public sealed record StepEffect(string Feature, Expression Value) : Effect;
-
 public sealed record LockEffect(ImmutableList<string> Features) : Effect;
 
 public sealed record OnlyEffect(string Feature, ImmutableList<string> Options) : Effect;
 
 public sealed record ForbidEffect(string Feature, ImmutableList<string> Options) : Effect;
+
+public sealed record MinEffect(string Feature, Expression Value) : Effect;
+
+public sealed record MaxEffect(string Feature, Expression Value) : Effect;
+
+public sealed record StepEffect(string Feature, Expression Value) : Effect;
 
 public sealed record MessageEffect(Severity Severity, string Text) : Effect;
 
