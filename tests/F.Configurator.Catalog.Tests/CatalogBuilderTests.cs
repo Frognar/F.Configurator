@@ -100,6 +100,29 @@ public class CatalogBuilderTests
         Assert.Equal(1200m, szerokosc.Max);
     }
 
+    // Record fields follow the grammar order: `jednostka`, `min`, `maks`, `krok`.
+    [Fact]
+    public void Number_feature_fields_follow_the_grammar_order()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Number("SzerokoscMM", feature => feature.Step(10m).Max(1200m).Min(600m).Unit("mm"))
+            .Build();
+
+        Assert.Equal(new NumberFeature("SzerokoscMM", "mm", 600m, 1200m, 10m), Assert.Single(catalog.Features));
+    }
+
+    // Record fields read like grammar 4.2: id, name, symbol, then attribute values.
+    [Fact]
+    public void Option_fields_put_the_symbol_next_to_the_id_and_name()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Choice("ZamekDolny", feature => feature.Option("KLUCZ", "Na klucz", option => option.Symbol("K")))
+            .Build();
+
+        var option = Assert.Single(Assert.IsType<ChoiceFeature>(Assert.Single(catalog.Features)).Options);
+        Assert.Equal(new FeatureOption("KLUCZ", "Na klucz", "K", EquatableDictionary<string, Value>.Empty), option);
+    }
+
     [Fact]
     public void Builder_creates_a_boolean_feature()
     {

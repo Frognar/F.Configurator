@@ -27,7 +27,7 @@ public class BasicFragmentTests
             .Number("SzerokoscMM", feature => feature.Unit("mm"))
             .Number("WysokoscMM", feature => feature.Unit("mm"))
             .Table("WymiaryDomyslne", WymiaryDomyslne)
-            .Rule("WymiaryZTabeli", rule => rule.AppliesTo("Basic").DefaultsFrom("WymiaryDomyslne", "SzerokoscMM", "WysokoscMM"))
+            .Rule("WymiaryZTabeli", rule => rule.AppliesTo("Basic").DefaultsFrom(["SzerokoscMM", "WysokoscMM"], "WymiaryDomyslne"))
             .Rule("ZamekBrak", rule => rule.AppliesTo("Basic")
                 .When(Equal(Reference("ZamekDolny"), Option("BRAK")))
                 .Hide("ZmianaPolozeniaZamka"))
