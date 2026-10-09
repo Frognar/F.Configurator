@@ -160,4 +160,14 @@ public class AllowedCombinationsTests
 
         Assert.Throws<ArgumentException>(() => builder.Row(Value.Number(80m)));
     }
+
+    [Fact]
+    public void Allowed_combinations_tables_built_the_same_way_are_equal()
+    {
+        var first = CatalogWithUchwyt().AllowedCombinations["DozwoloneUchwyt"];
+        var second = CatalogWithUchwyt().AllowedCombinations["DozwoloneUchwyt"];
+
+        Assert.Equal(first, second);
+        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+    }
 }

@@ -91,4 +91,16 @@ public class BasicFragmentTests
 
         Assert.Equal(Value.Boolean(expected), niskaWysokosc.Condition!.Evaluate(values));
     }
+
+    // The DSL compiler (E5) will be tested by comparing whole catalogs, so every record in the catalog
+    // compares by content: features, options, rules, effects, collections, stages and tables.
+    [Fact]
+    public void Catalogs_built_the_same_way_are_equal()
+    {
+        var first = Basic();
+        var second = Basic();
+
+        Assert.Equal(first, second);
+        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+    }
 }
