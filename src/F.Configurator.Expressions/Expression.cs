@@ -196,11 +196,7 @@ public sealed record Equal(Expression Left, Expression Right) : Expression
 public sealed record NotEqual(Expression Left, Expression Right) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        (Left.Evaluate(values), Right.Evaluate(values)) switch
-        {
-            (MissingValue, _) or (_, MissingValue) => BooleanValue.True,
-            ({ } l, { } r) => Value.Boolean(l != r),
-        };
+        new Not(new Equal(Left, Right)).Evaluate(values);
 }
 
 public abstract record BinaryComparison(Expression Left, Expression Right) : Expression
