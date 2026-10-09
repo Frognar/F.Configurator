@@ -333,9 +333,21 @@ public sealed record Round(Expression Input, Expression Step) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         (Input.Evaluate(values), Step.Evaluate(values)) switch
         {
-            (NumberValue number, NumberValue { Amount: > 0 } step) => number.RoundTo(step),
+            (NumberValue number, NumberValue { Amount: > 0 } step) => SaveRound(number, step),
             _ => Value.Missing,
         };
+
+    private Value SaveRound(NumberValue number, NumberValue step)
+    {
+        try
+        {
+            return number.RoundTo(step);
+        }
+        catch (OverflowException)
+        {
+            return Value.Missing;
+        }
+    }
 }
 
 public sealed record TableLookup(Table Table, EquatableList<Expression> Keys, string ValueKey) : Expression
