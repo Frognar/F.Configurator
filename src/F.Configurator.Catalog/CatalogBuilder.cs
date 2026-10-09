@@ -52,23 +52,19 @@ public sealed class CatalogBuilder
         });
 
     public CatalogBuilder Table(string name, Table table) =>
-        _catalog.Tables.ContainsKey(name)
+        _catalog.Tables.ContainsKey(name) || _catalog.AllowedCombinations.ContainsKey(name)
             ? throw new ArgumentException($"Table with name '{name}' already exists.")
-            : _catalog.AllowedCombinations.ContainsKey(name)
-                ? throw new ArgumentException($"Table with name '{name}' already exists.")
-                : new CatalogBuilder(_catalog with { Tables = _catalog.Tables.Add(name, table) });
+            : new CatalogBuilder(_catalog with { Tables = _catalog.Tables.Add(name, table) });
 
     public CatalogBuilder AllowedCombinations(string name,
         Func<AllowedCombinationsTableBuilder, AllowedCombinationsTableBuilder> setupTable) =>
-        _catalog.AllowedCombinations.ContainsKey(name)
+        _catalog.AllowedCombinations.ContainsKey(name) || _catalog.Tables.ContainsKey(name)
             ? throw new ArgumentException($"Table with name '{name}' already exists.")
-            : _catalog.Tables.ContainsKey(name)
-                ? throw new ArgumentException($"Table with name '{name}' already exists.")
-                : new CatalogBuilder(_catalog with
-                {
-                    AllowedCombinations =
-                    _catalog.AllowedCombinations.Add(name, setupTable(AllowedCombinationsTableBuilder.Create()).Build())
-                });
+            : new CatalogBuilder(_catalog with
+            {
+                AllowedCombinations =
+                _catalog.AllowedCombinations.Add(name, setupTable(AllowedCombinationsTableBuilder.Create()).Build())
+            });
 
     public Catalog Build() => _catalog;
 }
