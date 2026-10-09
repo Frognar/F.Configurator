@@ -103,11 +103,12 @@ public sealed class CatalogBuilder
 
 public sealed record Context(string Name, ImmutableList<AttributeDeclaration> Attributes);
 
-public sealed record AttributeDeclaration(string Name, AttributeType Type, object? Value);
+public sealed record AttributeDeclaration(string Name, AttributeType Type, Value? Value);
 
 public enum AttributeType
 {
-    Text
+    Text,
+    Boolean
 }
 
 public sealed class ContextBuilder

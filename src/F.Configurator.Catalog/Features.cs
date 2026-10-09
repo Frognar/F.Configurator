@@ -5,7 +5,10 @@ namespace F.Configurator.Catalog;
 
 public abstract record Feature(string Name);
 
-public sealed record ChoiceFeature(string Name, ImmutableList<FeatureOption> Options) : Feature(Name);
+public sealed record ChoiceFeature(
+    string Name,
+    ImmutableList<FeatureOption> Options,
+    ImmutableList<AttributeDeclaration> Attributes) : Feature(Name);
 
 public sealed class ChoiceFeatureBuilder
 {
@@ -13,7 +16,8 @@ public sealed class ChoiceFeatureBuilder
 
     private ChoiceFeatureBuilder(ChoiceFeature feature) => _feature = feature;
 
-    public static ChoiceFeatureBuilder Create(string name) => new(new ChoiceFeature(name, []));
+    public static ChoiceFeatureBuilder Create(string name) =>
+        new(new ChoiceFeature(name, ImmutableList<FeatureOption>.Empty, ImmutableList<AttributeDeclaration>.Empty));
 
     public ChoiceFeatureBuilder Option(
         string id,
@@ -24,6 +28,9 @@ public sealed class ChoiceFeatureBuilder
         if (setupOption is not null) builder = setupOption(builder);
         return new ChoiceFeatureBuilder(_feature with { Options = _feature.Options.Add(builder.Build()) });
     }
+
+    public ChoiceFeatureBuilder Attribute(string name, AttributeType type, Value? value = null) =>
+        new(_feature with { Attributes = _feature.Attributes.Add(new AttributeDeclaration(name, type, value)) });
 
     public ChoiceFeature Build() => _feature;
 }
