@@ -1,3 +1,5 @@
+using F.Configurator.Expressions;
+
 namespace F.Configurator.Catalog.Tests;
 
 // Grammar 4.5: a collection groups catalog features into stages; the order of stages and of
@@ -62,5 +64,29 @@ public class CollectionBuilderTests
             .Build();
 
         Assert.Equal(["Basic", "Brilliant"], catalog.Collections.Select(collection => collection.Name));
+    }
+
+    // Grammar 4.9: `indeks` is written in the collection block as one expression;
+    // turning options into their symbols is the engine's job.
+    [Fact]
+    public void Collection_keeps_its_index_pattern()
+    {
+        var pattern = Expression.Add(Expression.Reference("Model"), Expression.Reference("Typ"));
+
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Collection("Basic", collection => collection.Stage("Model", "Model", "Typ").Index(pattern))
+            .Build();
+
+        Assert.Same(pattern, Assert.Single(catalog.Collections).Index);
+    }
+
+    [Fact]
+    public void Collection_without_an_index_pattern_has_none()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Collection("Basic", collection => collection.Stage("Model", "Model"))
+            .Build();
+
+        Assert.Null(Assert.Single(catalog.Collections).Index);
     }
 }

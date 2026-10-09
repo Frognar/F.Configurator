@@ -230,4 +230,35 @@ public class CatalogBuilderTests
             builder.AllowedCombinations("DozwoloneModel", table => table.Allowed("Model").Row("VERTE")));
         Assert.Contains("'DozwoloneModel'", error.Message);
     }
+
+    // Grammar 4.2: `atrybut Seria : tekst` and `atrybut MaRamiak : tak/nie domyślnie NIE` declare
+    // option attributes; the validator checks every option against them.
+    [Fact]
+    public void Choice_feature_keeps_its_attribute_declarations()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Choice("Model", feature => feature
+                .Attribute("Seria", AttributeType.Text)
+                .Attribute("MaRamiak", AttributeType.Boolean, Value.Boolean(false))
+                .Option("PORTA", "Porta", option => option.Attribute("Seria", Value.Text("ASTORIA"))))
+            .Build();
+
+        var model = Assert.IsType<ChoiceFeature>(Assert.Single(catalog.Features));
+        Assert.Equal(
+            [
+                new AttributeDeclaration("Seria", AttributeType.Text, null),
+                new AttributeDeclaration("MaRamiak", AttributeType.Boolean, Value.Boolean(false)),
+            ],
+            model.Attributes);
+    }
+
+    [Fact]
+    public void Choice_feature_without_attribute_declarations_has_none()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Choice("Kierunek", feature => feature.Option("L", "Lewe").Option("P", "Prawe"))
+            .Build();
+
+        Assert.Empty(Assert.IsType<ChoiceFeature>(Assert.Single(catalog.Features)).Attributes);
+    }
 }
