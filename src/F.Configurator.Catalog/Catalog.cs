@@ -6,6 +6,7 @@ namespace F.Configurator.Catalog;
 public sealed record Catalog(
     string Name,
     string? Version,
+    Reaction? DefaultReaction,
     ImmutableList<Feature> Features,
     ImmutableList<Collection> Collections,
     ImmutableList<Rule> Rules,
@@ -21,6 +22,7 @@ public sealed class CatalogBuilder
     public static CatalogBuilder Create(string name) =>
         new(new Catalog(name,
             null,
+            null,
             ImmutableList<Feature>.Empty,
             ImmutableList<Collection>.Empty,
             ImmutableList<Rule>.Empty,
@@ -28,6 +30,8 @@ public sealed class CatalogBuilder
             ImmutableDictionary<string, AllowedCombinationsTable>.Empty));
 
     public CatalogBuilder Version(string version) => new(_catalog with { Version = version });
+
+    public CatalogBuilder DefaultReaction(Reaction reaction) => new(_catalog with { DefaultReaction = reaction });
 
     private CatalogBuilder AddFeature(Feature feature) =>
         _catalog.Features.Any(f => f.Name == feature.Name)
