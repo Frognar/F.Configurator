@@ -233,7 +233,7 @@ public sealed record In(Expression Left, Expression Right) : Expression
         (Left.Evaluate(values), Right.Evaluate(values)) switch
         {
             (NumberValue n, RangeValue r) => Value.Boolean(n.Amount >= r.Min && n.Amount <= r.Max),
-            (NumberValue n, ListValue l) => Value.Boolean(l.Values.Contains(n)),
+            ({ } n, ListValue l) => Value.Boolean(l.Values.Contains(n)),
             _ => BooleanValue.False,
         };
 }
