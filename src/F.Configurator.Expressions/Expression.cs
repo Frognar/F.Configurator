@@ -1,5 +1,3 @@
-using System.Collections.Immutable;
-
 namespace F.Configurator.Expressions;
 
 public abstract record Expression
@@ -53,7 +51,7 @@ public abstract record Expression
     public static Expression Round(Expression operand, Expression step) => new Round(operand, step);
 
     public static Expression TableLookup(Table table, List<Expression> keys, string value) =>
-        new TableLookup(table, keys, value);
+        new TableLookup(table, [.. keys], value);
 
     public static Expression List(Expression expression, params IEnumerable<Expression> expressions) =>
         new ListExpression([expression, .. expressions]);
@@ -148,7 +146,7 @@ public sealed record Negate(Expression Operand) : Expression
         };
 }
 
-public abstract record Extremum(IReadOnlyList<Expression> Expressions) : Expression
+public abstract record Extremum(EquatableList<Expression> Expressions) : Expression
 {
     public sealed override Value Evaluate(IReadOnlyDictionary<string, Value> values)
     {
@@ -163,12 +161,12 @@ public abstract record Extremum(IReadOnlyList<Expression> Expressions) : Express
     protected abstract Value? Pick(IReadOnlyList<NumberValue> evaluated);
 }
 
-public sealed record Min(IReadOnlyList<Expression> Expressions) : Extremum(Expressions)
+public sealed record Min(EquatableList<Expression> Expressions) : Extremum(Expressions)
 {
     protected override Value? Pick(IReadOnlyList<NumberValue> evaluated) => evaluated.MinBy(v => v.Amount);
 }
 
-public sealed record Max(IReadOnlyList<Expression> Expressions) : Extremum(Expressions)
+public sealed record Max(EquatableList<Expression> Expressions) : Extremum(Expressions)
 {
     protected override Value? Pick(IReadOnlyList<NumberValue> evaluated) => evaluated.MaxBy(v => v.Amount);
 }
@@ -326,7 +324,7 @@ public sealed record Round(Expression Input, Expression Step) : Expression
         };
 }
 
-public sealed record TableLookup(Table Table, IReadOnlyList<Expression> Keys, string ValueKey) : Expression
+public sealed record TableLookup(Table Table, EquatableList<Expression> Keys, string ValueKey) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values)
     {
@@ -335,7 +333,7 @@ public sealed record TableLookup(Table Table, IReadOnlyList<Expression> Keys, st
     }
 }
 
-public sealed record ListExpression(ImmutableList<Expression> Expressions) : Expression
+public sealed record ListExpression(EquatableList<Expression> Expressions) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         Value.List(Expressions.Select(e => e.Evaluate(values)));
