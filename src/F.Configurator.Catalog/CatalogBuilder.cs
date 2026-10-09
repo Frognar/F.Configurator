@@ -19,7 +19,7 @@ public sealed class CatalogBuilder
 
     private CatalogBuilder AddFeature(Feature feature) =>
         _catalog.Features.Any(f => f.Name == feature.Name)
-            ? throw new ArgumentException($"Feature with name '{feature.Name}' already exists.")
+            ? throw Duplicate("Feature", feature.Name)
             : new CatalogBuilder(_catalog with { Features = _catalog.Features.Add(feature) });
 
     public CatalogBuilder Choice(string name, Func<ChoiceFeatureBuilder, ChoiceFeatureBuilder> setupFeature) =>
@@ -39,7 +39,7 @@ public sealed class CatalogBuilder
 
     public CatalogBuilder Collection(string name, Func<CollectionBuilder, CollectionBuilder> setupCollection) =>
         _catalog.Collections.Any(c => c.Name == name)
-            ? throw new ArgumentException($"Collection with name '{name}' already exists.")
+            ? throw Duplicate("Collection", name)
             : new CatalogBuilder(_catalog with
             {
                 Collections = _catalog.Collections.Add(setupCollection(CollectionBuilder.Create(name)).Build())
