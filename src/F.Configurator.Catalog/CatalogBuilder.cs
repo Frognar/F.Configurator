@@ -263,5 +263,7 @@ public sealed record Violation(Reaction Reaction, string Message);
 
 public enum Reaction
 {
-    Correct
+    Correct,
+    Warn,
+    Error,
 }
