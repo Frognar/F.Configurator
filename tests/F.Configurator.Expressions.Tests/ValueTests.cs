@@ -13,4 +13,23 @@ public class ValueTests
     {
         Assert.NotEqual(Value.Number(0m), Value.Missing);
     }
+
+    // Records compare collections by reference unless told otherwise; a list value compares by its items.
+    [Fact]
+    public void Lists_with_the_same_items_are_equal()
+    {
+        var first = Value.List(Value.Option("CZ"), Value.Option("SK"));
+        var second = Value.List(Value.Option("CZ"), Value.Option("SK"));
+
+        Assert.Equal(first, second);
+        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+    }
+
+    [Fact]
+    public void Lists_with_items_in_a_different_order_are_not_equal()
+    {
+        Assert.NotEqual(
+            Value.List(Value.Option("CZ"), Value.Option("SK")),
+            Value.List(Value.Option("SK"), Value.Option("CZ")));
+    }
 }

@@ -133,5 +133,31 @@ public class AllowedCombinationsTests
 
         Assert.Throws<ArgumentException>(() => builder.Row(cell, cells));
     }
-}
 
+    // Basic keys some tables by `Szerokosc`, a number feature. The engine looks such a table up with
+    // NumberValue, so cells must keep their real value type instead of always becoming options.
+    [Fact]
+    public void Number_key_cells_match_number_values()
+    {
+        var table = CatalogBuilder.Create("Drzwi")
+            .AllowedCombinations("DozwoloneModel", t => t
+                .Key("Szerokosc")
+                .Allowed("Model")
+                .Row(Value.Number(80m), Value.Option("PORTA"))
+                .Row(Value.Number(90m), Value.Option("VERTE")))
+            .Build()
+            .AllowedCombinations["DozwoloneModel"];
+
+        var allowed = table.AllowedFor([Value.Number(80m)]);
+
+        Assert.Equal([Value.Option("PORTA")], allowed);
+    }
+
+    [Fact]
+    public void Row_of_values_with_a_wrong_number_of_cells_is_rejected()
+    {
+        var builder = AllowedCombinationsTableBuilder.Create().Key("Szerokosc").Allowed("Model");
+
+        Assert.Throws<ArgumentException>(() => builder.Row(Value.Number(80m)));
+    }
+}

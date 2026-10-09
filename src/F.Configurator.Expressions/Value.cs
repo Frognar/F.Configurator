@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.Globalization;
 
 namespace F.Configurator.Expressions;
@@ -37,4 +36,4 @@ public sealed record OptionValue(string Id) : Value;
 
 public sealed record MissingValue : Value;
 
-public sealed record ListValue(ImmutableList<Value> Values) : Value;
+public sealed record ListValue(EquatableList<Value> Values) : Value;

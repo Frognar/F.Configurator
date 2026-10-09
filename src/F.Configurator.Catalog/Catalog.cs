@@ -108,7 +108,8 @@ public sealed record AttributeDeclaration(string Name, AttributeType Type, Value
 public enum AttributeType
 {
     Text,
-    Boolean
+    Boolean,
+    Number
 }
 
 public sealed class ContextBuilder

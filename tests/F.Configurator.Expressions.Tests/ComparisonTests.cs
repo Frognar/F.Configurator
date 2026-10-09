@@ -124,4 +124,17 @@ public class ComparisonTests
 
         Assert.Equal(Value.Boolean(false), value);
     }
+
+    // Grammar 6.1: `=` compares values; two lists are equal when they hold the same items.
+    [Fact]
+    public void Lists_with_the_same_items_are_equal()
+    {
+        var expression = Expression.Equal(
+            Expression.List(Expression.Option("CZ"), Expression.Option("SK")),
+            Expression.List(Expression.Option("CZ"), Expression.Option("SK")));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Boolean(true), value);
+    }
 }

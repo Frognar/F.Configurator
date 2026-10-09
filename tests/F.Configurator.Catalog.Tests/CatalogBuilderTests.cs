@@ -261,4 +261,18 @@ public class CatalogBuilderTests
 
         Assert.Empty(Assert.IsType<ChoiceFeature>(Assert.Single(catalog.Features)).Attributes);
     }
+
+    // Grammar 4.2: attribute types are `tekst`, `liczba` and `tak/nie`, e.g. a leaf thickness in mm.
+    [Fact]
+    public void Choice_feature_keeps_a_number_attribute_declaration()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Choice("Model", feature => feature
+                .Attribute("GruboscMM", AttributeType.Number, Value.Number(40m))
+                .Option("PORTA", "Porta", option => option.Attribute("GruboscMM", Value.Number(44m))))
+            .Build();
+
+        var model = Assert.IsType<ChoiceFeature>(Assert.Single(catalog.Features));
+        Assert.Equal([new AttributeDeclaration("GruboscMM", AttributeType.Number, Value.Number(40m))], model.Attributes);
+    }
 }

@@ -1,5 +1,3 @@
-using System.Collections.Immutable;
-
 namespace F.Configurator.Expressions;
 
 public abstract record Expression
@@ -52,8 +50,8 @@ public abstract record Expression
     public static Expression Round(Expression operand) => new Round(operand, Number(1));
     public static Expression Round(Expression operand, Expression step) => new Round(operand, step);
 
-    public static Expression TableLookup(Table table, List<Expression> keys, string value) =>
-        new TableLookup(table, keys, value);
+    public static Expression TableLookup(Table table, IEnumerable<Expression> keys, string column) =>
+        new TableLookup(table, [.. keys], column);
 
     public static Expression List(Expression expression, params IEnumerable<Expression> expressions) =>
         new ListExpression([expression, .. expressions]);
@@ -103,9 +101,21 @@ public abstract record BinaryArithmetic(Expression Left, Expression Right) : Exp
     protected virtual Value Combine(Value left, Value right) =>
         (left, right) switch
         {
-            (NumberValue l, NumberValue r) => Apply(l.Amount, r.Amount),
+            (NumberValue l, NumberValue r) => SafeApply(l.Amount, r.Amount),
             _ => Value.Missing,
         };
+
+    private Value SafeApply(decimal left, decimal right)
+    {
+        try
+        {
+            return Apply(left, right);
+        }
+        catch (OverflowException)
+        {
+            return Value.Missing;
+        }
+    }
 
     protected abstract Value Apply(decimal left, decimal right);
 }
@@ -148,7 +158,7 @@ public sealed record Negate(Expression Operand) : Expression
         };
 }
 
-public abstract record Extremum(IReadOnlyList<Expression> Expressions) : Expression
+public abstract record Extremum(EquatableList<Expression> Expressions) : Expression
 {
     public sealed override Value Evaluate(IReadOnlyDictionary<string, Value> values)
     {
@@ -157,20 +167,22 @@ public abstract record Extremum(IReadOnlyList<Expression> Expressions) : Express
             .OfType<NumberValue>()
             .ToList();
 
-        return evaluated.Count == Expressions.Count ? Pick(evaluated) ?? Value.Missing : Value.Missing;
+        return evaluated.Count == Expressions.Count
+            ? Value.Number(Pick(evaluated.Select(v => v.Amount)))
+            : Value.Missing;
     }
 
-    protected abstract Value? Pick(IReadOnlyList<NumberValue> evaluated);
+    protected abstract decimal Pick(IEnumerable<decimal> amounts);
 }
 
-public sealed record Min(IReadOnlyList<Expression> Expressions) : Extremum(Expressions)
+public sealed record Min(EquatableList<Expression> Expressions) : Extremum(Expressions)
 {
-    protected override Value? Pick(IReadOnlyList<NumberValue> evaluated) => evaluated.MinBy(v => v.Amount);
+    protected override decimal Pick(IEnumerable<decimal> amounts) => amounts.Min();
 }
 
-public sealed record Max(IReadOnlyList<Expression> Expressions) : Extremum(Expressions)
+public sealed record Max(EquatableList<Expression> Expressions) : Extremum(Expressions)
 {
-    protected override Value? Pick(IReadOnlyList<NumberValue> evaluated) => evaluated.MaxBy(v => v.Amount);
+    protected override decimal Pick(IEnumerable<decimal> amounts) => amounts.Max();
 }
 
 public sealed record Equal(Expression Left, Expression Right) : Expression
@@ -186,11 +198,7 @@ public sealed record Equal(Expression Left, Expression Right) : Expression
 public sealed record NotEqual(Expression Left, Expression Right) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        (Left.Evaluate(values), Right.Evaluate(values)) switch
-        {
-            (MissingValue, _) or (_, MissingValue) => BooleanValue.True,
-            ({ } l, { } r) => Value.Boolean(l != r),
-        };
+        new Not(new Equal(Left, Right)).Evaluate(values);
 }
 
 public abstract record BinaryComparison(Expression Left, Expression Right) : Expression
@@ -242,13 +250,7 @@ public sealed record In(Expression Left, Expression Right) : Expression
 public sealed record NotIn(Expression Left, Expression Right) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        (Left.Evaluate(values), Right.Evaluate(values)) switch
-        {
-            (MissingValue, _) => BooleanValue.True,
-            (NumberValue n, RangeValue r) => Value.Boolean(n.Amount < r.Min || n.Amount > r.Max),
-            ({ } n, ListValue l) => Value.Boolean(!l.Values.Contains(n)),
-            _ => BooleanValue.False,
-        };
+        new Not(new In(Left, Right)).Evaluate(values);
 }
 
 public sealed record And(Expression Left, Expression Right) : Expression
@@ -276,8 +278,8 @@ public sealed record Not(Expression Operand) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         Operand.Evaluate(values) switch
         {
-            BooleanValue { Value: false } or MissingValue => BooleanValue.True,
-            _ => BooleanValue.False,
+            BooleanValue { Value: true } => BooleanValue.False,
+            _ => BooleanValue.True,
         };
 }
 
@@ -303,12 +305,14 @@ public sealed record Length(Expression Operand) : Expression
 
 public sealed record Pad(Expression ValueText, Expression TotalWidth, Expression PaddingChar) : Expression
 {
+    private const decimal MaxWidth = 1000;
+
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         (ValueText.Evaluate(values).AsText(), TotalWidth.Evaluate(values), PaddingChar.Evaluate(values)) switch
         {
             (
                 TextValue { Value: var text },
-                NumberValue { Amount: var width and >= 0 },
+                NumberValue { Amount: var width and >= 0 and <= MaxWidth },
                 TextValue { Value: [var c] }
                 ) =>
                 Value.Text(text.PadLeft(decimal.ToInt32(width), c)),
@@ -321,21 +325,33 @@ public sealed record Round(Expression Input, Expression Step) : Expression
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         (Input.Evaluate(values), Step.Evaluate(values)) switch
         {
-            (NumberValue number, NumberValue { Amount: > 0 } step) => number.RoundTo(step),
+            (NumberValue number, NumberValue { Amount: > 0 } step) => SafeRound(number, step),
             _ => Value.Missing,
         };
+
+    private Value SafeRound(NumberValue number, NumberValue step)
+    {
+        try
+        {
+            return number.RoundTo(step);
+        }
+        catch (OverflowException)
+        {
+            return Value.Missing;
+        }
+    }
 }
 
-public sealed record TableLookup(Table Table, IReadOnlyList<Expression> Keys, string ValueKey) : Expression
+public sealed record TableLookup(Table Table, EquatableList<Expression> Keys, string Column) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values)
     {
         var evaluatedKeys = Keys.Select(k => k.Evaluate(values)).ToArray();
-        return Table.Lookup(evaluatedKeys, ValueKey);
+        return Table.Lookup(evaluatedKeys, Column);
     }
 }
 
-public sealed record ListExpression(ImmutableList<Expression> Expressions) : Expression
+public sealed record ListExpression(EquatableList<Expression> Expressions) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         Value.List(Expressions.Select(e => e.Evaluate(values)));

@@ -58,5 +58,20 @@ public sealed class AllowedCombinationsTableBuilder
         return new AllowedCombinationsTableBuilder(_table with { Rows = _table.Rows.SetItem(key, allowed.Add(value)) });
     }
 
+    public AllowedCombinationsTableBuilder Row(Value cell, params IReadOnlyList<Value> cells)
+    {
+        Value[] all = [cell, .. cells];
+        if (all.Length - _table.KeyColumns.Count != 1)
+        {
+            throw new ArgumentException(
+                $"Row for '{_table.AllowedFeature}' needs {_table.KeyColumns.Count + 1} cells (keys + allowed option), got {all.Length}.");
+        }
+
+        ImmutableList<Value> key = [.. all.SkipLast(1)];
+        var value = all[^1];
+        var allowed = _table.Rows.GetValueOrDefault(key, []);
+        return new AllowedCombinationsTableBuilder(_table with { Rows = _table.Rows.SetItem(key, allowed.Add(value)) });
+    }
+
     public AllowedCombinationsTable Build() => _table;
 }

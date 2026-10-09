@@ -150,4 +150,37 @@ public class MembershipTests
         Assert.Equal(Value.Boolean(false), Expression.In(Expression.Reference("Norma"), list).Evaluate(empty));
         Assert.Equal(Value.Boolean(true), Expression.NotIn(Expression.Reference("Norma"), list).Evaluate(empty));
     }
+
+    // Agreed 2026-10-09: `x nie w Y` is always `nie (x w Y)`. A value of another type is not in a
+    // range, so it is outside it.
+    [Fact]
+    public void Text_is_outside_a_number_range()
+    {
+        var expression = Expression.NotIn(Expression.Text("A"), Expression.Range(1m, 5m));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Boolean(true), value);
+    }
+
+    [Fact]
+    public void Option_is_outside_a_number_range()
+    {
+        var expression = Expression.NotIn(Expression.Option("CZ"), Expression.Range(1m, 5m));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Boolean(true), value);
+    }
+
+    // The right side is neither a range nor a list, so nothing is in it.
+    [Fact]
+    public void Value_is_outside_something_that_is_neither_a_range_nor_a_list()
+    {
+        var expression = Expression.NotIn(Expression.Number(5m), Expression.Number(5m));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Boolean(true), value);
+    }
 }

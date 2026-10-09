@@ -110,4 +110,46 @@ public class ArithmeticTests
 
         Assert.Equal(Value.Missing, value);
     }
+
+    // Grammar 6.4 and the E2 rule "an expression never throws": a result outside the decimal range has
+    // no value, like division by zero.
+    [Fact]
+    public void Addition_beyond_the_decimal_range_evaluates_to_missing()
+    {
+        var expression = Expression.Add(Expression.Number(decimal.MaxValue), Expression.Number(decimal.MaxValue));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Missing, value);
+    }
+
+    [Fact]
+    public void Subtraction_beyond_the_decimal_range_evaluates_to_missing()
+    {
+        var expression = Expression.Subtract(Expression.Number(decimal.MinValue), Expression.Number(decimal.MaxValue));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Missing, value);
+    }
+
+    [Fact]
+    public void Multiplication_beyond_the_decimal_range_evaluates_to_missing()
+    {
+        var expression = Expression.Multiply(Expression.Number(decimal.MaxValue), Expression.Number(10m));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Missing, value);
+    }
+
+    [Fact]
+    public void Division_beyond_the_decimal_range_evaluates_to_missing()
+    {
+        var expression = Expression.Divide(Expression.Number(decimal.MaxValue), Expression.Number(0.1m));
+
+        var value = expression.Evaluate(new Dictionary<string, Value>());
+
+        Assert.Equal(Value.Missing, value);
+    }
 }
