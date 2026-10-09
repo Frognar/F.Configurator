@@ -19,7 +19,7 @@ public sealed class AllowedCombinationsTableBuilder
 
     public static AllowedCombinationsTableBuilder Create(IEnumerable<string> key, string allowed) =>
         new(new AllowedCombinationsTable(
-            [..key],
+            [.. key],
             allowed,
             EquatableDictionary<EquatableList<Value>, EquatableList<Value>>.Empty));
 
