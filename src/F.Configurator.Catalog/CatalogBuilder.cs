@@ -172,7 +172,7 @@ public sealed class CollectionBuilder
     public Collection Build() => _collection;
 }
 
-public sealed record Rule(string Name, Expression? Condition);
+public sealed record Rule(string Name, int Priority, Expression? Condition);
 
 public sealed class RuleBuilder
 {
@@ -180,7 +180,7 @@ public sealed class RuleBuilder
 
     private RuleBuilder(Rule rule) => _rule = rule;
 
-    public static RuleBuilder Create(string name) => new(new Rule(name, null));
+    public static RuleBuilder Create(string name) => new(new Rule(name, 0, null));
 
     public RuleBuilder When(Expression condition) => new(_rule with { Condition = condition });
 
