@@ -40,5 +40,10 @@ public sealed record Configuration(Collection Collection)
     public Value ValueOf(string featureName) => Values.TryGetValue(featureName, out var value) ? value : Value.Missing;
 
     public Configuration Set(string featureName, Value value) =>
-        this with { Values = Values.SetItem(featureName, value) };
+        Collection.Features.Contains(featureName)
+            ? VisibleFeatures.Contains(featureName)
+                ? this with { Values = Values.SetItem(featureName, value) }
+                : throw new InvalidOperationException(
+                    $"Feature '{featureName}' cannot be set in stage '{CurrentStage}'.")
+            : throw new ArgumentException($"Feature '{featureName}' not found in catalog.");
 }
