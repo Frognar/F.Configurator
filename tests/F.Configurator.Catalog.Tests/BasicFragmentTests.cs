@@ -97,10 +97,6 @@ public class BasicFragmentTests
     [Fact]
     public void Catalogs_built_the_same_way_are_equal()
     {
-        var first = Basic();
-        var second = Basic();
-
-        Assert.Equal(first, second);
-        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+        StructuralAssert.Equal(Basic(), Basic());
     }
 }
