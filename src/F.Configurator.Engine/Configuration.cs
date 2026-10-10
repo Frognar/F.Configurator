@@ -24,7 +24,13 @@ public sealed class Configuration
     public string CurrentStage => _collection.Stages[CurrentStageIndex].Name;
 
     public EquatableList<string> VisibleFeatures =>
-        [.. _collection.Stages.Take(CurrentStageIndex + 1).SelectMany(s => s.Features)];
+    [
+        .. _collection.Stages.Take(CurrentStageIndex + 1).SelectMany(s => s.Features)
+            .Except(_catalog.Rules.Where(r =>
+                    r.Condition is null ||
+                    r.Condition.Evaluate(_values.ToDictionary()) is BooleanValue { IsTrue: true })
+                .SelectMany(r => r.Effects.OfType<HideEffect>().SelectMany(e => e.Features)))
+    ];
 
     public static Configuration Start(ProductCatalog catalog, string collectionName)
     {
