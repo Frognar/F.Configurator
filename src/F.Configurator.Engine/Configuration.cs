@@ -52,21 +52,15 @@ public sealed class Configuration
             throw new ArgumentException($"Feature '{featureName}' does not accept {value}.");
         }
 
-        if (feature is ChoiceFeature option && value is OptionValue selected &&
-            option.Options.All(o => o.Id != selected.Id))
-        {
-            throw new ArgumentException($"Option '{selected.Id}' not found in feature '{featureName}'.");
-        }
-
         return new Configuration(_catalog, _collection, _values.SetItem(featureName, value));
     }
 
     private static bool Accepts(Feature feature, Value value) =>
-        feature switch
+        (feature, value) switch
         {
-            NumberFeature => value is NumberValue,
-            ChoiceFeature => value is OptionValue,
-            _ => false
+            (NumberFeature, NumberValue) => true,
+            (ChoiceFeature choice, OptionValue selected) => choice.Options.Any(o => o.Id == selected.Id),
+            _ => false,
         };
 
     public Value ValueOf(string featureName) => _values.TryGetValue(featureName, out var value) ? value : Value.Missing;
