@@ -3,7 +3,7 @@ using F.Configurator.Expressions;
 
 namespace F.Configurator.Engine;
 
-public sealed record Configuration(Collection Collection)
+public sealed record Configuration(Catalog.Catalog Catalog, Collection Collection)
 {
     private EquatableDictionary<string, Value> Values { get; init; } = EquatableDictionary<string, Value>.Empty;
 
@@ -34,16 +34,22 @@ public sealed record Configuration(Collection Collection)
         var collection = catalog.Collections.FirstOrDefault(c => c.Name == collectionName);
         return collection is null
             ? throw new ArgumentException($"Collection '{collectionName}' not found in catalog.")
-            : new Configuration(collection);
+            : new Configuration(catalog, collection);
     }
-
-    public Value ValueOf(string featureName) => Values.TryGetValue(featureName, out var value) ? value : Value.Missing;
 
     public Configuration Set(string featureName, Value value) =>
         Collection.Features.Contains(featureName)
             ? VisibleFeatures.Contains(featureName)
-                ? this with { Values = Values.SetItem(featureName, value) }
+                ? (Catalog.Features.First(f => f.Name == featureName), value) switch
+                {
+                    (ChoiceFeature choice, OptionValue selected)
+                        when choice.Options.All(o => o.Id != selected.Id) =>
+                        throw new ArgumentException($"Option '{selected.Id}' not found in feature '{featureName}'."),
+                    _ => this with { Values = Values.SetItem(featureName, value) }
+                }
                 : throw new InvalidOperationException(
                     $"Feature '{featureName}' cannot be set in stage '{CurrentStage}'.")
             : throw new ArgumentException($"Feature '{featureName}' not found in catalog.");
+
+    public Value ValueOf(string featureName) => Values.TryGetValue(featureName, out var value) ? value : Value.Missing;
 }
