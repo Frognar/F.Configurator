@@ -3,10 +3,11 @@ using F.Configurator.Expressions;
 
 namespace F.Configurator.Engine;
 
-public sealed record Configuration(Catalog.Catalog Catalog, Collection Collection)
+public sealed record Configuration(
+    Catalog.Catalog Catalog,
+    Collection Collection,
+    EquatableDictionary<string, Value> Values)
 {
-    private EquatableDictionary<string, Value> Values { get; init; } = EquatableDictionary<string, Value>.Empty;
-
     private int CurrentStageIndex
     {
         get
@@ -26,26 +27,37 @@ public sealed record Configuration(Catalog.Catalog Catalog, Collection Collectio
         var collection = catalog.Collections.FirstOrDefault(c => c.Name == collectionName);
         return collection is null
             ? throw new ArgumentException($"Collection '{collectionName}' not found in catalog.")
-            : new Configuration(catalog, collection);
+            : new Configuration(catalog, collection, EquatableDictionary<string, Value>.Empty);
     }
 
-    public Configuration Set(string featureName, Value value) =>
-        Collection.Features.Contains(featureName)
-            ? VisibleFeatures.Contains(featureName)
-                ? (Catalog.Features.First(f => f.Name == featureName), value) switch
-                {
-                    (ChoiceFeature choice, OptionValue selected)
-                        when choice.Options.All(o => o.Id != selected.Id) =>
-                        throw new ArgumentException($"Option '{selected.Id}' not found in feature '{featureName}'."),
-                    var (feature, _) when !MatchType(feature, value) =>
-                        throw new ArgumentException($"Value '{value}' is not of type '{feature.GetType()}'"),
-                    _ => this with { Values = Values.SetItem(featureName, value) }
-                }
-                : throw new InvalidOperationException(
-                    $"Feature '{featureName}' cannot be set in stage '{CurrentStage}'.")
-            : throw new ArgumentException($"Feature '{featureName}' not found in catalog.");
+    public Configuration Set(string featureName, Value value)
+    {
+        var feature = Catalog.Features.FirstOrDefault(f => f.Name == featureName);
+        if (feature is null || !Collection.Features.Contains(featureName))
+        {
+            throw new ArgumentException($"Feature '{featureName}' is not in collection '{Collection.Name}'.");
+        }
 
-    private static bool MatchType(Feature feature, Value value) =>
+        if (!VisibleFeatures.Contains(featureName))
+        {
+            throw new InvalidOperationException($"Feature '{featureName}' cannot be set in stage '{CurrentStage}'.");
+        }
+
+        if (!Accepts(feature, value))
+        {
+            throw new ArgumentException($"Feature '{featureName}' does not accept {value}.");
+        }
+
+        if (feature is ChoiceFeature option && value is OptionValue selected &&
+            option.Options.All(o => o.Id != selected.Id))
+        {
+            throw new ArgumentException($"Option '{selected.Id}' not found in feature '{featureName}'.");
+        }
+
+        return new Configuration(Catalog, Collection, Values.SetItem(featureName, value));
+    }
+
+    private static bool Accepts(Feature feature, Value value) =>
         feature switch
         {
             NumberFeature => value is NumberValue,
