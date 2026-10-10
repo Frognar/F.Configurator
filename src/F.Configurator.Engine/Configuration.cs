@@ -16,7 +16,9 @@ public sealed class Configuration
     {
         get
         {
-            var i = _collection.Stages.ToList().FindIndex(s => !s.Features.All(_values.ContainsKey));
+            var i = _collection.Stages.ToList()
+                .FindIndex(s => !s.Features.Except(HiddenFeatures).All(_values.ContainsKey));
+
             return i < 0 ? _collection.Stages.Count - 1 : i;
         }
     }
