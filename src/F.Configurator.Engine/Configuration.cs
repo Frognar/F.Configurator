@@ -3,24 +3,24 @@ using F.Configurator.Expressions;
 
 namespace F.Configurator.Engine;
 
-public sealed record Configuration(
-    Catalog.Catalog Catalog,
-    Collection Collection,
-    EquatableDictionary<string, Value> Values)
+public sealed class Configuration(
+    Catalog.Catalog catalog,
+    Collection collection,
+    EquatableDictionary<string, Value> values)
 {
     private int CurrentStageIndex
     {
         get
         {
-            var i = Collection.Stages.ToList().FindIndex(s => !s.Features.All(Values.ContainsKey));
-            return i < 0 ? Collection.Stages.Count - 1 : i;
+            var i = collection.Stages.ToList().FindIndex(s => !s.Features.All(values.ContainsKey));
+            return i < 0 ? collection.Stages.Count - 1 : i;
         }
     }
 
-    public string CurrentStage => Collection.Stages[CurrentStageIndex].Name;
+    public string CurrentStage => collection.Stages[CurrentStageIndex].Name;
 
     public EquatableList<string> VisibleFeatures =>
-        [.. Collection.Stages.Take(CurrentStageIndex + 1).SelectMany(s => s.Features)];
+        [.. collection.Stages.Take(CurrentStageIndex + 1).SelectMany(s => s.Features)];
 
     public static Configuration Start(Catalog.Catalog catalog, string collectionName)
     {
@@ -32,10 +32,10 @@ public sealed record Configuration(
 
     public Configuration Set(string featureName, Value value)
     {
-        var feature = Catalog.Features.FirstOrDefault(f => f.Name == featureName);
-        if (feature is null || !Collection.Features.Contains(featureName))
+        var feature = catalog.Features.FirstOrDefault(f => f.Name == featureName);
+        if (feature is null || !collection.Features.Contains(featureName))
         {
-            throw new ArgumentException($"Feature '{featureName}' is not in collection '{Collection.Name}'.");
+            throw new ArgumentException($"Feature '{featureName}' is not in collection '{collection.Name}'.");
         }
 
         if (!VisibleFeatures.Contains(featureName))
@@ -54,7 +54,7 @@ public sealed record Configuration(
             throw new ArgumentException($"Option '{selected.Id}' not found in feature '{featureName}'.");
         }
 
-        return new Configuration(Catalog, Collection, Values.SetItem(featureName, value));
+        return new Configuration(catalog, collection, values.SetItem(featureName, value));
     }
 
     private static bool Accepts(Feature feature, Value value) =>
@@ -65,5 +65,5 @@ public sealed record Configuration(
             _ => false
         };
 
-    public Value ValueOf(string featureName) => Values.TryGetValue(featureName, out var value) ? value : Value.Missing;
+    public Value ValueOf(string featureName) => values.TryGetValue(featureName, out var value) ? value : Value.Missing;
 }
