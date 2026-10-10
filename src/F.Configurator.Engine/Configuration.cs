@@ -3,24 +3,28 @@ using F.Configurator.Expressions;
 
 namespace F.Configurator.Engine;
 
-public sealed class Configuration(
-    ProductCatalog catalog,
-    Collection collection,
-    EquatableDictionary<string, Value> values)
+public sealed class Configuration
 {
+    private readonly ProductCatalog _catalog;
+    private readonly Collection _collection;
+    private readonly EquatableDictionary<string, Value> _values;
+
+    private Configuration(ProductCatalog catalog, Collection collection, EquatableDictionary<string, Value> values) =>
+        (_catalog, _collection, _values) = (catalog, collection, values);
+
     private int CurrentStageIndex
     {
         get
         {
-            var i = collection.Stages.ToList().FindIndex(s => !s.Features.All(values.ContainsKey));
-            return i < 0 ? collection.Stages.Count - 1 : i;
+            var i = _collection.Stages.ToList().FindIndex(s => !s.Features.All(_values.ContainsKey));
+            return i < 0 ? _collection.Stages.Count - 1 : i;
         }
     }
 
-    public string CurrentStage => collection.Stages[CurrentStageIndex].Name;
+    public string CurrentStage => _collection.Stages[CurrentStageIndex].Name;
 
     public EquatableList<string> VisibleFeatures =>
-        [.. collection.Stages.Take(CurrentStageIndex + 1).SelectMany(s => s.Features)];
+        [.. _collection.Stages.Take(CurrentStageIndex + 1).SelectMany(s => s.Features)];
 
     public static Configuration Start(ProductCatalog catalog, string collectionName)
     {
@@ -32,10 +36,10 @@ public sealed class Configuration(
 
     public Configuration Set(string featureName, Value value)
     {
-        var feature = catalog.Features.FirstOrDefault(f => f.Name == featureName);
-        if (feature is null || !collection.Features.Contains(featureName))
+        var feature = _catalog.Features.FirstOrDefault(f => f.Name == featureName);
+        if (feature is null || !_collection.Features.Contains(featureName))
         {
-            throw new ArgumentException($"Feature '{featureName}' is not in collection '{collection.Name}'.");
+            throw new ArgumentException($"Feature '{featureName}' is not in collection '{_collection.Name}'.");
         }
 
         if (!VisibleFeatures.Contains(featureName))
@@ -54,7 +58,7 @@ public sealed class Configuration(
             throw new ArgumentException($"Option '{selected.Id}' not found in feature '{featureName}'.");
         }
 
-        return new Configuration(catalog, collection, values.SetItem(featureName, value));
+        return new Configuration(_catalog, _collection, _values.SetItem(featureName, value));
     }
 
     private static bool Accepts(Feature feature, Value value) =>
@@ -65,5 +69,5 @@ public sealed class Configuration(
             _ => false
         };
 
-    public Value ValueOf(string featureName) => values.TryGetValue(featureName, out var value) ? value : Value.Missing;
+    public Value ValueOf(string featureName) => _values.TryGetValue(featureName, out var value) ? value : Value.Missing;
 }
