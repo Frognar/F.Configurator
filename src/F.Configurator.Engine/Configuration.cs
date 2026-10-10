@@ -34,6 +34,8 @@ public sealed class Configuration
             : new Configuration(catalog, collection, EquatableDictionary<string, Value>.Empty);
     }
 
+    public Value ValueOf(string featureName) => _values.TryGetValue(featureName, out var value) ? value : Value.Missing;
+
     public Configuration Set(string featureName, Value value)
     {
         var feature = _catalog.Features.FirstOrDefault(f => f.Name == featureName);
@@ -62,6 +64,4 @@ public sealed class Configuration
             (ChoiceFeature choice, OptionValue selected) => choice.Options.Any(o => o.Id == selected.Id),
             _ => false,
         };
-
-    public Value ValueOf(string featureName) => _values.TryGetValue(featureName, out var value) ? value : Value.Missing;
 }
