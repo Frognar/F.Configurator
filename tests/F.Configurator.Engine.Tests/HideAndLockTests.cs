@@ -128,6 +128,20 @@ public class HideAndLockTests
         Assert.Equal("Wymiary", configuration.CurrentStage);
     }
 
+    // Showing a feature again reopens its stage; values already given in later stages stay.
+    [Fact]
+    public void Feature_shown_again_keeps_later_values()
+    {
+        var configuration = StartWithZamekBrakRule()
+            .Set("FelcSkrzydla", Value.Option("Z"))
+            .Set("ZamekDolny", Value.Option("BRAK"))
+            .Set("SzerokoscMM", Value.Number(900m))
+            .Set("ZamekDolny", Value.Option("KLUCZ"));
+
+        Assert.Equal("Skrzydlo", configuration.CurrentStage);
+        Assert.Equal(Value.Number(900m), configuration.ValueOf("SzerokoscMM"));
+    }
+
     [Fact]
     public void Nothing_is_locked_at_start()
     {
