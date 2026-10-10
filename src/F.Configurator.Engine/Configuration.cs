@@ -62,14 +62,14 @@ public sealed class Configuration
             throw new InvalidOperationException($"Feature '{featureName}' cannot be set in stage '{CurrentStage}'.");
         }
 
-        if (!Accepts(feature, value))
-        {
-            throw new ArgumentException($"Feature '{featureName}' does not accept {value}.");
-        }
-
         if (LockedFeatures.Contains(featureName))
         {
             throw new InvalidOperationException($"Feature '{featureName}' is locked.");
+        }
+
+        if (!Accepts(feature, value))
+        {
+            throw new ArgumentException($"Feature '{featureName}' does not accept {value}.");
         }
 
         var newConfiguration = new Configuration(_catalog, _collection, _values.SetItem(featureName, value));
