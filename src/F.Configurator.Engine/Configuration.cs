@@ -4,7 +4,7 @@ using F.Configurator.Expressions;
 namespace F.Configurator.Engine;
 
 public sealed class Configuration(
-    Catalog.Catalog catalog,
+    ProductCatalog catalog,
     Collection collection,
     EquatableDictionary<string, Value> values)
 {
@@ -22,7 +22,7 @@ public sealed class Configuration(
     public EquatableList<string> VisibleFeatures =>
         [.. collection.Stages.Take(CurrentStageIndex + 1).SelectMany(s => s.Features)];
 
-    public static Configuration Start(Catalog.Catalog catalog, string collectionName)
+    public static Configuration Start(ProductCatalog catalog, string collectionName)
     {
         var collection = catalog.Collections.FirstOrDefault(c => c.Name == collectionName);
         return collection is null

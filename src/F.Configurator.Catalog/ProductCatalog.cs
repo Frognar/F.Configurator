@@ -2,7 +2,7 @@ using F.Configurator.Expressions;
 
 namespace F.Configurator.Catalog;
 
-public sealed record Catalog(
+public sealed record ProductCatalog(
     string Name,
     string? Version,
     Reaction? DefaultReaction,
@@ -15,12 +15,12 @@ public sealed record Catalog(
 
 public sealed class CatalogBuilder
 {
-    private readonly Catalog _catalog;
+    private readonly ProductCatalog _catalog;
 
-    private CatalogBuilder(Catalog catalog) => _catalog = catalog;
+    private CatalogBuilder(ProductCatalog catalog) => _catalog = catalog;
 
     public static CatalogBuilder Create(string name) =>
-        new(new Catalog(name,
+        new(new ProductCatalog(name,
             null,
             null,
             EquatableDictionary<string, Context>.Empty,
@@ -101,7 +101,7 @@ public sealed class CatalogBuilder
     private static ArgumentException Duplicate(string kind, string name) =>
         new($"{kind} with name '{name}' already exists.");
 
-    public Catalog Build() => _catalog;
+    public ProductCatalog Build() => _catalog;
 }
 
 public sealed record Context(string Name, EquatableList<AttributeDeclaration> Attributes);
