@@ -23,15 +23,16 @@ public sealed class Configuration
 
     public string CurrentStage => _collection.Stages[CurrentStageIndex].Name;
 
+    private IEnumerable<Rule> ActiveRules =>
+        _catalog.Rules.Where(r =>
+            (r.Collections.Count == 0 || r.Collections.Contains(_collection.Name)) &&
+            (r.Condition is null || r.Condition.Evaluate(_values) is BooleanValue { IsTrue: true }));
+
+    private IEnumerable<string> HiddenFeatures =>
+        ActiveRules.SelectMany(r => r.Effects.OfType<HideEffect>()).SelectMany(e => e.Features);
+
     public EquatableList<string> VisibleFeatures =>
-    [
-        .. _collection.Stages.Take(CurrentStageIndex + 1).SelectMany(s => s.Features)
-            .Except(_catalog.Rules.Where(r =>
-                    (!r.Collections.Any() || r.Collections.Contains(_collection.Name)) &&
-                    (r.Condition is null ||
-                     r.Condition.Evaluate(_values) is BooleanValue { IsTrue: true }))
-                .SelectMany(r => r.Effects.OfType<HideEffect>().SelectMany(e => e.Features)))
-    ];
+        [.. _collection.Stages.Take(CurrentStageIndex + 1).SelectMany(s => s.Features).Except(HiddenFeatures)];
 
     public static Configuration Start(ProductCatalog catalog, string collectionName)
     {
