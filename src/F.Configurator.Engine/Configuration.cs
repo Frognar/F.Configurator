@@ -36,8 +36,8 @@ public sealed class Configuration
     public EquatableList<string> VisibleFeatures =>
         [.. _collection.Stages.Take(CurrentStageIndex + 1).SelectMany(s => s.Features).Except(HiddenFeatures)];
 
-    public IEnumerable<string> LockedFeatures =>
-        ActiveRules.SelectMany(r => r.Effects.OfType<LockEffect>().SelectMany(e => e.Features));
+    public EquatableList<string> LockedFeatures =>
+        [.. ActiveRules.SelectMany(r => r.Effects.OfType<LockEffect>().SelectMany(e => e.Features))];
 
     public static Configuration Start(ProductCatalog catalog, string collectionName)
     {
