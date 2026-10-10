@@ -27,8 +27,9 @@ public sealed class Configuration
     [
         .. _collection.Stages.Take(CurrentStageIndex + 1).SelectMany(s => s.Features)
             .Except(_catalog.Rules.Where(r =>
-                    r.Condition is null ||
-                    r.Condition.Evaluate(_values.ToDictionary()) is BooleanValue { IsTrue: true })
+                    (!r.Collections.Any() || r.Collections.Contains(_collection.Name)) &&
+                    (r.Condition is null ||
+                     r.Condition.Evaluate(_values) is BooleanValue { IsTrue: true }))
                 .SelectMany(r => r.Effects.OfType<HideEffect>().SelectMany(e => e.Features)))
     ];
 
