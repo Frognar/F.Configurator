@@ -42,4 +42,5 @@ public sealed class EquatableList<T> : IReadOnlyList<T>, IEquatable<EquatableLis
 public static class EquatableList
 {
     public static EquatableList<T> Create<T>(ReadOnlySpan<T> items) => new([.. items]);
+    public static EquatableList<T> Create<T>(IEnumerable<T> items) => new([.. items]);
 }
