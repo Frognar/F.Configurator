@@ -5,9 +5,9 @@ namespace F.Configurator.Catalog.Tests;
 // code that builds the catalog, reported with the name. Rules are left to the validator.
 public class NameUniquenessTests
 {
-    private static readonly Table Wymiary = new(
-        ["Norma"],
-        [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) }.ToEquatableDictionary())]);
+    private static readonly Table Wymiary = TableBuilder.Create(["Norma"], ["SzerokoscMM"])
+        .Row([Value.Option("PL")], [Value.Number(844m)])
+        .Build();
 
     [Fact]
     public void Builder_rejects_a_second_feature_with_the_same_name()

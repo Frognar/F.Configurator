@@ -28,9 +28,9 @@ public class StructuralEqualityTests
             Expression.List(Option("CZ"), Option("SK")));
     }
 
-    private static Table Wymiary() => new(
-        ["Norma"],
-        [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) }.ToEquatableDictionary())]);
+    private static Table Wymiary() => TableBuilder.Create(["Norma"], ["SzerokoscMM"])
+        .Row([Value.Option("PL")], [Value.Number(844m)])
+        .Build();
 
     private static EquatableDictionary<string, Value> GruboscMM() => new Dictionary<string, Value>
     {

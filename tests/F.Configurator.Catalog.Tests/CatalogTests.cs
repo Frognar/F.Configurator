@@ -36,9 +36,9 @@ public class CatalogTests
     [Fact]
     public void Catalog_keeps_a_named_table()
     {
-        var wymiary = new Table(
-            ["Norma"],
-            [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) }.ToEquatableDictionary())]);
+        var wymiary = TableBuilder.Create(["Norma"], ["SzerokoscMM"])
+            .Row([Value.Option("PL")], [Value.Number(844m)])
+            .Build();
 
         var catalog = CatalogBuilder.Create("Drzwi")
             .Table("Wymiary", wymiary)
