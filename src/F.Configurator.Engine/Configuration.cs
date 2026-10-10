@@ -7,27 +7,19 @@ public sealed record Configuration(Catalog.Catalog Catalog, Collection Collectio
 {
     private EquatableDictionary<string, Value> Values { get; init; } = EquatableDictionary<string, Value>.Empty;
 
-    public string CurrentStage =>
-        (Collection.Stages.FirstOrDefault(stage => !stage.Features.All(Values.ContainsKey))
-         ?? Collection.Stages[^1]).Name;
-
-    public EquatableList<string> VisibleFeatures => [.. StagesUpToCurrent.SelectMany(s => s.Features)];
-
-    private IEnumerable<Stage> StagesUpToCurrent
+    private int CurrentStageIndex
     {
         get
         {
-            foreach (var stage in Collection.Stages)
-            {
-                yield return stage;
-
-                if (stage.Name == CurrentStage)
-                {
-                    yield break;
-                }
-            }
+            var i = Collection.Stages.ToList().FindIndex(s => !s.Features.All(Values.ContainsKey));
+            return i < 0 ? Collection.Stages.Count - 1 : i;
         }
     }
+
+    public string CurrentStage => Collection.Stages[CurrentStageIndex].Name;
+
+    public EquatableList<string> VisibleFeatures =>
+        [.. Collection.Stages.Take(CurrentStageIndex + 1).SelectMany(s => s.Features)];
 
     public static Configuration Start(Catalog.Catalog catalog, string collectionName)
     {
