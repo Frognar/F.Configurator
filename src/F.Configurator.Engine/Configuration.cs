@@ -64,7 +64,13 @@ public sealed class Configuration
             throw new ArgumentException($"Feature '{featureName}' does not accept {value}.");
         }
 
-        return new Configuration(_catalog, _collection, _values.SetItem(featureName, value));
+        var newConfiguration = new Configuration(_catalog, _collection, _values.SetItem(featureName, value));
+        return new Configuration(
+            _catalog,
+            _collection,
+            newConfiguration._values
+                .Where(kvp => newConfiguration.VisibleFeatures.Contains(kvp.Key))
+                .ToEquatableDictionary());
     }
 
     private static bool Accepts(Feature feature, Value value) =>
