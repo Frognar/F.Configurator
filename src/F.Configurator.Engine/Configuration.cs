@@ -36,6 +36,8 @@ public sealed class Configuration
     public EquatableList<string> VisibleFeatures =>
         [.. _collection.Stages.Take(CurrentStageIndex + 1).SelectMany(s => s.Features).Except(HiddenFeatures)];
 
+    public EquatableList<string> LockedFeatures => [];
+
     public static Configuration Start(ProductCatalog catalog, string collectionName)
     {
         var collection = catalog.Collections.FirstOrDefault(c => c.Name == collectionName);
