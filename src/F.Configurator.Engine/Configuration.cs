@@ -6,12 +6,40 @@ namespace F.Configurator.Engine;
 public sealed record Configuration(Collection Collection)
 {
     private EquatableDictionary<string, Value> Values { get; init; } = EquatableDictionary<string, Value>.Empty;
-    public string CurrentStage => "Model";
 
-    public EquatableList<string> VisibleFeatures =>
-        Collection
-            .Stages.First(s => s.Name == CurrentStage)
-            .Features;
+    public string CurrentStage
+    {
+        get
+        {
+            foreach (var stage in Collection.Stages)
+            {
+                if (!stage.Features.All(f => Values.ContainsKey(f)))
+                {
+                    return stage.Name;
+                }
+            }
+
+            return Collection.Stages[^1].Name;
+        }
+    }
+
+    public EquatableList<string> VisibleFeatures
+    {
+        get
+        {
+            List<string> visibleFeatures = [];
+            foreach (var stage in Collection.Stages)
+            {
+                visibleFeatures.AddRange(stage.Features);
+                if (stage.Name == CurrentStage)
+                {
+                    break;
+                }
+            }
+
+            return [.. visibleFeatures];
+        }
+    }
 
     public static Configuration Start(Catalog.Catalog catalog, string collectionName)
     {
