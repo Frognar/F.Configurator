@@ -7,37 +7,25 @@ public sealed record Configuration(Collection Collection)
 {
     private EquatableDictionary<string, Value> Values { get; init; } = EquatableDictionary<string, Value>.Empty;
 
-    public string CurrentStage
+    public string CurrentStage =>
+        (Collection.Stages.FirstOrDefault(stage => !stage.Features.All(Values.ContainsKey))
+         ?? Collection.Stages[^1]).Name;
+
+    public EquatableList<string> VisibleFeatures => [.. StagesUpToCurrent.SelectMany(s => s.Features)];
+
+    private IEnumerable<Stage> StagesUpToCurrent
     {
         get
         {
             foreach (var stage in Collection.Stages)
             {
-                if (!stage.Features.All(f => Values.ContainsKey(f)))
-                {
-                    return stage.Name;
-                }
-            }
+                yield return stage;
 
-            return Collection.Stages[^1].Name;
-        }
-    }
-
-    public EquatableList<string> VisibleFeatures
-    {
-        get
-        {
-            List<string> visibleFeatures = [];
-            foreach (var stage in Collection.Stages)
-            {
-                visibleFeatures.AddRange(stage.Features);
                 if (stage.Name == CurrentStage)
                 {
-                    break;
+                    yield break;
                 }
             }
-
-            return [.. visibleFeatures];
         }
     }
 
