@@ -13,7 +13,10 @@ public sealed record Configuration(Catalog.Catalog Catalog, string CollectionNam
 
     public static Configuration Start(Catalog.Catalog catalog, string collectionName)
     {
-        return new Configuration(catalog, collectionName);
+        var collection = catalog.Collections.FirstOrDefault(c => c.Name == collectionName);
+        return collection is null
+            ? throw new ArgumentException($"Collection '{collectionName}' not found in catalog.")
+            : new Configuration(catalog, collection.Name);
     }
 
     public Value ValueOf(string featureName) => Value.Missing;
