@@ -67,6 +67,11 @@ public sealed class Configuration
             throw new ArgumentException($"Feature '{featureName}' does not accept {value}.");
         }
 
+        if (LockedFeatures.Contains(featureName))
+        {
+            throw new InvalidOperationException($"Feature '{featureName}' is locked.");
+        }
+
         var newConfiguration = new Configuration(_catalog, _collection, _values.SetItem(featureName, value));
         return new Configuration(
             _catalog,
