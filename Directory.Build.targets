@@ -5,4 +5,14 @@
     <Using Remove="System.Net.Http" />
   </ItemGroup>
 
+  <!-- Points git at the repository's hooks (.githooks/pre-commit), so a fresh clone gets them on its first build. -->
+  <Target Name="UseRepositoryGitHooks"
+          BeforeTargets="Build"
+          Condition="Exists('$(MSBuildThisFileDirectory).git') And Exists('$(MSBuildThisFileDirectory).githooks')">
+    <Exec Command="git config core.hooksPath .githooks"
+          WorkingDirectory="$(MSBuildThisFileDirectory)"
+          ContinueOnError="true"
+          StandardOutputImportance="low" />
+  </Target>
+
 </Project>

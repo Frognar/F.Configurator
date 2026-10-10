@@ -13,3 +13,61 @@ indent_size = 2
 
 [*.md]
 trim_trailing_whitespace = false
+# C# style: the conventions the code already follows. With EnforceCodeStyleInBuild (Directory.Build.props)
+# and TreatWarningsAsErrors, a `:warning` rule fails the build.
+[*.cs]
+# Layout
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_using_directive_placement = outside_namespace:warning
+dotnet_sort_system_directives_first = true
+csharp_prefer_braces = when_multiline:warning
+dotnet_diagnostic.IDE0005.severity = warning # unused using
+dotnet_diagnostic.IDE0055.severity = warning # formatting
+
+# var and target-typed new
+csharp_style_var_for_built_in_types = true:warning
+csharp_style_var_when_type_is_apparent = true:warning
+csharp_style_var_elsewhere = true:warning
+csharp_style_implicit_object_creation_when_type_is_apparent = true:warning
+
+# Members
+csharp_style_expression_bodied_properties = true:warning
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+dotnet_style_readonly_field = true:warning
+dotnet_style_qualification_for_field = false:warning
+dotnet_style_qualification_for_property = false:warning
+dotnet_style_qualification_for_method = false:warning
+dotnet_style_qualification_for_event = false:warning
+dotnet_style_predefined_type_for_locals_parameters_members = true:warning
+dotnet_style_predefined_type_for_member_access = true:warning
+
+# Pattern matching
+csharp_style_pattern_matching_over_is_with_cast_check = true:warning
+csharp_style_pattern_matching_over_as_with_null_check = true:warning
+csharp_style_prefer_switch_expression = true:warning
+
+# Collection expressions stay a suggestion: `[]` inside EquatableList itself would call its own builder.
+dotnet_style_prefer_collection_expression = when_types_loosely_match:suggestion
+
+# Naming: constants and private static readonly fields PascalCase, other private fields _camelCase.
+dotnet_naming_rule.constants_pascal.symbols = constants
+dotnet_naming_rule.constants_pascal.style = pascal_case
+dotnet_naming_rule.constants_pascal.severity = warning
+dotnet_naming_symbols.constants.applicable_kinds = field, local
+dotnet_naming_symbols.constants.required_modifiers = const
+
+dotnet_naming_rule.private_static_readonly_fields_pascal.symbols = private_static_readonly_fields
+dotnet_naming_rule.private_static_readonly_fields_pascal.style = pascal_case
+dotnet_naming_rule.private_static_readonly_fields_pascal.severity = warning
+dotnet_naming_symbols.private_static_readonly_fields.applicable_kinds = field
+dotnet_naming_symbols.private_static_readonly_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_static_readonly_fields.required_modifiers = static, readonly
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+
+dotnet_naming_rule.private_fields_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_underscore.style = underscore_camel_case
+dotnet_naming_rule.private_fields_underscore.severity = warning
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.underscore_camel_case.capitalization = camel_case
+dotnet_naming_style.underscore_camel_case.required_prefix = _

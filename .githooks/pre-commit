@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Blocks a commit whose staged C# files are not formatted. Checks whitespace only (about 2 s, no build);
+# the full code style is checked by `dotnet build` and CI. Nothing is changed for you: run the command below.
+set -euo pipefail
+
+files=()
+while IFS= read -r -d '' file; do
+    files+=("$file")
+done < <(git diff --cached --name-only --diff-filter=ACMR -z -- '*.cs')
+
+if [ ${#files[@]} -eq 0 ]; then
+    exit 0
+fi
+
+if ! dotnet format whitespace --folder --verify-no-changes --include "${files[@]}"; then
+    echo
+    echo "Formatting is off in the files above. Run:"
+    echo "    dotnet format F.Configurator.slnx"
+    echo "then stage the changes and commit again."
+    exit 1
+fi
