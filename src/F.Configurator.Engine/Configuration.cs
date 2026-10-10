@@ -77,7 +77,7 @@ public sealed class Configuration
             _catalog,
             _collection,
             newConfiguration._values
-                .Where(kvp => newConfiguration.VisibleFeatures.Contains(kvp.Key))
+                .Where(kvp => !newConfiguration.HiddenFeatures.Contains(kvp.Key))
                 .ToEquatableDictionary());
     }
 
