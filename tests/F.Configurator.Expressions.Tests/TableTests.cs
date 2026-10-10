@@ -11,7 +11,7 @@ public class TableTests
         var table = new Table(
             ["Norma"],
             [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) }.ToEquatableDictionary())]);
-        var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "SzerokoscMM");
+        var expression = TableLookup(table, [Reference("Norma")], "SzerokoscMM");
         var values = new Dictionary<string, Value> { ["Norma"] = Value.Option("PL") };
 
         var value = expression.Evaluate(values);
@@ -26,7 +26,7 @@ public class TableTests
         var table = new Table(
             ["Norma"],
             [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) }.ToEquatableDictionary())]);
-        var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "SzerokoscMM");
+        var expression = TableLookup(table, [Reference("Norma")], "SzerokoscMM");
         var values = new Dictionary<string, Value> { ["Norma"] = Value.Option("DE") };
 
         var value = expression.Evaluate(values);
@@ -41,7 +41,7 @@ public class TableTests
         var table = new Table(
             ["Norma"],
             [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) }.ToEquatableDictionary())]);
-        var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "WysokoscMM");
+        var expression = TableLookup(table, [Reference("Norma")], "WysokoscMM");
         var values = new Dictionary<string, Value> { ["Norma"] = Value.Option("PL") };
 
         var value = expression.Evaluate(values);
@@ -58,7 +58,7 @@ public class TableTests
         var table = new Table(
             ["Norma"],
             [new TableRow([[Value.Option("CZ"), Value.Option("SK")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(830m) }.ToEquatableDictionary())]);
-        var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "SzerokoscMM");
+        var expression = TableLookup(table, [Reference("Norma")], "SzerokoscMM");
         var values = new Dictionary<string, Value> { ["Norma"] = Value.Option(norma) };
 
         var value = expression.Evaluate(values);
@@ -73,9 +73,9 @@ public class TableTests
         var table = new Table(
             ["Norma", "Szerokosc"],
             [new TableRow([[Value.Option("PL")], []], new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(2030m) }.ToEquatableDictionary())]);
-        var expression = Expression.TableLookup(
+        var expression = TableLookup(
             table,
-            [Expression.Reference("Norma"), Expression.Reference("Szerokosc")],
+            [Reference("Norma"), Reference("Szerokosc")],
             "WysokoscMM");
         var values = new Dictionary<string, Value> { ["Norma"] = Value.Option("PL"), ["Szerokosc"] = Value.Number(90m) };
 
@@ -91,9 +91,9 @@ public class TableTests
         var table = new Table(
             ["Norma", "Szerokosc"],
             [new TableRow([[Value.Option("PL")], []], new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(2030m) }.ToEquatableDictionary())]);
-        var expression = Expression.TableLookup(
+        var expression = TableLookup(
             table,
-            [Expression.Reference("Norma"), Expression.Reference("Szerokosc")],
+            [Reference("Norma"), Reference("Szerokosc")],
             "WysokoscMM");
         var values = new Dictionary<string, Value> { ["Norma"] = Value.Option("PL") };
 
@@ -109,7 +109,7 @@ public class TableTests
         var table = new Table(
             ["Norma", "Szerokosc"],
             [new TableRow([[Value.Option("PL")], [Value.Number(90m)]], new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(2030m) }.ToEquatableDictionary())]);
-        var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "WysokoscMM");
+        var expression = TableLookup(table, [Reference("Norma")], "WysokoscMM");
         var values = new Dictionary<string, Value> { ["Norma"] = Value.Option("PL") };
 
         var value = expression.Evaluate(values);
@@ -123,9 +123,9 @@ public class TableTests
         var table = new Table(
             ["Norma"],
             [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) }.ToEquatableDictionary())]);
-        var expression = Expression.TableLookup(
+        var expression = TableLookup(
             table,
-            [Expression.Reference("Norma"), Expression.Reference("Szerokosc")],
+            [Reference("Norma"), Reference("Szerokosc")],
             "SzerokoscMM");
         var values = new Dictionary<string, Value> { ["Norma"] = Value.Option("PL"), ["Szerokosc"] = Value.Number(90m) };
 

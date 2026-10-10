@@ -5,7 +5,7 @@ public class ComparisonTests
     [Fact]
     public void Equal_numbers_compare_as_equal()
     {
-        var expression = Expression.Equal(Expression.Reference("SzerokoscMM"), Expression.Number(900m));
+        var expression = Equal(Reference("SzerokoscMM"), Number(900m));
         var values = new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(900m) };
 
         var value = expression.Evaluate(values);
@@ -17,9 +17,9 @@ public class ComparisonTests
     [Fact]
     public void Missing_values_do_not_compare_as_equal()
     {
-        var expression = Expression.Equal(Expression.Reference("SzerokoscMM"), Expression.Reference("WysokoscMM"));
+        var expression = Equal(Reference("SzerokoscMM"), Reference("WysokoscMM"));
 
-        var value = expression.Evaluate(new Dictionary<string, Value>());
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Boolean(false), value);
     }
@@ -28,9 +28,9 @@ public class ComparisonTests
     [Fact]
     public void Missing_value_is_not_equal_to_a_number()
     {
-        var expression = Expression.NotEqual(Expression.Reference("SzerokoscMM"), Expression.Number(900m));
+        var expression = NotEqual(Reference("SzerokoscMM"), Number(900m));
 
-        var value = expression.Evaluate(new Dictionary<string, Value>());
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Boolean(true), value);
     }
@@ -38,7 +38,7 @@ public class ComparisonTests
     [Fact]
     public void Equal_numbers_are_not_unequal()
     {
-        var expression = Expression.NotEqual(Expression.Reference("SzerokoscMM"), Expression.Number(900m));
+        var expression = NotEqual(Reference("SzerokoscMM"), Number(900m));
         var values = new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(900m) };
 
         var value = expression.Evaluate(values);
@@ -49,7 +49,7 @@ public class ComparisonTests
     [Fact]
     public void Smaller_number_is_less_than_larger_number()
     {
-        var expression = Expression.LessThan(Expression.Reference("SzerokoscMM"), Expression.Number(900m));
+        var expression = LessThan(Reference("SzerokoscMM"), Number(900m));
         var values = new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(800m) };
 
         var value = expression.Evaluate(values);
@@ -61,10 +61,9 @@ public class ComparisonTests
     [Fact]
     public void Missing_value_is_not_less_than_a_number()
     {
-        var expression = Expression.LessThan(Expression.Reference("SzerokoscMM"), Expression.Number(900m));
-        var values = new Dictionary<string, Value>();
+        var expression = LessThan(Reference("SzerokoscMM"), Number(900m));
 
-        var value = expression.Evaluate(values);
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Boolean(false), value);
     }
@@ -72,7 +71,7 @@ public class ComparisonTests
     [Fact]
     public void Equal_number_is_less_than_or_equal()
     {
-        var expression = Expression.LessThanOrEqual(Expression.Reference("SzerokoscMM"), Expression.Number(900m));
+        var expression = LessThanOrEqual(Reference("SzerokoscMM"), Number(900m));
         var values = new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(900m) };
 
         var value = expression.Evaluate(values);
@@ -83,7 +82,7 @@ public class ComparisonTests
     [Fact]
     public void Larger_number_is_greater_than_smaller_number()
     {
-        var expression = Expression.GreaterThan(Expression.Reference("WysokoscMM"), Expression.Number(2000m));
+        var expression = GreaterThan(Reference("WysokoscMM"), Number(2000m));
         var values = new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(2100m) };
 
         var value = expression.Evaluate(values);
@@ -94,7 +93,7 @@ public class ComparisonTests
     [Fact]
     public void Equal_number_is_greater_than_or_equal()
     {
-        var expression = Expression.GreaterThanOrEqual(Expression.Reference("WysokoscMM"), Expression.Number(2000m));
+        var expression = GreaterThanOrEqual(Reference("WysokoscMM"), Number(2000m));
         var values = new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(2000m) };
 
         var value = expression.Evaluate(values);
@@ -106,7 +105,7 @@ public class ComparisonTests
     [Fact]
     public void Equal_options_compare_as_equal()
     {
-        var expression = Expression.Equal(Expression.Reference("Kraj"), Expression.Option("PL"));
+        var expression = Equal(Reference("Kraj"), Option("PL"));
         var values = new Dictionary<string, Value> { ["Kraj"] = Value.Option("PL") };
 
         var value = expression.Evaluate(values);
@@ -118,9 +117,9 @@ public class ComparisonTests
     [Fact]
     public void Option_is_not_equal_to_text_with_the_same_spelling()
     {
-        var expression = Expression.Equal(Expression.Option("PL"), Expression.Text("PL"));
+        var expression = Equal(Option("PL"), Text("PL"));
 
-        var value = expression.Evaluate(new Dictionary<string, Value>());
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Boolean(false), value);
     }
@@ -129,11 +128,11 @@ public class ComparisonTests
     [Fact]
     public void Lists_with_the_same_items_are_equal()
     {
-        var expression = Expression.Equal(
-            Expression.List(Expression.Option("CZ"), Expression.Option("SK")),
-            Expression.List(Expression.Option("CZ"), Expression.Option("SK")));
+        var expression = Equal(
+            Expression.List(Option("CZ"), Option("SK")),
+            Expression.List(Option("CZ"), Option("SK")));
 
-        var value = expression.Evaluate(new Dictionary<string, Value>());
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Boolean(true), value);
     }

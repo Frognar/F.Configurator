@@ -1,5 +1,3 @@
-using F.Configurator.Expressions;
-
 namespace F.Configurator.Catalog.Tests;
 
 // Grammar 4.7: a rule is a name, an optional condition (`gdy`), one or more effects (`wtedy`),
@@ -10,7 +8,7 @@ public class RuleTests
     [Fact]
     public void Builder_creates_a_rule_with_its_condition()
     {
-        var condition = Expression.Equal(Expression.Reference("ZamekDolny"), Expression.Option("BRAK"));
+        var condition = Equal(Reference("ZamekDolny"), Option("BRAK"));
 
         var rule = RuleBuilder.Create("ZamekBrak").When(condition).Hide("ZmianaPolozeniaZamka").Build();
 
@@ -39,7 +37,7 @@ public class RuleTests
     [Fact]
     public void Rule_keeps_its_priority()
     {
-        var rule = RuleBuilder.Create("MaxSzerY").Priority(10).Max("SzerokoscMM", Expression.Number(1100m)).Build();
+        var rule = RuleBuilder.Create("MaxSzerY").Priority(10).Max("SzerokoscMM", Number(1100m)).Build();
 
         Assert.Equal(10, rule.Priority);
     }
@@ -50,7 +48,7 @@ public class RuleTests
     {
         var rule = RuleBuilder.Create("MaxSzerBasic")
             .AppliesTo("Brilliant", "Basic")
-            .Max("SzerokoscMM", Expression.Number(1044m))
+            .Max("SzerokoscMM", Number(1044m))
             .Build();
 
         Assert.Equal(["Brilliant", "Basic"], rule.Collections);
@@ -91,19 +89,19 @@ public class RuleTests
     [Fact]
     public void Rule_keeps_number_bounds_as_expressions()
     {
-        var maks = Expression.Divide(Expression.Reference("WysokoscMM"), Expression.Number(10m));
+        var maks = Divide(Reference("WysokoscMM"), Number(10m));
 
         var rule = RuleBuilder.Create("Zamek")
-            .Min("ZmianaPolozeniaZamka", Expression.Number(0m))
+            .Min("ZmianaPolozeniaZamka", Number(0m))
             .Max("ZmianaPolozeniaZamka", maks)
-            .Step("ZmianaPolozeniaZamka", Expression.Number(5m))
+            .Step("ZmianaPolozeniaZamka", Number(5m))
             .Build();
 
         Assert.Equal(
             [
-                new MinEffect("ZmianaPolozeniaZamka", Expression.Number(0m)),
+                new MinEffect("ZmianaPolozeniaZamka", Number(0m)),
                 new MaxEffect("ZmianaPolozeniaZamka", maks),
-                new StepEffect("ZmianaPolozeniaZamka", Expression.Number(5m)),
+                new StepEffect("ZmianaPolozeniaZamka", Number(5m)),
             ],
             rule.Effects);
     }
@@ -113,14 +111,14 @@ public class RuleTests
     public void Rule_keeps_default_and_forced_values()
     {
         var rule = RuleBuilder.Create("WysDomyslnaY")
-            .Default("WysokoscMM", Expression.Number(2050m))
-            .Set("Podciecie", Expression.Option("TAK"))
+            .Default("WysokoscMM", Number(2050m))
+            .Set("Podciecie", Option("TAK"))
             .Build();
 
         Assert.Equal(
             [
-                new DefaultEffect("WysokoscMM", Expression.Number(2050m)),
-                new SetEffect("Podciecie", Expression.Option("TAK")),
+                new DefaultEffect("WysokoscMM", Number(2050m)),
+                new SetEffect("Podciecie", Option("TAK")),
             ],
             rule.Effects);
     }
@@ -149,7 +147,7 @@ public class RuleTests
     public void Rule_keeps_its_reaction_to_a_violation()
     {
         var rule = RuleBuilder.Create("MaxSzerBasic")
-            .Max("SzerokoscMM", Expression.Number(1044m))
+            .Max("SzerokoscMM", Number(1044m))
             .OnViolation(Reaction.Correct, "Maksymalna szerokość to {maks} mm. Zmieniono wartość.")
             .Build();
 
@@ -160,7 +158,7 @@ public class RuleTests
     [Fact]
     public void Rule_without_a_reaction_has_none()
     {
-        var rule = RuleBuilder.Create("BezReakcji").Max("WysokoscMM", Expression.Number(2100m)).Build();
+        var rule = RuleBuilder.Create("BezReakcji").Max("WysokoscMM", Number(2100m)).Build();
 
         Assert.Null(rule.Violation);
     }
@@ -173,7 +171,7 @@ public class RuleTests
     public void Rule_keeps_every_kind_of_reaction(Reaction reaction)
     {
         var rule = RuleBuilder.Create("MaxSzer")
-            .Max("SzerokoscMM", Expression.Number(1044m))
+            .Max("SzerokoscMM", Number(1044m))
             .OnViolation(reaction, "Za szeroko.")
             .Build();
 
@@ -212,7 +210,7 @@ public class RuleTests
     {
         var catalog = CatalogBuilder.Create("Drzwi")
             .Rule("ZamekBrak", rule => rule.Hide("ZmianaPolozeniaZamka"))
-            .Rule("MaxSzer", rule => rule.Max("SzerokoscMM", Expression.Number(1044m)))
+            .Rule("MaxSzer", rule => rule.Max("SzerokoscMM", Number(1044m)))
             .Build();
 
         Assert.Equal(["ZamekBrak", "MaxSzer"], catalog.Rules.Select(rule => rule.Name));

@@ -5,9 +5,9 @@ public class ArithmeticTests
     [Fact]
     public void Addition_of_two_numbers_evaluates_to_their_sum()
     {
-        var expression = Expression.Add(Expression.Number(2m), Expression.Number(3m));
+        var expression = Add(Number(2m), Number(3m));
 
-        var value = expression.Evaluate(new Dictionary<string, Value>());
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Number(5m), value);
     }
@@ -15,7 +15,7 @@ public class ArithmeticTests
     [Fact]
     public void Addition_evaluates_references_in_its_operands()
     {
-        var expression = Expression.Add(Expression.Reference("SzerokoscMM"), Expression.Number(4m));
+        var expression = Add(Reference("SzerokoscMM"), Number(4m));
         var values = new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(900m) };
 
         var value = expression.Evaluate(values);
@@ -31,9 +31,9 @@ public class ArithmeticTests
     [InlineData(1044)]
     public void Addition_with_missing_operand_evaluates_to_missing(decimal amount)
     {
-        var expression = Expression.Add(Expression.Reference("SzerokoscMM"), Expression.Number(amount));
+        var expression = Add(Reference("SzerokoscMM"), Number(amount));
 
-        var value = expression.Evaluate(new Dictionary<string, Value>());
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Missing, value);
     }
@@ -41,7 +41,7 @@ public class ArithmeticTests
     [Fact]
     public void Subtraction_evaluates_to_the_difference()
     {
-        var expression = Expression.Subtract(Expression.Reference("SzerokoscMM"), Expression.Number(4m));
+        var expression = Subtract(Reference("SzerokoscMM"), Number(4m));
         var values = new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(900m) };
 
         var value = expression.Evaluate(values);
@@ -52,7 +52,7 @@ public class ArithmeticTests
     [Fact]
     public void Multiplication_evaluates_to_the_product()
     {
-        var expression = Expression.Multiply(Expression.Reference("SzerokoscMM"), Expression.Reference("WysokoscMM"));
+        var expression = Multiply(Reference("SzerokoscMM"), Reference("WysokoscMM"));
         var values = new Dictionary<string, Value>
         {
             ["SzerokoscMM"] = Value.Number(900m),
@@ -67,7 +67,7 @@ public class ArithmeticTests
     [Fact]
     public void Division_evaluates_to_the_quotient()
     {
-        var expression = Expression.Divide(Expression.Reference("PowierzchniaMM2"), Expression.Number(1000000m));
+        var expression = Divide(Reference("PowierzchniaMM2"), Number(1000000m));
         var values = new Dictionary<string, Value> { ["PowierzchniaMM2"] = Value.Number(1845000m) };
 
         var value = expression.Evaluate(values);
@@ -79,7 +79,7 @@ public class ArithmeticTests
     [Fact]
     public void Division_by_zero_evaluates_to_missing()
     {
-        var expression = Expression.Divide(Expression.Number(1845m), Expression.Reference("Dzielnik"));
+        var expression = Divide(Number(1845m), Reference("Dzielnik"));
         var values = new Dictionary<string, Value> { ["Dzielnik"] = Value.Number(0m) };
 
         var value = expression.Evaluate(values);
@@ -91,7 +91,7 @@ public class ArithmeticTests
     [Fact]
     public void Negation_evaluates_to_the_opposite_number()
     {
-        var expression = Expression.Negate(Expression.Reference("Odchylka"));
+        var expression = Negate(Reference("Odchylka"));
         var values = new Dictionary<string, Value> { ["Odchylka"] = Value.Number(3m) };
 
         var value = expression.Evaluate(values);
@@ -103,7 +103,7 @@ public class ArithmeticTests
     [Fact]
     public void Negation_of_a_non_number_evaluates_to_missing()
     {
-        var expression = Expression.Negate(Expression.Reference("MaRamiak"));
+        var expression = Negate(Reference("MaRamiak"));
         var values = new Dictionary<string, Value> { ["MaRamiak"] = Value.Boolean(true) };
 
         var value = expression.Evaluate(values);
@@ -116,9 +116,9 @@ public class ArithmeticTests
     [Fact]
     public void Addition_beyond_the_decimal_range_evaluates_to_missing()
     {
-        var expression = Expression.Add(Expression.Number(decimal.MaxValue), Expression.Number(decimal.MaxValue));
+        var expression = Add(Number(decimal.MaxValue), Number(decimal.MaxValue));
 
-        var value = expression.Evaluate(new Dictionary<string, Value>());
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Missing, value);
     }
@@ -126,9 +126,9 @@ public class ArithmeticTests
     [Fact]
     public void Subtraction_beyond_the_decimal_range_evaluates_to_missing()
     {
-        var expression = Expression.Subtract(Expression.Number(decimal.MinValue), Expression.Number(decimal.MaxValue));
+        var expression = Subtract(Number(decimal.MinValue), Number(decimal.MaxValue));
 
-        var value = expression.Evaluate(new Dictionary<string, Value>());
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Missing, value);
     }
@@ -136,9 +136,9 @@ public class ArithmeticTests
     [Fact]
     public void Multiplication_beyond_the_decimal_range_evaluates_to_missing()
     {
-        var expression = Expression.Multiply(Expression.Number(decimal.MaxValue), Expression.Number(10m));
+        var expression = Multiply(Number(decimal.MaxValue), Number(10m));
 
-        var value = expression.Evaluate(new Dictionary<string, Value>());
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Missing, value);
     }
@@ -146,9 +146,9 @@ public class ArithmeticTests
     [Fact]
     public void Division_beyond_the_decimal_range_evaluates_to_missing()
     {
-        var expression = Expression.Divide(Expression.Number(decimal.MaxValue), Expression.Number(0.1m));
+        var expression = Divide(Number(decimal.MaxValue), Number(0.1m));
 
-        var value = expression.Evaluate(new Dictionary<string, Value>());
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Missing, value);
     }

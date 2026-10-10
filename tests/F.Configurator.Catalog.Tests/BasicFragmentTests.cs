@@ -1,6 +1,3 @@
-using F.Configurator.Expressions;
-using static F.Configurator.Expressions.Expression;
-
 namespace F.Configurator.Catalog.Tests;
 
 // E3 completion criterion (plan, E3): the Basic fragment from analysis 2.4 written with the builder.

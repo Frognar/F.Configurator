@@ -1,5 +1,3 @@
-using F.Configurator.Expressions;
-
 namespace F.Configurator.Catalog.Tests;
 
 // Grammar 4.5: a collection groups catalog features into stages; the order of stages and of
@@ -52,7 +50,7 @@ public class CollectionTests
     [Fact]
     public void Collection_keeps_its_index_pattern()
     {
-        var pattern = Expression.Add(Expression.Reference("Model"), Expression.Reference("Typ"));
+        var pattern = Add(Reference("Model"), Reference("Typ"));
 
         var basic = CollectionBuilder.Create("Basic").Stage("Model", "Model", "Typ").Index(pattern).Build();
 

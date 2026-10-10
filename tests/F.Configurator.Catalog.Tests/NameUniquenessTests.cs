@@ -1,5 +1,3 @@
-using F.Configurator.Expressions;
-
 namespace F.Configurator.Catalog.Tests;
 
 // The builder does not validate catalogs (that is the validator's job), but names other elements refer

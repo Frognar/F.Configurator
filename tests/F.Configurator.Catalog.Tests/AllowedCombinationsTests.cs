@@ -1,5 +1,3 @@
-using F.Configurator.Expressions;
-
 namespace F.Configurator.Catalog.Tests;
 
 // Grammar G18 (analysis/basic/NOTATKA.md, 5): `tabela T klucz A, B dozwolone C` lists allowed options

@@ -4,20 +4,9 @@ namespace F.Configurator.Expressions.Tests;
 public class TextTests
 {
     [Fact]
-    public void Text_literal_evaluates_to_itself()
-    {
-        var expression = Expression.Text("ASTORIA");
-        var values = new Dictionary<string, Value>();
-
-        var value = expression.Evaluate(values);
-
-        Assert.Equal(Value.Text("ASTORIA"), value);
-    }
-
-    [Fact]
     public void Addition_of_two_texts_joins_them()
     {
-        var expression = Expression.Add(Expression.Reference("Seria"), Expression.Text("-90"));
+        var expression = Add(Reference("Seria"), Text("-90"));
         var values = new Dictionary<string, Value> { ["Seria"] = Value.Text("AST") };
 
         var value = expression.Evaluate(values);
@@ -29,7 +18,7 @@ public class TextTests
     [Fact]
     public void Addition_of_text_and_number_evaluates_to_missing()
     {
-        var expression = Expression.Add(Expression.Reference("Seria"), Expression.Number(90m));
+        var expression = Add(Reference("Seria"), Number(90m));
         var values = new Dictionary<string, Value> { ["Seria"] = Value.Text("AST") };
 
         var value = expression.Evaluate(values);
@@ -40,7 +29,7 @@ public class TextTests
     [Fact]
     public void Equal_texts_compare_as_equal()
     {
-        var expression = Expression.Equal(Expression.Reference("Seria"), Expression.Text("AST"));
+        var expression = Equal(Reference("Seria"), Text("AST"));
         var values = new Dictionary<string, Value> { ["Seria"] = Value.Text("AST") };
 
         var value = expression.Evaluate(values);

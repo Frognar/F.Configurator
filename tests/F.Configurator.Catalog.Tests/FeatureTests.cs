@@ -1,5 +1,3 @@
-using F.Configurator.Expressions;
-
 namespace F.Configurator.Catalog.Tests;
 
 // Grammar 4.2: a catalog declares features; a choice feature lists its options.
@@ -118,7 +116,7 @@ public class FeatureTests
     [Fact]
     public void Catalog_creates_a_computed_feature_with_its_expression()
     {
-        var formula = Expression.Add(Expression.Reference("SzerokoscMM"), Expression.Number(60m));
+        var formula = Add(Reference("SzerokoscMM"), Number(60m));
 
         var catalog = CatalogBuilder.Create("Drzwi").Computed("SzerokoscOscieznicyMM", formula).Build();
 

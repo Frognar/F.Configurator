@@ -6,9 +6,9 @@ public class LogicalTests
     [Fact]
     public void And_of_two_true_conditions_is_true()
     {
-        var expression = Expression.And(
-            Expression.GreaterThan(Expression.Reference("SzerokoscMM"), Expression.Number(800m)),
-            Expression.LessThan(Expression.Reference("WysokoscMM"), Expression.Number(2100m)));
+        var expression = And(
+            GreaterThan(Reference("SzerokoscMM"), Number(800m)),
+            LessThan(Reference("WysokoscMM"), Number(2100m)));
         var values = new Dictionary<string, Value>
         {
             ["SzerokoscMM"] = Value.Number(900m),
@@ -26,7 +26,7 @@ public class LogicalTests
     [InlineData(false, false)]
     public void And_with_a_false_condition_is_false(bool left, bool right)
     {
-        var expression = Expression.And(Expression.Reference("A"), Expression.Reference("B"));
+        var expression = And(Reference("A"), Reference("B"));
         var values = new Dictionary<string, Value> { ["A"] = Value.Boolean(left), ["B"] = Value.Boolean(right) };
 
         var value = expression.Evaluate(values);
@@ -38,7 +38,7 @@ public class LogicalTests
     [Fact]
     public void And_with_a_missing_condition_is_false()
     {
-        var expression = Expression.And(Expression.Reference("A"), Expression.Reference("B"));
+        var expression = And(Reference("A"), Reference("B"));
         var values = new Dictionary<string, Value> { ["B"] = Value.Boolean(true) };
 
         var value = expression.Evaluate(values);
@@ -49,7 +49,7 @@ public class LogicalTests
     [Fact]
     public void Or_with_one_true_condition_is_true()
     {
-        var expression = Expression.Or(Expression.Reference("A"), Expression.Reference("B"));
+        var expression = Or(Reference("A"), Reference("B"));
         var values = new Dictionary<string, Value> { ["A"] = Value.Boolean(false), ["B"] = Value.Boolean(true) };
 
         var value = expression.Evaluate(values);
@@ -61,7 +61,7 @@ public class LogicalTests
     [Fact]
     public void Or_without_a_true_condition_is_false()
     {
-        var expression = Expression.Or(Expression.Reference("A"), Expression.Reference("B"));
+        var expression = Or(Reference("A"), Reference("B"));
         var values = new Dictionary<string, Value> { ["B"] = Value.Boolean(false) };
 
         var value = expression.Evaluate(values);
@@ -72,7 +72,7 @@ public class LogicalTests
     [Fact]
     public void Not_negates_a_condition()
     {
-        var expression = Expression.Not(Expression.Reference("A"));
+        var expression = Not(Reference("A"));
         var values = new Dictionary<string, Value> { ["A"] = Value.Boolean(true) };
 
         var value = expression.Evaluate(values);
@@ -84,10 +84,9 @@ public class LogicalTests
     [Fact]
     public void Not_of_a_missing_condition_is_true()
     {
-        var expression = Expression.Not(Expression.Reference("A"));
-        var values = new Dictionary<string, Value>();
+        var expression = Not(Reference("A"));
 
-        var value = expression.Evaluate(values);
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Boolean(true), value);
     }
@@ -98,9 +97,9 @@ public class LogicalTests
     [Fact]
     public void Not_of_a_number_is_true()
     {
-        var expression = Expression.Not(Expression.Number(5m));
+        var expression = Not(Number(5m));
 
-        var value = expression.Evaluate(new Dictionary<string, Value>());
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Boolean(true), value);
     }
@@ -108,9 +107,9 @@ public class LogicalTests
     [Fact]
     public void Not_of_a_text_is_true()
     {
-        var expression = Expression.Not(Expression.Text("krowa"));
+        var expression = Not(Text("krowa"));
 
-        var value = expression.Evaluate(new Dictionary<string, Value>());
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Boolean(true), value);
     }

@@ -7,31 +7,25 @@ public class StructuralEqualityTests
     [Fact]
     public void Min_nodes_built_the_same_way_are_equal()
     {
-        var first = Expression.Min(Expression.Reference("SzerokoscMM"), Expression.Number(900m));
-        var second = Expression.Min(Expression.Reference("SzerokoscMM"), Expression.Number(900m));
-
-        Assert.Equal(first, second);
-        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+        StructuralAssert.Equal(
+            Min(Reference("SzerokoscMM"), Number(900m)),
+            Min(Reference("SzerokoscMM"), Number(900m)));
     }
 
     [Fact]
     public void Max_nodes_built_the_same_way_are_equal()
     {
-        var first = Expression.Max(Expression.Reference("SzerokoscMM"), Expression.Number(900m));
-        var second = Expression.Max(Expression.Reference("SzerokoscMM"), Expression.Number(900m));
-
-        Assert.Equal(first, second);
-        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+        StructuralAssert.Equal(
+            Max(Reference("SzerokoscMM"), Number(900m)),
+            Max(Reference("SzerokoscMM"), Number(900m)));
     }
 
     [Fact]
     public void List_nodes_built_the_same_way_are_equal()
     {
-        var first = Expression.List(Expression.Option("CZ"), Expression.Option("SK"));
-        var second = Expression.List(Expression.Option("CZ"), Expression.Option("SK"));
-
-        Assert.Equal(first, second);
-        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+        StructuralAssert.Equal(
+            Expression.List(Option("CZ"), Option("SK")),
+            Expression.List(Option("CZ"), Option("SK")));
     }
 
     private static Table Wymiary() => new(
@@ -47,45 +41,36 @@ public class StructuralEqualityTests
     [Fact]
     public void Tables_built_the_same_way_are_equal()
     {
-        var first = Wymiary();
-        var second = Wymiary();
-
-        Assert.Equal(first, second);
-        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+        StructuralAssert.Equal(Wymiary(), Wymiary());
     }
 
     [Fact]
     public void Table_lookups_built_the_same_way_are_equal()
     {
-        var first = Expression.TableLookup(Wymiary(), [Expression.Reference("Norma")], "SzerokoscMM");
-        var second = Expression.TableLookup(Wymiary(), [Expression.Reference("Norma")], "SzerokoscMM");
-
-        Assert.Equal(first, second);
-        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+        StructuralAssert.Equal(
+            TableLookup(Wymiary(), [Reference("Norma")], "SzerokoscMM"),
+            TableLookup(Wymiary(), [Reference("Norma")], "SzerokoscMM"));
     }
 
     [Fact]
     public void Option_attributes_built_the_same_way_are_equal()
     {
-        var first = Expression.OptionAttribute(Expression.Reference("Model"), GruboscMM());
-        var second = Expression.OptionAttribute(Expression.Reference("Model"), GruboscMM());
-
-        Assert.Equal(first, second);
-        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+        StructuralAssert.Equal(
+            OptionAttribute(Reference("Model"), GruboscMM()),
+            OptionAttribute(Reference("Model"), GruboscMM()));
     }
 
     // Dictionaries compare by content, not by insertion order.
     [Fact]
     public void Option_attributes_with_values_added_in_a_different_order_are_equal()
     {
-        var first = Expression.OptionAttribute(
-            Expression.Reference("Model"),
+        var first = OptionAttribute(
+            Reference("Model"),
             new Dictionary<string, Value> { ["PORTA"] = Value.Number(40m), ["VERTE"] = Value.Number(44m) }.ToEquatableDictionary());
-        var second = Expression.OptionAttribute(
-            Expression.Reference("Model"),
+        var second = OptionAttribute(
+            Reference("Model"),
             new Dictionary<string, Value> { ["VERTE"] = Value.Number(44m), ["PORTA"] = Value.Number(40m) }.ToEquatableDictionary());
 
-        Assert.Equal(first, second);
-        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+        StructuralAssert.Equal(first, second);
     }
 }

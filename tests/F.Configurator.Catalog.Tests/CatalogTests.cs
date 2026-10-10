@@ -1,5 +1,3 @@
-using F.Configurator.Expressions;
-
 namespace F.Configurator.Catalog.Tests;
 
 // Grammar 4.1: `katalog "…"`, `wersja "2026.10.1"`, `reakcja błąd` (the reaction of rules without
