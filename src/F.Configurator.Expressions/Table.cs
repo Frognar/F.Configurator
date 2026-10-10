@@ -24,14 +24,38 @@ public sealed record TableRow(EquatableList<EquatableList<Value>> Keys, Equatabl
 public sealed class TableBuilder
 {
     private readonly Table _table;
+    private readonly EquatableList<string> _valueColumns;
 
-    private TableBuilder(Table table) => _table = table;
+    private TableBuilder(Table table, EquatableList<string> valueColumns) =>
+        (_table, _valueColumns) = (table, valueColumns);
 
-    public static TableBuilder Create(IEnumerable<string> x, IEnumerable<string> y) => new(new Table([], []));
+    public static TableBuilder Create(IEnumerable<string> keyColumns, IEnumerable<string> valueColumns) =>
+        new(new Table([.. keyColumns], []), [.. valueColumns]);
 
-    public TableBuilder Row(IEnumerable<Value> x, IEnumerable<Value> y) => new(_table);
+    public TableBuilder Row(IEnumerable<Value> keyCells, IEnumerable<Value> valueCells) =>
+        Row(keyCells.Select(k => (IEnumerable<Value>)[k]), valueCells);
 
-    public TableBuilder Row(IEnumerable<IEnumerable<Value>> x, IEnumerable<Value> y) => new(_table);
+    public TableBuilder Row(IEnumerable<IEnumerable<Value>> keyCells, IEnumerable<Value> valueCells)
+    {
+        var keys = EquatableList.Create(keyCells.Select(EquatableList.Create));
+        var values = EquatableList.Create(valueCells);
+        if (keys.Count != _table.KeyColumns.Count)
+        {
+            throw new ArgumentException(
+                $"Row needs {_table.KeyColumns.Count} key cells ({string.Join(", ", _table.KeyColumns)}), got {keys.Count}.");
+        }
+
+        if (values.Count != _valueColumns.Count)
+        {
+            throw new ArgumentException(
+                $"Row needs {_valueColumns.Count} value cells ({string.Join(", ", _valueColumns)}), got {values.Count}.");
+        }
+
+        return new TableBuilder(_table with
+        {
+            Rows = _table.Rows.Add(new TableRow(keys, _valueColumns.Zip(values).ToEquatableDictionary()))
+        }, _valueColumns);
+    }
 
     public Table Build() => _table;
 }
