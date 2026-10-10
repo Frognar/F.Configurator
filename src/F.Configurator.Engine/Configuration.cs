@@ -15,4 +15,6 @@ public sealed record Configuration(Catalog.Catalog Catalog, string CollectionNam
     {
         return new Configuration(catalog, collectionName);
     }
+
+    public Value ValueOf(string featureName) => Value.Missing;
 }
