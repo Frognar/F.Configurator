@@ -1,6 +1,3 @@
-using F.Configurator.Expressions;
-using static F.Configurator.Expressions.Expression;
-
 namespace F.Configurator.Catalog.Tests;
 
 // E3 completion criterion (plan, E3): the Basic fragment from analysis 2.4 written with the builder.
@@ -8,13 +5,9 @@ namespace F.Configurator.Catalog.Tests;
 // The builder does not check references (e.g. `Typ` is not declared here); that is the validator (E5).
 public class BasicFragmentTests
 {
-    private static readonly Table WymiaryDomyslne = new(
-        ["Norma", "Szerokosc"],
-        [
-            new TableRow(
-                [[Value.Option("PL")], [Value.Option("80")]],
-                new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m), ["WysokoscMM"] = Value.Number(2030m) }.ToEquatableDictionary()),
-        ]);
+    private static readonly Table WymiaryDomyslne = TableBuilder.Create(["Norma", "Szerokosc"], ["SzerokoscMM", "WysokoscMM"])
+        .Row([Value.Option("PL"), Value.Option("80")], [Value.Number(844m), Value.Number(2030m)])
+        .Build();
 
     private static readonly EquatableDictionary<string, Value> Seria = new Dictionary<string, Value>
     {
@@ -97,10 +90,6 @@ public class BasicFragmentTests
     [Fact]
     public void Catalogs_built_the_same_way_are_equal()
     {
-        var first = Basic();
-        var second = Basic();
-
-        Assert.Equal(first, second);
-        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+        StructuralAssert.Equal(Basic(), Basic());
     }
 }

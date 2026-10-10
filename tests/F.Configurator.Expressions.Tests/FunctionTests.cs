@@ -6,10 +6,10 @@ public class FunctionTests
     [Fact]
     public void Min_evaluates_to_the_smallest_argument()
     {
-        var expression = Expression.Min(
-            Expression.Reference("SzerokoscMM"),
-            Expression.Number(1000m),
-            Expression.Reference("WysokoscMM"));
+        var expression = Min(
+            Reference("SzerokoscMM"),
+            Number(1000m),
+            Reference("WysokoscMM"));
         var values = new Dictionary<string, Value>
         {
             ["SzerokoscMM"] = Value.Number(900m),
@@ -25,10 +25,9 @@ public class FunctionTests
     [Fact]
     public void Min_with_a_missing_argument_evaluates_to_missing()
     {
-        var expression = Expression.Min(Expression.Reference("SzerokoscMM"), Expression.Number(1000m));
-        var values = new Dictionary<string, Value>();
+        var expression = Min(Reference("SzerokoscMM"), Number(1000m));
 
-        var value = expression.Evaluate(values);
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Missing, value);
     }
@@ -36,10 +35,10 @@ public class FunctionTests
     [Fact]
     public void Max_evaluates_to_the_largest_argument()
     {
-        var expression = Expression.Max(
-            Expression.Reference("SzerokoscMM"),
-            Expression.Number(1000m),
-            Expression.Reference("WysokoscMM"));
+        var expression = Max(
+            Reference("SzerokoscMM"),
+            Number(1000m),
+            Reference("WysokoscMM"));
         var values = new Dictionary<string, Value>
         {
             ["SzerokoscMM"] = Value.Number(900m),
@@ -54,7 +53,7 @@ public class FunctionTests
     [Fact]
     public void Length_evaluates_to_the_number_of_characters()
     {
-        var expression = Expression.Length(Expression.Reference("Grawer"));
+        var expression = Length(Reference("Grawer"));
         var values = new Dictionary<string, Value> { ["Grawer"] = Value.Text("Kowalscy") };
 
         var value = expression.Evaluate(values);
@@ -66,7 +65,7 @@ public class FunctionTests
     [Fact]
     public void Pad_fills_a_number_with_zeros_on_the_left()
     {
-        var expression = Expression.Pad(Expression.Reference("WysokoscMM"), Expression.Number(4m));
+        var expression = Pad(Reference("WysokoscMM"), Number(4m));
         var values = new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(900m) };
 
         var value = expression.Evaluate(values);
@@ -78,9 +77,9 @@ public class FunctionTests
     [Fact]
     public void Pad_ignores_trailing_zeros_of_the_number()
     {
-        var expression = Expression.Pad(
-            Expression.Multiply(Expression.Reference("WysokoscMM"), Expression.Number(1.00m)),
-            Expression.Number(4m));
+        var expression = Pad(
+            Multiply(Reference("WysokoscMM"), Number(1.00m)),
+            Number(4m));
         var values = new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(900m) };
 
         var value = expression.Evaluate(values);
@@ -91,7 +90,7 @@ public class FunctionTests
     [Fact]
     public void Pad_fills_a_text_with_zeros_on_the_left()
     {
-        var expression = Expression.Pad(Expression.Reference("Kod"), Expression.Number(3m));
+        var expression = Pad(Reference("Kod"), Number(3m));
         var values = new Dictionary<string, Value> { ["Kod"] = Value.Text("7") };
 
         var value = expression.Evaluate(values);
@@ -103,7 +102,7 @@ public class FunctionTests
     [Fact]
     public void Pad_fills_with_the_given_character()
     {
-        var expression = Expression.Pad(Expression.Reference("Kod"), Expression.Number(4m), Expression.Text("_"));
+        var expression = Pad(Reference("Kod"), Number(4m), Text("_"));
         var values = new Dictionary<string, Value> { ["Kod"] = Value.Text("AB") };
 
         var value = expression.Evaluate(values);
@@ -117,7 +116,7 @@ public class FunctionTests
     [InlineData("_-")]
     public void Pad_with_a_fill_other_than_one_character_evaluates_to_missing(string fill)
     {
-        var expression = Expression.Pad(Expression.Reference("Kod"), Expression.Number(4m), Expression.Text(fill));
+        var expression = Pad(Reference("Kod"), Number(4m), Text(fill));
         var values = new Dictionary<string, Value> { ["Kod"] = Value.Text("AB") };
 
         var value = expression.Evaluate(values);
@@ -129,9 +128,9 @@ public class FunctionTests
     [Fact]
     public void Round_rounds_half_up()
     {
-        var expression = Expression.Round(Expression.Number(2.5m));
+        var expression = Round(Number(2.5m));
 
-        var value = expression.Evaluate(new Dictionary<string, Value>());
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Number(3m), value);
     }
@@ -140,9 +139,9 @@ public class FunctionTests
     [Fact]
     public void Round_rounds_negative_half_away_from_zero()
     {
-        var expression = Expression.Round(Expression.Number(-2.5m));
+        var expression = Round(Number(-2.5m));
 
-        var value = expression.Evaluate(new Dictionary<string, Value>());
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Number(-3m), value);
     }
@@ -151,9 +150,9 @@ public class FunctionTests
     [Fact]
     public void Round_to_a_step_rounds_to_the_nearest_multiple()
     {
-        var expression = Expression.Round(Expression.Number(1234m), Expression.Number(10m));
+        var expression = Round(Number(1234m), Number(10m));
 
-        var value = expression.Evaluate(new Dictionary<string, Value>());
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Number(1230m), value);
     }
@@ -162,9 +161,9 @@ public class FunctionTests
     [Fact]
     public void Round_to_a_fractional_step_rounds_half_up()
     {
-        var expression = Expression.Round(Expression.Number(1.225m), Expression.Number(0.05m));
+        var expression = Round(Number(1.225m), Number(0.05m));
 
-        var value = expression.Evaluate(new Dictionary<string, Value>());
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Number(1.25m), value);
     }
@@ -175,9 +174,9 @@ public class FunctionTests
     [InlineData(-10)]
     public void Round_to_a_non_positive_step_evaluates_to_missing(int step)
     {
-        var expression = Expression.Round(Expression.Number(1234m), Expression.Number(step));
+        var expression = Round(Number(1234m), Number(step));
 
-        var value = expression.Evaluate(new Dictionary<string, Value>());
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Missing, value);
     }
@@ -187,9 +186,9 @@ public class FunctionTests
     [Fact]
     public void Round_beyond_the_decimal_range_evaluates_to_missing()
     {
-        var expression = Expression.Round(Expression.Number(decimal.MaxValue), Expression.Number(0.1m));
+        var expression = Round(Number(decimal.MaxValue), Number(0.1m));
 
-        var value = expression.Evaluate(new Dictionary<string, Value>());
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Missing, value);
     }
@@ -201,9 +200,9 @@ public class FunctionTests
     [InlineData(100000000000000000000.0)]
     public void Pad_wider_than_the_limit_evaluates_to_missing(double width)
     {
-        var expression = Expression.Pad(Expression.Text("12"), Expression.Number((decimal)width));
+        var expression = Pad(Text("12"), Number((decimal)width));
 
-        var value = expression.Evaluate(new Dictionary<string, Value>());
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Missing, value);
     }
@@ -211,9 +210,9 @@ public class FunctionTests
     [Fact]
     public void Pad_up_to_the_limit_is_allowed()
     {
-        var expression = Expression.Pad(Expression.Text("12"), Expression.Number(1000m));
+        var expression = Pad(Text("12"), Number(1000m));
 
-        var value = expression.Evaluate(new Dictionary<string, Value>());
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Text("12".PadLeft(1000, '0')), value);
     }

@@ -67,4 +67,7 @@ public static class EquatableDictionary
 {
     public static EquatableDictionary<TKey, TValue> ToEquatableDictionary<TKey, TValue>(
         this IEnumerable<KeyValuePair<TKey, TValue>> pairs) where TKey : notnull => new(pairs.ToImmutableDictionary());
+
+    public static EquatableDictionary<TKey, TValue> ToEquatableDictionary<TKey, TValue>(
+        this IEnumerable<(TKey, TValue)> pairs) where TKey : notnull => pairs.ToDictionary().ToEquatableDictionary();
 }

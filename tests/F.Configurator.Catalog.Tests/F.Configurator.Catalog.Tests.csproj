@@ -17,6 +17,8 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="F.Configurator.Expressions" />
+    <Using Include="F.Configurator.Expressions.Expression" Static="true" />
   </ItemGroup>
 
 </Project>

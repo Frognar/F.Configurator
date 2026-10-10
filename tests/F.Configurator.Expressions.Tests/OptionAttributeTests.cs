@@ -12,7 +12,7 @@ public class OptionAttributeTests
             ["PORTA"] = Value.Number(40m),
             ["VERTE"] = Value.Number(44m),
         }.ToEquatableDictionary();
-        var expression = Expression.OptionAttribute(Expression.Reference("Model"), gruboscMM);
+        var expression = OptionAttribute(Reference("Model"), gruboscMM);
         var values = new Dictionary<string, Value> { ["Model"] = Value.Option("VERTE") };
 
         var value = expression.Evaluate(values);
@@ -25,9 +25,9 @@ public class OptionAttributeTests
     public void Option_attribute_is_missing_when_no_option_is_chosen()
     {
         var gruboscMM = new Dictionary<string, Value> { ["PORTA"] = Value.Number(40m) }.ToEquatableDictionary();
-        var expression = Expression.OptionAttribute(Expression.Reference("Model"), gruboscMM);
+        var expression = OptionAttribute(Reference("Model"), gruboscMM);
 
-        var value = expression.Evaluate(new Dictionary<string, Value>());
+        var value = expression.Evaluate(NoValues);
 
         Assert.Equal(Value.Missing, value);
     }
@@ -37,7 +37,7 @@ public class OptionAttributeTests
     public void Option_attribute_is_missing_when_the_chosen_option_does_not_set_it()
     {
         var gruboscMM = new Dictionary<string, Value> { ["PORTA"] = Value.Number(40m) }.ToEquatableDictionary();
-        var expression = Expression.OptionAttribute(Expression.Reference("Model"), gruboscMM);
+        var expression = OptionAttribute(Reference("Model"), gruboscMM);
         var values = new Dictionary<string, Value> { ["Model"] = Value.Option("VERTE") };
 
         var value = expression.Evaluate(values);

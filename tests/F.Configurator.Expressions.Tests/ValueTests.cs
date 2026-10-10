@@ -18,11 +18,9 @@ public class ValueTests
     [Fact]
     public void Lists_with_the_same_items_are_equal()
     {
-        var first = Value.List(Value.Option("CZ"), Value.Option("SK"));
-        var second = Value.List(Value.Option("CZ"), Value.Option("SK"));
-
-        Assert.Equal(first, second);
-        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+        StructuralAssert.Equal(
+            Value.List(Value.Option("CZ"), Value.Option("SK")),
+            Value.List(Value.Option("CZ"), Value.Option("SK")));
     }
 
     [Fact]

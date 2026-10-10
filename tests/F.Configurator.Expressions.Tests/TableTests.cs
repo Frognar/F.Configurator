@@ -5,13 +5,20 @@ namespace F.Configurator.Expressions.Tests;
 // Key cells hold options of a choice feature (`Norma` is a choice: PL, DE, CZ, SK).
 public class TableTests
 {
+    private static readonly Table Szerokosci = TableBuilder.Create(["Norma"], ["SzerokoscMM"])
+        .Row([Value.Option("PL")], [Value.Number(844m)])
+        .Row([[Value.Option("CZ"), Value.Option("SK")]], [Value.Number(830m)])
+        .Build();
+
+    // An empty key cell matches any chosen value.
+    private static readonly Table Wysokosci = TableBuilder.Create(["Norma", "Szerokosc"], ["WysokoscMM"])
+        .Row([[Value.Option("PL")], []], [Value.Number(2030m)])
+        .Build();
+
     [Fact]
     public void Lookup_reads_the_column_from_the_matching_row()
     {
-        var table = new Table(
-            ["Norma"],
-            [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) }.ToEquatableDictionary())]);
-        var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "SzerokoscMM");
+        var expression = TableLookup(Szerokosci, [Reference("Norma")], "SzerokoscMM");
         var values = new Dictionary<string, Value> { ["Norma"] = Value.Option("PL") };
 
         var value = expression.Evaluate(values);
@@ -23,10 +30,7 @@ public class TableTests
     [Fact]
     public void Lookup_without_a_matching_row_evaluates_to_missing()
     {
-        var table = new Table(
-            ["Norma"],
-            [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) }.ToEquatableDictionary())]);
-        var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "SzerokoscMM");
+        var expression = TableLookup(Szerokosci, [Reference("Norma")], "SzerokoscMM");
         var values = new Dictionary<string, Value> { ["Norma"] = Value.Option("DE") };
 
         var value = expression.Evaluate(values);
@@ -38,10 +42,7 @@ public class TableTests
     [Fact]
     public void Lookup_of_an_unknown_column_evaluates_to_missing()
     {
-        var table = new Table(
-            ["Norma"],
-            [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) }.ToEquatableDictionary())]);
-        var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "WysokoscMM");
+        var expression = TableLookup(Szerokosci, [Reference("Norma")], "WysokoscMM");
         var values = new Dictionary<string, Value> { ["Norma"] = Value.Option("PL") };
 
         var value = expression.Evaluate(values);
@@ -55,10 +56,7 @@ public class TableTests
     [InlineData("SK")]
     public void Lookup_matches_any_of_the_values_listed_in_a_key_cell(string norma)
     {
-        var table = new Table(
-            ["Norma"],
-            [new TableRow([[Value.Option("CZ"), Value.Option("SK")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(830m) }.ToEquatableDictionary())]);
-        var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "SzerokoscMM");
+        var expression = TableLookup(Szerokosci, [Reference("Norma")], "SzerokoscMM");
         var values = new Dictionary<string, Value> { ["Norma"] = Value.Option(norma) };
 
         var value = expression.Evaluate(values);
@@ -70,13 +68,7 @@ public class TableTests
     [Fact]
     public void Lookup_matches_any_value_in_an_empty_key_cell()
     {
-        var table = new Table(
-            ["Norma", "Szerokosc"],
-            [new TableRow([[Value.Option("PL")], []], new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(2030m) }.ToEquatableDictionary())]);
-        var expression = Expression.TableLookup(
-            table,
-            [Expression.Reference("Norma"), Expression.Reference("Szerokosc")],
-            "WysokoscMM");
+        var expression = TableLookup(Wysokosci, [Reference("Norma"), Reference("Szerokosc")], "WysokoscMM");
         var values = new Dictionary<string, Value> { ["Norma"] = Value.Option("PL"), ["Szerokosc"] = Value.Number(90m) };
 
         var value = expression.Evaluate(values);
@@ -88,13 +80,7 @@ public class TableTests
     [Fact]
     public void Missing_key_does_not_match_an_empty_key_cell()
     {
-        var table = new Table(
-            ["Norma", "Szerokosc"],
-            [new TableRow([[Value.Option("PL")], []], new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(2030m) }.ToEquatableDictionary())]);
-        var expression = Expression.TableLookup(
-            table,
-            [Expression.Reference("Norma"), Expression.Reference("Szerokosc")],
-            "WysokoscMM");
+        var expression = TableLookup(Wysokosci, [Reference("Norma"), Reference("Szerokosc")], "WysokoscMM");
         var values = new Dictionary<string, Value> { ["Norma"] = Value.Option("PL") };
 
         var value = expression.Evaluate(values);
@@ -106,10 +92,7 @@ public class TableTests
     [Fact]
     public void Lookup_with_fewer_keys_than_key_columns_evaluates_to_missing()
     {
-        var table = new Table(
-            ["Norma", "Szerokosc"],
-            [new TableRow([[Value.Option("PL")], [Value.Number(90m)]], new Dictionary<string, Value> { ["WysokoscMM"] = Value.Number(2030m) }.ToEquatableDictionary())]);
-        var expression = Expression.TableLookup(table, [Expression.Reference("Norma")], "WysokoscMM");
+        var expression = TableLookup(Wysokosci, [Reference("Norma")], "WysokoscMM");
         var values = new Dictionary<string, Value> { ["Norma"] = Value.Option("PL") };
 
         var value = expression.Evaluate(values);
@@ -120,13 +103,7 @@ public class TableTests
     [Fact]
     public void Lookup_with_more_keys_than_key_columns_evaluates_to_missing()
     {
-        var table = new Table(
-            ["Norma"],
-            [new TableRow([[Value.Option("PL")]], new Dictionary<string, Value> { ["SzerokoscMM"] = Value.Number(844m) }.ToEquatableDictionary())]);
-        var expression = Expression.TableLookup(
-            table,
-            [Expression.Reference("Norma"), Expression.Reference("Szerokosc")],
-            "SzerokoscMM");
+        var expression = TableLookup(Szerokosci, [Reference("Norma"), Reference("Szerokosc")], "SzerokoscMM");
         var values = new Dictionary<string, Value> { ["Norma"] = Value.Option("PL"), ["Szerokosc"] = Value.Number(90m) };
 
         var value = expression.Evaluate(values);
