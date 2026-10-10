@@ -20,3 +20,18 @@ public sealed record Table(EquatableList<string> KeyColumns, EquatableList<Table
 }
 
 public sealed record TableRow(EquatableList<EquatableList<Value>> Keys, EquatableDictionary<string, Value> Values);
+
+public sealed class TableBuilder
+{
+    private readonly Table _table;
+
+    private TableBuilder(Table table) => _table = table;
+
+    public static TableBuilder Create(IEnumerable<string> x, IEnumerable<string> y) => new(new Table([], []));
+
+    public TableBuilder Row(IEnumerable<Value> x, IEnumerable<Value> y) => new(_table);
+
+    public TableBuilder Row(IEnumerable<IEnumerable<Value>> x, IEnumerable<Value> y) => new(_table);
+
+    public Table Build() => _table;
+}
