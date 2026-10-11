@@ -78,18 +78,38 @@ public sealed class Configuration
         return [];
     }
 
-    public EquatableList<UnavailableOption> UnavailableOptions(string featureName) =>
-    [
-        .. ActiveRules
-            .SelectMany(r => r.Effects
-                .OfType<ForbidEffect>()
-                .Where(e => e.Feature == featureName)
-                .Select(e => e.Options
-                    .OfType<OptionValue>()
-                    .Select(o => new UnavailableOption(o.Id, r.Name))))
-            .DefaultIfEmpty([])
-            .Aggregate((acc, next) => acc.Union(next))
-    ];
+    public EquatableList<UnavailableOption> UnavailableOptions(string featureName)
+    {
+        var feature = _catalog.Features.FirstOrDefault(f => f.Name == featureName);
+        if (feature is ChoiceFeature choice)
+        {
+            return
+            [
+                .. ActiveRules
+                    .SelectMany(r => r.Effects
+                        .OfType<ForbidEffect>()
+                        .Where(e => e.Feature == choice.Name)
+                        .Select(e => e.Options
+                            .OfType<OptionValue>()
+                            .Select(o => new UnavailableOption(o.Id, r.Name))))
+                    .DefaultIfEmpty([])
+                    .Aggregate((acc, next) => acc.Union(next)),
+                .. ActiveRules
+                    .SelectMany(r => r.Effects
+                        .OfType<OnlyEffect>()
+                        .Where(e => e.Feature == choice.Name)
+                        .Select(e =>
+                            choice.Options.Select(o => o.Id)
+                                .Except(e.Options
+                                    .OfType<OptionValue>()
+                                    .Select(o => o.Id))
+                                .Select(o => new UnavailableOption(o, r.Name))))
+                    .SelectMany(o => o)
+            ];
+        }
+
+        return [];
+    }
 
 
     public Value ValueOf(string featureName) => _values.TryGetValue(featureName, out var value) ? value : Value.Missing;
