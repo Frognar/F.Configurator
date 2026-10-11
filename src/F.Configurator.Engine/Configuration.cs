@@ -70,8 +70,18 @@ public sealed class Configuration
         {
             OnlyEffect only => only.Feature == featureName && !only.Options.Contains(option),
             ForbidEffect forbid => forbid.Feature == featureName && forbid.Options.Contains(option),
+            OnlyFromTableEffect onlyFromTable => onlyFromTable.Feature == featureName && !(OptionsFromTable(onlyFromTable)?.Contains(option) ?? true),
             _ => false,
         }));
+
+    private EquatableList<Value>? OptionsFromTable(OnlyFromTableEffect onlyFromTable)
+    {
+        var table = _catalog.AllowedCombinations[onlyFromTable.Table];
+        var keyValues = EquatableList.Create(table.KeyColumns
+            .Select(k => _values.TryGetValue(k, out var value) ? value : Value.Missing));
+
+        return table.Rows.GetValueOrDefault(keyValues);
+    }
 
     public Value ValueOf(string featureName) => _values.TryGetValue(featureName, out var value) ? value : Value.Missing;
 
