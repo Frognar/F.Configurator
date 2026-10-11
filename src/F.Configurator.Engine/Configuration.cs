@@ -33,7 +33,7 @@ public sealed class Configuration
     private IEnumerable<string> HiddenFeatures =>
         ActiveRules.SelectMany(r => r.Effects.OfType<HideEffect>()).SelectMany(e => e.Features)
             .Concat(ActiveRules.SelectMany(r => r.Effects.OfType<OnlyFromTableEffect>())
-                .Where(e => OptionsFromTable(e) is null).Select(e => e.Feature));
+                .Where(e => OptionsFromTable(e) is { Count: 0 }).Select(e => e.Feature));
 
     public EquatableList<string> VisibleFeatures =>
         [.. _collection.Stages.Take(CurrentStageIndex + 1).SelectMany(s => s.Features).Except(HiddenFeatures)];
@@ -79,10 +79,7 @@ public sealed class Configuration
     private EquatableList<Value>? OptionsFromTable(OnlyFromTableEffect onlyFromTable)
     {
         var table = _catalog.AllowedCombinations[onlyFromTable.Table];
-        var keyValues = EquatableList.Create(table.KeyColumns
-            .Select(k => _values.TryGetValue(k, out var value) ? value : Value.Missing));
-
-        return table.Rows.GetValueOrDefault(keyValues);
+        return table.AllowedFor([.. table.KeyColumns.Select(ValueOf)]);
     }
 
     public Value ValueOf(string featureName) => _values.TryGetValue(featureName, out var value) ? value : Value.Missing;
