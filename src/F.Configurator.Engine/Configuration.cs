@@ -132,6 +132,11 @@ public sealed class Configuration
             throw new InvalidOperationException($"Feature '{featureName}' is locked.");
         }
 
+        if (value is OptionValue option && UnavailableOptions(featureName).Any(o => o.Id == option.Id))
+        {
+            throw new InvalidOperationException($"Option '{option.Id}' is unavailable in feature '{featureName}'.");
+        }
+
         if (!Accepts(feature, value))
         {
             throw new ArgumentException($"Feature '{featureName}' does not accept {value}.");
