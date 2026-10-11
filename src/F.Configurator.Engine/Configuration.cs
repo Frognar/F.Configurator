@@ -47,6 +47,19 @@ public sealed class Configuration
             : new Configuration(catalog, collection, EquatableDictionary<string, Value>.Empty);
     }
 
+    public IEnumerable<string> AvailableOptions(string featureName)
+    {
+        var feature = _catalog.Features.FirstOrDefault(f => f.Name == featureName);
+        if (feature is ChoiceFeature choice)
+        {
+            return choice.Options.Select(o => o.Id);
+        }
+
+        return [];
+    }
+
+    public IEnumerable<string> UnavailableOptions(string featureName) => [];
+
     public Value ValueOf(string featureName) => _values.TryGetValue(featureName, out var value) ? value : Value.Missing;
 
     public Configuration Set(string featureName, Value value)
