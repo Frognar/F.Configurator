@@ -47,75 +47,31 @@ public sealed class Configuration
             : new Configuration(catalog, collection, EquatableDictionary<string, Value>.Empty);
     }
 
-    public IEnumerable<string> AvailableOptions(string featureName)
-    {
-        var feature = _catalog.Features.FirstOrDefault(f => f.Name == featureName);
-        if (feature is null)
+    public EquatableList<string> AvailableOptions(string featureName) =>
+    [
+        .. ChoiceFeature(featureName).Options.Select(o => o.Id)
+            .Except(UnavailableOptions(featureName).Select(u => u.Id))
+    ];
+
+    public EquatableList<UnavailableOption> UnavailableOptions(string featureName) =>
+    [
+        .. ChoiceFeature(featureName).Options
+            .Select(o => (o.Id, Rule: ExcludingRule(featureName, Value.Option(o.Id))))
+            .Where(x => x.Rule is not null)
+            .Select(x => new UnavailableOption(x.Id, x.Rule!.Name))
+    ];
+
+    private ChoiceFeature ChoiceFeature(string featureName) =>
+        _catalog.Features.OfType<ChoiceFeature>().FirstOrDefault(f => f.Name == featureName)
+        ?? throw new ArgumentException($"Feature '{featureName}' is not a choice feature in catalog.");
+
+    private Rule? ExcludingRule(string featureName, Value option) =>
+        ActiveRules.FirstOrDefault(r => r.Effects.Any(e => e switch
         {
-            throw new ArgumentException($"Feature '{featureName}' not found in catalog.");
-        }
-
-        if (feature is ChoiceFeature choice)
-        {
-            var onlyOptions = ActiveRules
-                .SelectMany(r => r.Effects
-                    .OfType<OnlyEffect>()
-                    .Where(e => e.Feature == choice.Name)
-                    .Select(e => e.Options
-                        .OfType<OptionValue>()
-                        .Select(o => o.Id)))
-                .DefaultIfEmpty(choice.Options.Select(o => o.Id))
-                .Aggregate((acc, next) => acc.Intersect(next));
-
-            var forbiddenOptions = ActiveRules
-                .SelectMany(r => r.Effects
-                    .OfType<ForbidEffect>()
-                    .Where(e => e.Feature == choice.Name)
-                    .Select(e => e.Options
-                        .OfType<OptionValue>()
-                        .Select(o => o.Id)))
-                .DefaultIfEmpty([])
-                .Aggregate((acc, next) => acc.Union(next));
-
-            return onlyOptions.Except(forbiddenOptions);
-        }
-
-        return [];
-    }
-
-    public EquatableList<UnavailableOption> UnavailableOptions(string featureName)
-    {
-        var feature = _catalog.Features.FirstOrDefault(f => f.Name == featureName);
-        if (feature is ChoiceFeature choice)
-        {
-            return
-            [
-                .. ActiveRules
-                    .SelectMany(r => r.Effects
-                        .OfType<ForbidEffect>()
-                        .Where(e => e.Feature == choice.Name)
-                        .Select(e => e.Options
-                            .OfType<OptionValue>()
-                            .Select(o => new UnavailableOption(o.Id, r.Name))))
-                    .DefaultIfEmpty([])
-                    .Aggregate((acc, next) => acc.Union(next)),
-                .. ActiveRules
-                    .SelectMany(r => r.Effects
-                        .OfType<OnlyEffect>()
-                        .Where(e => e.Feature == choice.Name)
-                        .Select(e =>
-                            choice.Options.Select(o => o.Id)
-                                .Except(e.Options
-                                    .OfType<OptionValue>()
-                                    .Select(o => o.Id))
-                                .Select(o => new UnavailableOption(o, r.Name))))
-                    .SelectMany(o => o)
-            ];
-        }
-
-        return [];
-    }
-
+            OnlyEffect only => only.Feature == featureName && !only.Options.Contains(option),
+            ForbidEffect forbid => forbid.Feature == featureName && forbid.Options.Contains(option),
+            _ => false,
+        }));
 
     public Value ValueOf(string featureName) => _values.TryGetValue(featureName, out var value) ? value : Value.Missing;
 
