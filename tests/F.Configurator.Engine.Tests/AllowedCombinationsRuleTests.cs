@@ -54,6 +54,23 @@ public class AllowedCombinationsRuleTests
         Assert.Equal(["KLAMKA", "GALKA", "POCHWYT"], configuration.AvailableOptions("Uchwyt"));
     }
 
+    // G18.2: waiting is not "no row", so the feature is not hidden while its key is incomplete.
+    [Fact]
+    public void Feature_stays_visible_until_every_key_feature_has_a_value()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Choice("Model", feature => feature.Option("PORTA", "Porta").Option("VERTE", "Verte"))
+            .Choice("Uchwyt", feature => feature.Option("KLAMKA", "Klamka").Option("GALKA", "Gałka"))
+            .AllowedCombinations("DozwoloneUchwyt", ["Model"], "Uchwyt", table => table.Row("PORTA", "GALKA"))
+            .Rule("UchwytZTabeli", rule => rule.OnlyFrom("Uchwyt", "DozwoloneUchwyt"))
+            .Collection("Basic", collection => collection.Stage("Drzwi", "Model", "Uchwyt"))
+            .Build();
+
+        var configuration = Configuration.Start(catalog, "Basic");
+
+        Assert.Equal(["Model", "Uchwyt"], configuration.VisibleFeatures);
+    }
+
     // G18.1: a table combines with other `tylko` rules by intersection.
     [Fact]
     public void Table_and_only_rule_leave_the_options_they_share()
