@@ -52,7 +52,7 @@ public sealed class Configuration
         var feature = _catalog.Features.FirstOrDefault(f => f.Name == featureName);
         if (feature is ChoiceFeature choice)
         {
-            return ActiveRules
+            var onlyOptions = ActiveRules
                 .SelectMany(r => r.Effects
                     .OfType<OnlyEffect>()
                     .Where(e => e.Feature == choice.Name)
@@ -61,6 +61,18 @@ public sealed class Configuration
                         .Select(o => o.Id)))
                 .DefaultIfEmpty(choice.Options.Select(o => o.Id))
                 .Aggregate((acc, next) => acc.Intersect(next));
+
+            var forbiddenOptions = ActiveRules
+                .SelectMany(r => r.Effects
+                    .OfType<ForbidEffect>()
+                    .Where(e => e.Feature == choice.Name)
+                    .Select(e => e.Options
+                        .OfType<OptionValue>()
+                        .Select(o => o.Id)))
+                .DefaultIfEmpty([])
+                .Aggregate((acc, next) => acc.Union(next));
+
+            return onlyOptions.Except(forbiddenOptions);
         }
 
         return [];
