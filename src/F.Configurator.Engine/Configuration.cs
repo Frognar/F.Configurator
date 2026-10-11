@@ -50,6 +50,11 @@ public sealed class Configuration
     public IEnumerable<string> AvailableOptions(string featureName)
     {
         var feature = _catalog.Features.FirstOrDefault(f => f.Name == featureName);
+        if (feature is null)
+        {
+            throw new ArgumentException($"Feature '{featureName}' not found in catalog.");
+        }
+
         if (feature is ChoiceFeature choice)
         {
             var onlyOptions = ActiveRules
