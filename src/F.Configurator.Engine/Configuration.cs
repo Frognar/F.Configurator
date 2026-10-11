@@ -78,7 +78,19 @@ public sealed class Configuration
         return [];
     }
 
-    public IEnumerable<string> UnavailableOptions(string featureName) => [];
+    public EquatableList<UnavailableOption> UnavailableOptions(string featureName) =>
+    [
+        .. ActiveRules
+            .SelectMany(r => r.Effects
+                .OfType<ForbidEffect>()
+                .Where(e => e.Feature == featureName)
+                .Select(e => e.Options
+                    .OfType<OptionValue>()
+                    .Select(o => new UnavailableOption(o.Id, r.Name))))
+            .DefaultIfEmpty([])
+            .Aggregate((acc, next) => acc.Union(next))
+    ];
+
 
     public Value ValueOf(string featureName) => _values.TryGetValue(featureName, out var value) ? value : Value.Missing;
 
@@ -122,3 +134,5 @@ public sealed class Configuration
             _ => false,
         };
 }
+
+public sealed record UnavailableOption(string Id, string RuleName);
