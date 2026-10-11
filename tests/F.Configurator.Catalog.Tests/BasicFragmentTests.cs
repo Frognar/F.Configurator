@@ -5,7 +5,8 @@ namespace F.Configurator.Catalog.Tests;
 // The builder does not check references (e.g. `Typ` is not declared here); that is the validator (E5).
 public class BasicFragmentTests
 {
-    private static readonly Table WymiaryDomyslne = TableBuilder.Create(["Norma", "Szerokosc"], ["SzerokoscMM", "WysokoscMM"])
+    private static readonly Table WymiaryDomyslne = TableBuilder
+        .Create(["Norma", "Szerokosc"], ["SzerokoscMM", "WysokoscMM"])
         .Row([Value.Option("PL"), Value.Option("80")], [Value.Number(844m), Value.Number(2030m)])
         .Build();
 
@@ -15,12 +16,13 @@ public class BasicFragmentTests
         ["ASTORIA_01"] = Value.Text("ASTORIA"),
     }.ToEquatableDictionary();
 
-    private static Catalog Basic() =>
+    private static ProductCatalog Basic() =>
         CatalogBuilder.Create("Drzwi wewnętrzne")
             .Number("SzerokoscMM", feature => feature.Unit("mm"))
             .Number("WysokoscMM", feature => feature.Unit("mm"))
             .Table("WymiaryDomyslne", WymiaryDomyslne)
-            .Rule("WymiaryZTabeli", rule => rule.AppliesTo("Basic").DefaultsFrom(["SzerokoscMM", "WysokoscMM"], "WymiaryDomyslne"))
+            .Rule("WymiaryZTabeli",
+                rule => rule.AppliesTo("Basic").DefaultsFrom(["SzerokoscMM", "WysokoscMM"], "WymiaryDomyslne"))
             .Rule("ZamekBrak", rule => rule.AppliesTo("Basic")
                 .When(Equal(Reference("ZamekDolny"), Option("BRAK")))
                 .Hide("ZmianaPolozeniaZamka"))
@@ -28,9 +30,10 @@ public class BasicFragmentTests
                 .When(Equal(Reference("FelcSkrzydla"), Option("X")))
                 .Lock("SzerokoscMM", "WysokoscMM"))
             .Rule("MaxSzerBasic", rule => rule.AppliesTo("Brilliant", "Basic")
-                .When(In(Reference("Kolekcja"), Expression.List(Option("Brilliant"), Option("Basic"))))
+                .When(In(Reference("Kolekcja"), List(Option("Brilliant"), Option("Basic"))))
                 .Max("SzerokoscMM", Number(1044m))
-                .OnViolation(Reaction.Correct, "Maksymalna dopuszczalna szerokość dla tego modelu to {maks} mm. Zmieniono wartość."))
+                .OnViolation(Reaction.Correct,
+                    "Maksymalna dopuszczalna szerokość dla tego modelu to {maks} mm. Zmieniono wartość."))
             .Rule("NiskaWysokoscBasic", rule => rule.AppliesTo("Basic")
                 .When(And(
                     NotEqual(OptionAttribute(Reference("Model"), Seria), Text("ASTORIA")),
@@ -40,7 +43,8 @@ public class BasicFragmentTests
                 .Stage("Model", "Model", "Typ", "FelcSkrzydla")
                 .Stage("Wymiary", "Norma", "Szerokosc", "SzerokoscMM", "WysokoscMM")
                 .Stage("Okucia", "ZamekDolny", "ZmianaPolozeniaZamka")
-                .Index(Add(Add(Add(Reference("Model"), Reference("Typ")), Reference("SzerokoscMM")), Pad(Reference("WysokoscMM"), Number(4m)))))
+                .Index(Add(Add(Add(Reference("Model"), Reference("Typ")), Reference("SzerokoscMM")),
+                    Pad(Reference("WysokoscMM"), Number(4m)))))
             .Build();
 
     [Fact]
