@@ -25,52 +25,60 @@ The wizard guides the user through choosing product features and produces:
 - **Pricing** is a separate layer on top of the engine: the engine knows nothing about prices, and a price list prices the step result.
 - **Context** (for example, the customer) is an input declared in the catalog. Rules may use it, but the product index never depends on it.
 
-An example catalog in the DSL (keywords are Polish and may be written with or without diacritics):
+An example catalog in the DSL (keywords are Polish and may be written with or without diacritics). The rule allows only matte colors for carbon frames:
 
 ```
+katalog "Rowery"
+
 cecha Rama : wybór
-  opcja ALU
+  opcja ALU "Aluminium"
     symbol "A"
-  opcja KARBON
+  opcja KARBON "Karbon"
     symbol "K"
 
+cecha Rozmiar : liczba
+  jednostka cm
+
 cecha Kolor : wybór
-  opcje z "dane/kolory.csv"
+  opcja CZARNY_MAT "Czarny mat"
+  opcja CZERWONY_POLYSK "Czerwony połysk"
+  opcja CZARNY_POLYSK "Czarny połysk"
 
-kolekcja Rowery
-  nazwa "Rowery szosowe"
-  tryb kolejny
-
+kolekcja Szosowe
   etap "Rama"
     cechy Rama, Rozmiar
   etap "Wygląd"
-    cechy Kolor, Naklejki
+    cechy Kolor
 
-  reguła KarbonBezPolysku
-    opis "Carbon frames come in matte colors only."
-    gdy Rama = KARBON
-    wtedy zabroń Kolor [CZERWONY_POLYSK, CZARNY_POLYSK]
+reguła KarbonBezPolysku
+  gdy Rama = KARBON
+  wtedy zabroń Kolor [CZERWONY_POLYSK, CZARNY_POLYSK]
 ```
 
-Until the parser exists, catalogs are built in code:
+Until the parser exists, the same catalog is built in code:
 
 ```csharp
 using static F.Configurator.Expressions.Expression;
 
-var catalog = CatalogBuilder.Create("Bikes")
-    .Choice("Frame", feature => feature.Option("ALU", "Aluminium").Option("CARBON", "Carbon"))
-    .Choice("Color", feature => feature.Option("RED_GLOSS", "Red gloss").Option("BLACK_MATTE", "Black matte"))
-    .Number("Size", feature => feature.Unit("cm"))
-    .Collection("Road", collection => collection
-        .Stage("Frame", "Frame", "Size")
-        .Stage("Look", "Color"))
-    .Rule("CarbonIsMatte", rule => rule
-        .When(Equal(Reference("Frame"), Option("CARBON")))
-        .Forbid("Color", "RED_GLOSS"))
+var catalog = CatalogBuilder.Create("Rowery")
+    .Choice("Rama", feature => feature
+        .Option("ALU", "Aluminium", option => option.Symbol("A"))
+        .Option("KARBON", "Karbon", option => option.Symbol("K")))
+    .Number("Rozmiar", feature => feature.Unit("cm"))
+    .Choice("Kolor", feature => feature
+        .Option("CZARNY_MAT", "Czarny mat")
+        .Option("CZERWONY_POLYSK", "Czerwony połysk")
+        .Option("CZARNY_POLYSK", "Czarny połysk"))
+    .Collection("Szosowe", collection => collection
+        .Stage("Rama", "Rama", "Rozmiar")
+        .Stage("Wygląd", "Kolor"))
+    .Rule("KarbonBezPolysku", rule => rule
+        .When(Equal(Reference("Rama"), Option("KARBON")))
+        .Forbid("Kolor", "CZERWONY_POLYSK", "CZARNY_POLYSK"))
     .Build();
 
-var configuration = Configuration.Start(catalog, "Road");
-var next = configuration.Set("Frame", Value.Option("CARBON")); // a new state; the previous one is unchanged
+var configuration = Configuration.Start(catalog, "Szosowe");
+var next = configuration.Set("Rama", Value.Option("KARBON")); // a new state; the previous one is unchanged
 ```
 
 ## Repository layout
