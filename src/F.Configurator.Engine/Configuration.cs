@@ -31,7 +31,9 @@ public sealed class Configuration
             (r.Condition is null || r.Condition.Evaluate(_values) is BooleanValue { IsTrue: true }));
 
     private IEnumerable<string> HiddenFeatures =>
-        ActiveRules.SelectMany(r => r.Effects.OfType<HideEffect>()).SelectMany(e => e.Features);
+        ActiveRules.SelectMany(r => r.Effects.OfType<HideEffect>()).SelectMany(e => e.Features)
+            .Concat(ActiveRules.SelectMany(r => r.Effects.OfType<OnlyFromTableEffect>())
+                .Where(e => OptionsFromTable(e) is null).Select(e => e.Feature));
 
     public EquatableList<string> VisibleFeatures =>
         [.. _collection.Stages.Take(CurrentStageIndex + 1).SelectMany(s => s.Features).Except(HiddenFeatures)];
