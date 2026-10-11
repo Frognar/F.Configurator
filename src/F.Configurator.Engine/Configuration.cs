@@ -52,7 +52,13 @@ public sealed class Configuration
         var feature = _catalog.Features.FirstOrDefault(f => f.Name == featureName);
         if (feature is ChoiceFeature choice)
         {
-            return choice.Options.Select(o => o.Id);
+            var onlyRule = ActiveRules
+                .SelectMany(r => r.Effects.OfType<OnlyEffect>().Where(e => e.Feature == choice.Name))
+                .FirstOrDefault();
+
+            return onlyRule is null
+                ? choice.Options.Select(o => o.Id)
+                : onlyRule.Options.OfType<OptionValue>().Select(o => o.Id);
         }
 
         return [];
