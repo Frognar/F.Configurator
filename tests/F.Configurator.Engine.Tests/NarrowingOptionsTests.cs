@@ -36,6 +36,14 @@ public class NarrowingOptionsTests
     }
 
     [Fact]
+    public void Only_keeps_the_declaration_order_of_options()
+    {
+        var configuration = Start(catalog => catalog.Rule("BezCZ", rule => rule.Only("Norma", "DE", "PL")));
+
+        Assert.Equal(["PL", "DE"], configuration.AvailableOptions("Norma"));
+    }
+
+    [Fact]
     public void Several_only_rules_leave_the_options_they_share()
     {
         var configuration = Start(catalog => catalog
@@ -108,6 +116,35 @@ public class NarrowingOptionsTests
         Assert.Equal(
             [new UnavailableOption("CZ", "TylkoPL"), new UnavailableOption("DE", "TylkoPL")],
             configuration.UnavailableOptions("Norma"));
+    }
+
+    [Fact]
+    public void Unavailable_options_are_listed_in_declaration_order()
+    {
+        var configuration = Start(catalog => catalog
+            .Rule("BezDE", rule => rule.Forbid("Norma", "DE"))
+            .Rule("BezCZ", rule => rule.Forbid("Norma", "CZ")));
+
+        Assert.Equal(["CZ", "DE"], configuration.UnavailableOptions("Norma").Select(option => option.Id));
+    }
+
+    // Which rule is named is not settled yet, but each option is listed once.
+    [Fact]
+    public void Option_excluded_by_several_rules_is_listed_once()
+    {
+        var configuration = Start(catalog => catalog
+            .Rule("TylkoPL", rule => rule.Only("Norma", "PL", "DE"))
+            .Rule("BezCZ", rule => rule.Forbid("Norma", "CZ")));
+
+        Assert.Equal(["CZ"], configuration.UnavailableOptions("Norma").Select(option => option.Id));
+    }
+
+    [Fact]
+    public void Unavailable_options_of_an_unknown_feature_are_rejected()
+    {
+        var configuration = Start(catalog => catalog);
+
+        Assert.Throws<ArgumentException>(() => configuration.UnavailableOptions("Kolor"));
     }
 
     // Unlike an option the feature does not have, an unavailable option is valid in another state.
