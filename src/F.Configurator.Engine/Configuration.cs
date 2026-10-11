@@ -112,14 +112,30 @@ public sealed class Configuration
             throw new ArgumentException($"Feature '{featureName}' does not accept {value}.");
         }
 
-        var newConfiguration = new Configuration(_catalog, _collection, _values.SetItem(featureName, value));
-        return new Configuration(
+        return new Configuration(_catalog, _collection, _values.SetItem(featureName, value)).Settled();
+    }
+
+    private Configuration Settled()
+    {
+        var withoutHidden = new Configuration(
             _catalog,
             _collection,
-            newConfiguration._values
-                .Where(kvp => !newConfiguration.HiddenFeatures.Contains(kvp.Key))
+            _values
+                .Where(kvp => !HiddenFeatures.Contains(kvp.Key))
                 .ToEquatableDictionary());
+
+        return withoutHidden.SingleOptionsFromTables().FirstOrDefault() is ({ } feature, { } option)
+            ? new Configuration(_catalog, _collection, _values.SetItem(feature, option)).Settled()
+            : withoutHidden;
     }
+
+    private IEnumerable<(string Feature, Value Option)> SingleOptionsFromTables() =>
+        ActiveRules.SelectMany(r => r.Effects.OfType<OnlyFromTableEffect>())
+            .Where(e => !_values.ContainsKey(e.Feature))
+            .Select(e => (e.Feature, Options: OptionsFromTable(e)))
+            .Where(x => x.Options is [_])
+            .Select(x => (x.Feature, x.Options![0]));
+
 
     private static bool Accepts(Feature feature, Value value) =>
         (feature, value) switch
