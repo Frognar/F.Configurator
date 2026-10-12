@@ -79,11 +79,13 @@ public sealed record OnlyEffect(string Feature, EquatableList<Value> Options) : 
 
 public sealed record ForbidEffect(string Feature, EquatableList<Value> Options) : Effect;
 
-public sealed record MinEffect(string Feature, Expression Value) : Effect;
+public abstract record LimitEffect(string Feature, Expression Value) : Effect;
 
-public sealed record MaxEffect(string Feature, Expression Value) : Effect;
+public sealed record MinEffect(string Feature, Expression Value) : LimitEffect(Feature, Value);
 
-public sealed record StepEffect(string Feature, Expression Value) : Effect;
+public sealed record MaxEffect(string Feature, Expression Value) : LimitEffect(Feature, Value);
+
+public sealed record StepEffect(string Feature, Expression Value) : LimitEffect(Feature, Value);
 
 public sealed record DefaultsFromTableEffect(EquatableList<string> Features, string Table) : Effect;
 
