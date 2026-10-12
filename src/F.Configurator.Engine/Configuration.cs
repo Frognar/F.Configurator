@@ -7,10 +7,18 @@ public sealed class Configuration
 {
     private readonly ProductCatalog _catalog;
     private readonly Collection _collection;
+    private readonly EquatableDictionary<string, Value> _valuesSetByUser;
+    private readonly EquatableDictionary<string, Value> _otherSetValues;
     private readonly EquatableDictionary<string, Value> _values;
 
-    private Configuration(ProductCatalog catalog, Collection collection, EquatableDictionary<string, Value> values) =>
-        (_catalog, _collection, _values) = (catalog, collection, values);
+    private Configuration(
+        ProductCatalog catalog,
+        Collection collection,
+        EquatableDictionary<string, Value> valuesSetByUser,
+        EquatableDictionary<string, Value> otherSetValues) =>
+        (_catalog, _collection, _valuesSetByUser, _otherSetValues, _values) =
+        (catalog, collection, valuesSetByUser, otherSetValues,
+            valuesSetByUser.Concat(otherSetValues).ToEquatableDictionary());
 
     private int CurrentStageIndex
     {
@@ -46,7 +54,12 @@ public sealed class Configuration
         var collection = catalog.Collections.FirstOrDefault(c => c.Name == collectionName);
         return collection is null
             ? throw new ArgumentException($"Collection '{collectionName}' not found in catalog.")
-            : new Configuration(catalog, collection, EquatableDictionary<string, Value>.Empty);
+            : new Configuration(
+                    catalog,
+                    collection,
+                    EquatableDictionary<string, Value>.Empty,
+                    EquatableDictionary<string, Value>.Empty)
+                .Settled();
     }
 
     public EquatableList<string> AvailableOptions(string featureName) =>
@@ -72,7 +85,8 @@ public sealed class Configuration
         {
             OnlyEffect only => only.Feature == featureName && !only.Options.Contains(option),
             ForbidEffect forbid => forbid.Feature == featureName && forbid.Options.Contains(option),
-            OnlyFromTableEffect onlyFromTable => onlyFromTable.Feature == featureName && !(OptionsFromTable(onlyFromTable)?.Contains(option) ?? true),
+            OnlyFromTableEffect onlyFromTable => onlyFromTable.Feature == featureName &&
+                                                 !(OptionsFromTable(onlyFromTable)?.Contains(option) ?? true),
             _ => false,
         }));
 
@@ -112,30 +126,27 @@ public sealed class Configuration
             throw new ArgumentException($"Feature '{featureName}' does not accept {value}.");
         }
 
-        return new Configuration(_catalog, _collection, _values.SetItem(featureName, value)).Settled();
+        return new Configuration(_catalog, _collection, _valuesSetByUser.SetItem(featureName, value), _otherSetValues)
+            .Settled();
     }
 
     private Configuration Settled()
     {
-        var withoutHidden = new Configuration(
-            _catalog,
-            _collection,
-            _values
-                .Where(kvp => !HiddenFeatures.Contains(kvp.Key))
-                .ToEquatableDictionary());
+        var hidden = HiddenFeatures.ToHashSet();
+        var userValues = _valuesSetByUser.Where(kvp => !hidden.Contains(kvp.Key)).ToEquatableDictionary();
+        var otherValues = SingleOptionsFromTables()
+            .Where(x => !userValues.ContainsKey(x.Feature) && !hidden.Contains(x.Feature))
+            .ToEquatableDictionary();
 
-        return withoutHidden.SingleOptionsFromTables().FirstOrDefault() is ({ } feature, { } option)
-            ? new Configuration(_catalog, _collection, _values.SetItem(feature, option)).Settled()
-            : withoutHidden;
+        var next = new Configuration(_catalog, _collection, userValues, otherValues);
+        return next._values.Equals(_values) ? next : next.Settled();
     }
 
     private IEnumerable<(string Feature, Value Option)> SingleOptionsFromTables() =>
         ActiveRules.SelectMany(r => r.Effects.OfType<OnlyFromTableEffect>())
-            .Where(e => !_values.ContainsKey(e.Feature))
             .Select(e => (e.Feature, Options: OptionsFromTable(e)))
             .Where(x => x.Options is [_])
             .Select(x => (x.Feature, x.Options![0]));
-
 
     private static bool Accepts(Feature feature, Value value) =>
         (feature, value) switch
@@ -144,6 +155,13 @@ public sealed class Configuration
             (ChoiceFeature choice, OptionValue selected) => choice.Options.Any(o => o.Id == selected.Id),
             _ => false,
         };
+
+    public ValueSource? SourceOf(string featureName) => ValueSource.Default;
 }
 
 public sealed record UnavailableOption(string Id, string RuleName);
+
+public enum ValueSource
+{
+    Default
+}
