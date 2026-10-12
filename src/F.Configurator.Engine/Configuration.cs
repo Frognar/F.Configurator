@@ -74,9 +74,15 @@ public sealed class Configuration
             .Distinct()
     ];
 
-    public EquatableList<RuleViolation> Violations => _corrections;
+    public EquatableList<RuleViolation> Violations =>
+    [
+        .. _corrections,
+        .. LimitViolations().Where(v => v.Violation.Reaction != Reaction.Correct).Select(v => v.Violation)
+    ];
 
-    public bool CanFinish => true;
+    public bool CanFinish =>
+        _collection.Features.Except(HiddenFeatures).All(_values.ContainsKey) &&
+        Violations.All(e => e.Reaction != Reaction.Error);
 
     public static Configuration Start(ProductCatalog catalog, string collectionName)
     {
@@ -170,7 +176,7 @@ public sealed class Configuration
     {
         var hidden = HiddenFeatures.ToHashSet();
         var forcedValues = Winners(ForcedValues());
-        var corrections = Corrections().ToList();
+        var corrections = LimitViolations().Where(v => v.Violation.Reaction == Reaction.Correct).ToList();
         var userValues = corrections
             .Aggregate(_userValues, (values, c) => values.SetItem(c.Violation.Feature, c.Corrected))
             .Where(kvp => !hidden.Contains(kvp.Key) && !forcedValues.ContainsKey(kvp.Key))
@@ -186,19 +192,48 @@ public sealed class Configuration
         return next._values.Equals(_values) ? next : next.Settled();
     }
 
-    private IEnumerable<(RuleViolation Violation, Value Corrected)> Corrections() =>
+    private IEnumerable<(RuleViolation Violation, Value Corrected)> LimitViolations() =>
         _userValues
-            .Select(kvp => (Feature: kvp.Key,
-                Number: _catalog.Features.OfType<NumberFeature>().FirstOrDefault(f => f.Name == kvp.Key), kvp.Value))
+            .Select(kvp => (Number: _catalog.Features.OfType<NumberFeature>().FirstOrDefault(f => f.Name == kvp.Key),
+                kvp.Value))
             .Where(x => x is { Number: not null, Value: NumberValue })
-            .Select(x => (x.Feature, Amount: ((NumberValue)x.Value).Amount, Max: MaxOf(x.Number!)))
-            .Where(x => x.Max.Amount is { } max && x.Amount > max && ReactionOf(x.Max.Rule) == Reaction.Correct)
-            .Select(x => (
-                new RuleViolation(x.Feature, x.Max.Rule?.Name, Reaction.Correct, x.Max.Rule?.Violation?.Message),
-                Value.Number(x.Max.Amount!.Value)));
+            .SelectMany(x => LimitViolations(x.Number!, ((NumberValue)x.Value).Amount));
 
-    private Reaction ReactionOf(Rule? rule) =>
-        rule?.Violation?.Reaction ?? _catalog.DefaultReaction ?? Reaction.Error;
+    private IEnumerable<(RuleViolation Violation, Value Corrected)> LimitViolations(NumberFeature number,
+        decimal amount)
+    {
+        var (min, minRule) = MinOf(number);
+        var (max, maxRule) = MaxOf(number);
+        var (step, stepRule) = StepOf(number);
+        var corrected = Value.Number(Clamp(RoundToStep(amount, step), min, max));
+
+        if (step is { } s && amount % s != 0)
+        {
+            yield return (ViolationOf(number, stepRule), corrected);
+        }
+
+        if (amount < min)
+        {
+            yield return (ViolationOf(number, minRule), corrected);
+        }
+
+        if (amount > max)
+        {
+            yield return (ViolationOf(number, maxRule), corrected);
+        }
+    }
+
+    private static decimal RoundToStep(decimal amount, decimal? step) =>
+        step is { } s ? Math.Round(amount / s, MidpointRounding.AwayFromZero) * s : amount;
+
+    private static decimal Clamp(decimal amount, decimal? min, decimal? max) =>
+        Math.Min(Math.Max(amount, min ?? amount), max ?? decimal.MaxValue);
+
+    private RuleViolation ViolationOf(NumberFeature number, Rule? rule) =>
+        new(number.Name,
+            rule?.Name,
+            rule?.Violation?.Reaction ?? _catalog.DefaultReaction ?? Reaction.Error,
+            rule?.Violation?.Message);
 
     private sealed record Candidate(string Feature, Value Value, int Priority, string RuleName);
 
