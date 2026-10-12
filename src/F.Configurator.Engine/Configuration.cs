@@ -11,17 +11,30 @@ public sealed class Configuration
     private readonly EquatableDictionary<string, Value> _forcedValues;
     private readonly EquatableDictionary<string, Value> _defaultValues;
     private readonly EquatableDictionary<string, Value> _values;
+    private readonly EquatableList<Rule> _activeRules;
 
     private Configuration(
         ProductCatalog catalog,
         Collection collection,
         EquatableDictionary<string, Value> userValues,
         EquatableDictionary<string, Value> forcedValues,
-        EquatableDictionary<string, Value> defaultValues) =>
-        (_catalog, _collection, _userValues, _forcedValues, _defaultValues, _values) =
-        (catalog, collection, userValues, forcedValues, defaultValues,
-            userValues.Concat(forcedValues)
-                .Aggregate(defaultValues, (values, kvp) => values.SetItem(kvp.Key, kvp.Value)));
+        EquatableDictionary<string, Value> defaultValues)
+    {
+        _catalog = catalog;
+        _collection = collection;
+        _userValues = userValues;
+        _forcedValues = forcedValues;
+        _defaultValues = defaultValues;
+        _values = userValues.Concat(forcedValues)
+            .Aggregate(defaultValues, (values, kvp) => values.SetItem(kvp.Key, kvp.Value));
+
+        _activeRules =
+        [
+            .. _catalog.Rules.Where(r =>
+                (r.Collections.Count == 0 || r.Collections.Contains(_collection.Name)) &&
+                (r.Condition is null || r.Condition.Evaluate(_values) is BooleanValue { IsTrue: true }))
+        ];
+    }
 
     private int CurrentStageIndex
     {
@@ -36,14 +49,9 @@ public sealed class Configuration
 
     public string CurrentStage => _collection.Stages[CurrentStageIndex].Name;
 
-    private IEnumerable<Rule> ActiveRules =>
-        _catalog.Rules.Where(r =>
-            (r.Collections.Count == 0 || r.Collections.Contains(_collection.Name)) &&
-            (r.Condition is null || r.Condition.Evaluate(_values) is BooleanValue { IsTrue: true }));
-
     private IEnumerable<string> HiddenFeatures =>
-        ActiveRules.SelectMany(r => r.Effects.OfType<HideEffect>()).SelectMany(e => e.Features)
-            .Concat(ActiveRules.SelectMany(r => r.Effects.OfType<OnlyFromTableEffect>())
+        _activeRules.SelectMany(r => r.Effects.OfType<HideEffect>()).SelectMany(e => e.Features)
+            .Concat(_activeRules.SelectMany(r => r.Effects.OfType<OnlyFromTableEffect>())
                 .Where(e => OptionsFromTable(e) is { Count: 0 }).Select(e => e.Feature));
 
     public EquatableList<string> VisibleFeatures =>
@@ -51,8 +59,8 @@ public sealed class Configuration
 
     public EquatableList<string> LockedFeatures =>
     [
-        .. ActiveRules.SelectMany(r => r.Effects.OfType<LockEffect>().SelectMany(e => e.Features))
-            .Concat(ActiveRules.SelectMany(r => r.Effects.OfType<SetEffect>().Select(e => e.Feature)))
+        .. _activeRules.SelectMany(r => r.Effects.OfType<LockEffect>().SelectMany(e => e.Features))
+            .Concat(_activeRules.SelectMany(r => r.Effects.OfType<SetEffect>().Select(e => e.Feature)))
             .Distinct()
     ];
 
@@ -89,7 +97,7 @@ public sealed class Configuration
         ?? throw new ArgumentException($"Feature '{featureName}' is not a choice feature in catalog.");
 
     private Rule? ExcludingRule(string featureName, Value option) =>
-        ActiveRules.FirstOrDefault(r => r.Effects.Any(e => e switch
+        _activeRules.FirstOrDefault(r => r.Effects.Any(e => e switch
         {
             OnlyEffect only => only.Feature == featureName && !only.Options.Contains(option),
             ForbidEffect forbid => forbid.Feature == featureName && forbid.Options.Contains(option),
@@ -177,7 +185,7 @@ public sealed class Configuration
             .ToEquatableDictionary();
 
     private IEnumerable<Candidate> ForcedValues() =>
-        ActiveRules.SelectMany(r => r.Effects.OfType<SetEffect>()
+        _activeRules.SelectMany(r => r.Effects.OfType<SetEffect>()
             .Select(e => (e.Feature, Option: e.Value.Evaluate(_values)))
             .Where(x => x.Option is not MissingValue)
             .Select(x => new Candidate(x.Feature, x.Option, r.Priority, r.Name)));
@@ -187,11 +195,11 @@ public sealed class Configuration
             .Where(x => x.Value is not MissingValue);
 
     private IEnumerable<Candidate> DefaultsFromRules() =>
-        ActiveRules.SelectMany(r => r.Effects.OfType<DefaultEffect>()
+        _activeRules.SelectMany(r => r.Effects.OfType<DefaultEffect>()
             .Select(e => new Candidate(e.Feature, e.Value.Evaluate(_values), r.Priority, r.Name)));
 
     private IEnumerable<Candidate> DefaultsFromTables() =>
-        ActiveRules.SelectMany(r => r.Effects.OfType<DefaultsFromTableEffect>()
+        _activeRules.SelectMany(r => r.Effects.OfType<DefaultsFromTableEffect>()
             .SelectMany(e =>
             {
                 var table = _catalog.Tables[e.Table];
@@ -200,7 +208,7 @@ public sealed class Configuration
             }));
 
     private IEnumerable<Candidate> SingleOptionsFromTables() =>
-        ActiveRules.SelectMany(r => r.Effects.OfType<OnlyFromTableEffect>()
+        _activeRules.SelectMany(r => r.Effects.OfType<OnlyFromTableEffect>()
             .Select(e => (e.Feature, Options: OptionsFromTable(e)))
             .Where(x => x.Options is [_])
             .Select(x => new Candidate(x.Feature, x.Options![0], int.MinValue, r.Name)));
