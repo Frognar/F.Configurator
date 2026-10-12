@@ -239,18 +239,21 @@ public sealed class Configuration
     {
         var number = _catalog.Features.OfType<NumberFeature>().First(f => f.Name == featureName);
         var minValue = Effects<MinEffect>()
+            .OrderByDescending(x => x.Rule.Priority)
             .FirstOrDefault(x => x.Effect.Feature == featureName)
             .Effect?.Value.Evaluate(_values) is NumberValue { Amount: var min }
             ? min
             : number.Min;
 
         var maxValue = Effects<MaxEffect>()
+            .OrderByDescending(x => x.Rule.Priority)
             .FirstOrDefault(x => x.Effect.Feature == featureName)
             .Effect?.Value.Evaluate(_values) is NumberValue { Amount: var max }
             ? max
             : number.Max;
 
         var stepValue = Effects<StepEffect>()
+            .OrderByDescending(x => x.Rule.Priority)
             .FirstOrDefault(x => x.Effect.Feature == featureName)
             .Effect?.Value.Evaluate(_values) is NumberValue { Amount: var step }
             ? step
