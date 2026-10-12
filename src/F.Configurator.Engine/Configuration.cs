@@ -213,14 +213,13 @@ public sealed class Configuration
             _ => false,
         };
 
-    public ValueSource? SourceOf(string featureName) =>
-        _userValues.ContainsKey(featureName)
-            ? ValueSource.User
-            : _defaultValues.ContainsKey(featureName)
-                ? ValueSource.Default
-                : _forcedValues.ContainsKey(featureName)
-                    ? ValueSource.Forced
-                    : null;
+    public ValueSource? SourceOf(string featureName) => featureName switch
+    {
+        _ when _forcedValues.ContainsKey(featureName) => ValueSource.Forced,
+        _ when _userValues.ContainsKey(featureName) => ValueSource.User,
+        _ when _defaultValues.ContainsKey(featureName) => ValueSource.Default,
+        _ => null,
+    };
 }
 
 public sealed record UnavailableOption(string Id, string RuleName);
