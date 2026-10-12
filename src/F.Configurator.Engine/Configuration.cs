@@ -7,18 +7,20 @@ public sealed class Configuration
 {
     private readonly ProductCatalog _catalog;
     private readonly Collection _collection;
-    private readonly EquatableDictionary<string, Value> _valuesSetByUser;
-    private readonly EquatableDictionary<string, Value> _otherSetValues;
+    private readonly EquatableDictionary<string, Value> _userValues;
+    private readonly EquatableDictionary<string, Value> _forcedValues;
+    private readonly EquatableDictionary<string, Value> _defaultValues;
     private readonly EquatableDictionary<string, Value> _values;
 
     private Configuration(
         ProductCatalog catalog,
         Collection collection,
-        EquatableDictionary<string, Value> valuesSetByUser,
-        EquatableDictionary<string, Value> otherSetValues) =>
-        (_catalog, _collection, _valuesSetByUser, _otherSetValues, _values) =
-        (catalog, collection, valuesSetByUser, otherSetValues,
-            valuesSetByUser.Concat(otherSetValues).ToEquatableDictionary());
+        EquatableDictionary<string, Value> userValues,
+        EquatableDictionary<string, Value> forcedValues,
+        EquatableDictionary<string, Value> defaultValues) =>
+        (_catalog, _collection, _userValues, _forcedValues, _defaultValues, _values) =
+        (catalog, collection, userValues, forcedValues, defaultValues,
+            userValues.Concat(forcedValues).Concat(defaultValues).DistinctBy(kvp => kvp.Key).ToEquatableDictionary());
 
     private int CurrentStageIndex
     {
@@ -57,6 +59,7 @@ public sealed class Configuration
             : new Configuration(
                     catalog,
                     collection,
+                    EquatableDictionary<string, Value>.Empty,
                     EquatableDictionary<string, Value>.Empty,
                     EquatableDictionary<string, Value>.Empty)
                 .Settled();
@@ -126,27 +129,40 @@ public sealed class Configuration
             throw new ArgumentException($"Feature '{featureName}' does not accept {value}.");
         }
 
-        return new Configuration(_catalog, _collection, _valuesSetByUser.SetItem(featureName, value), _otherSetValues)
+        return new Configuration(
+                _catalog,
+                _collection,
+                _userValues.SetItem(featureName, value),
+                _forcedValues,
+                _defaultValues)
             .Settled();
     }
 
     private Configuration Settled()
     {
         var hidden = HiddenFeatures.ToHashSet();
-        var userValues = _valuesSetByUser.Where(kvp => !hidden.Contains(kvp.Key)).ToEquatableDictionary();
-        var otherValues = SingleOptionsFromTables()
-            .Where(x => !userValues.ContainsKey(x.Feature) && !hidden.Contains(x.Feature))
+        var userValues = _userValues.Where(kvp => !hidden.Contains(kvp.Key)).ToEquatableDictionary();
+        var forcedValues = ForcedValues().Where(x => !hidden.Contains(x.Feature)).ToEquatableDictionary();
+        var defaultValues = DefaultValues()
+            .Where(x => !hidden.Contains(x.Feature) && !userValues.ContainsKey(x.Feature) &&
+                        !forcedValues.ContainsKey(x.Feature))
+            .DistinctBy(x => x.Feature)
             .ToEquatableDictionary();
 
-        var next = new Configuration(_catalog, _collection, userValues, otherValues);
+        var next = new Configuration(_catalog, _collection, userValues, forcedValues, defaultValues);
         return next._values.Equals(_values) ? next : next.Settled();
     }
 
-    private IEnumerable<(string Feature, Value Option)> SingleOptionsFromTables() =>
+    private IEnumerable<(string Feature, Value Option)> ForcedValues() =>
         ActiveRules.SelectMany(r => r.Effects.OfType<OnlyFromTableEffect>())
             .Select(e => (e.Feature, Options: OptionsFromTable(e)))
             .Where(x => x.Options is [_])
             .Select(x => (x.Feature, x.Options![0]));
+
+    private IEnumerable<(string Feature, Value Option)> DefaultValues() =>
+        ActiveRules.SelectMany(r => r.Effects.OfType<DefaultEffect>())
+            .Select(e => (e.Feature, Option: e.Value.Evaluate(_values)))
+            .Where(e => e.Option is not null and not MissingValue);
 
     private static bool Accepts(Feature feature, Value value) =>
         (feature, value) switch
@@ -157,9 +173,9 @@ public sealed class Configuration
         };
 
     public ValueSource? SourceOf(string featureName) =>
-        _valuesSetByUser.ContainsKey(featureName)
+        _userValues.ContainsKey(featureName)
             ? ValueSource.User
-            : _otherSetValues.ContainsKey(featureName)
+            : _values.ContainsKey(featureName)
                 ? ValueSource.Default
                 : null;
 }
