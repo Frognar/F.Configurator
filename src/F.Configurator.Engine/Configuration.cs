@@ -49,18 +49,22 @@ public sealed class Configuration
 
     public string CurrentStage => _collection.Stages[CurrentStageIndex].Name;
 
+    private IEnumerable<(Rule Rule, T Effect)> Effects<T>() where T : Effect =>
+        _activeRules.SelectMany(r => r.Effects.OfType<T>().Select(e => (r, e)));
+
     private IEnumerable<string> HiddenFeatures =>
-        _activeRules.SelectMany(r => r.Effects.OfType<HideEffect>()).SelectMany(e => e.Features)
-            .Concat(_activeRules.SelectMany(r => r.Effects.OfType<OnlyFromTableEffect>())
-                .Where(e => OptionsFromTable(e) is { Count: 0 }).Select(e => e.Feature));
+        Effects<HideEffect>().SelectMany(e => e.Effect.Features)
+            .Concat(Effects<OnlyFromTableEffect>()
+                .Where(x => OptionsFromTable(x.Effect) is { Count: 0 })
+                .Select(x => x.Effect.Feature));
 
     public EquatableList<string> VisibleFeatures =>
         [.. _collection.Stages.Take(CurrentStageIndex + 1).SelectMany(s => s.Features).Except(HiddenFeatures)];
 
     public EquatableList<string> LockedFeatures =>
     [
-        .. _activeRules.SelectMany(r => r.Effects.OfType<LockEffect>().SelectMany(e => e.Features))
-            .Concat(_activeRules.SelectMany(r => r.Effects.OfType<SetEffect>().Select(e => e.Feature)))
+        .. Effects<LockEffect>().SelectMany(x => x.Effect.Features)
+            .Concat(Effects<SetEffect>().Select(x => x.Effect.Feature))
             .Distinct()
     ];
 
@@ -185,33 +189,33 @@ public sealed class Configuration
             .ToEquatableDictionary();
 
     private IEnumerable<Candidate> ForcedValues() =>
-        _activeRules.SelectMany(r => r.Effects.OfType<SetEffect>()
-            .Select(e => (e.Feature, Option: e.Value.Evaluate(_values)))
+        Effects<SetEffect>().Select(x => (x.Rule, x.Effect.Feature, Option: x.Effect.Value.Evaluate(_values)))
             .Where(x => x.Option is not MissingValue)
-            .Select(x => new Candidate(x.Feature, x.Option, r.Priority, r.Name)));
+            .Select(x => new Candidate(x.Feature, x.Option, x.Rule.Priority, x.Rule.Name));
 
     private IEnumerable<Candidate> DefaultValues() =>
         DefaultsFromRules().Concat(DefaultsFromTables()).Concat(SingleOptionsFromTables())
             .Where(x => x.Value is not MissingValue);
 
     private IEnumerable<Candidate> DefaultsFromRules() =>
-        _activeRules.SelectMany(r => r.Effects.OfType<DefaultEffect>()
-            .Select(e => new Candidate(e.Feature, e.Value.Evaluate(_values), r.Priority, r.Name)));
+        Effects<DefaultEffect>()
+            .Select(x =>
+                new Candidate(x.Effect.Feature, x.Effect.Value.Evaluate(_values), x.Rule.Priority, x.Rule.Name));
 
     private IEnumerable<Candidate> DefaultsFromTables() =>
-        _activeRules.SelectMany(r => r.Effects.OfType<DefaultsFromTableEffect>()
-            .SelectMany(e =>
+        Effects<DefaultsFromTableEffect>()
+            .SelectMany(x =>
             {
-                var table = _catalog.Tables[e.Table];
+                var table = _catalog.Tables[x.Effect.Table];
                 EquatableList<Value> key = [.. table.KeyColumns.Select(ValueOf)];
-                return e.Features.Select(f => new Candidate(f, table.Lookup(key, f), int.MinValue, r.Name));
-            }));
+                return x.Effect.Features.Select(f => new Candidate(f, table.Lookup(key, f), int.MinValue, x.Rule.Name));
+            });
 
     private IEnumerable<Candidate> SingleOptionsFromTables() =>
-        _activeRules.SelectMany(r => r.Effects.OfType<OnlyFromTableEffect>()
-            .Select(e => (e.Feature, Options: OptionsFromTable(e)))
+        Effects<OnlyFromTableEffect>()
+            .Select(x => (x.Rule, x.Effect.Feature, Options: OptionsFromTable(x.Effect)))
             .Where(x => x.Options is [_])
-            .Select(x => new Candidate(x.Feature, x.Options![0], int.MinValue, r.Name)));
+            .Select(x => new Candidate(x.Feature, x.Options![0], int.MinValue, x.Rule.Name));
 
     private static bool Accepts(Feature feature, Value value) =>
         (feature, value) switch
