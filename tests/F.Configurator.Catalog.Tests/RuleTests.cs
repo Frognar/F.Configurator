@@ -106,6 +106,15 @@ public class RuleTests
             rule.Effects);
     }
 
+    // Grammar 4.7: `długość Grawer = 0..12`; the right-hand side is an expression giving a range.
+    [Fact]
+    public void Rule_keeps_text_length_as_an_expression()
+    {
+        var rule = RuleBuilder.Create("GrawerKrotki").Length("Grawer", Expression.Range(0m, 12m)).Build();
+
+        Assert.Equal([new LengthEffect("Grawer", Expression.Range(0m, 12m))], rule.Effects);
+    }
+
     // Grammar 4.7: `domyślnie A = 2050` and `ustaw Podciecie = TAK`.
     [Fact]
     public void Rule_keeps_default_and_forced_values()

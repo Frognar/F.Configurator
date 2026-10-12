@@ -75,6 +75,49 @@ public class LimitReactionsTests
         Assert.Equal(Value.Number(expected), configuration.ValueOf("SzerokoscMM"));
     }
 
+    // The nearest allowed value lies within the limits and on the step, so a limit that is not a multiple of the
+    // step gives the nearest multiple inside the limits. Only the broken limit is reported.
+    [Fact]
+    public void Correct_keeps_the_value_on_the_step_below_the_maximum()
+    {
+        var configuration = Start(catalog => MaxWidth(Reaction.Correct)(catalog)
+                .Rule("KrokSzerokosci", rule => rule.Step("SzerokoscMM", Number(5m)).OnViolation(Reaction.Correct, "Szerokość co 5 mm.")))
+            .Set("SzerokoscMM", Value.Number(1100m));
+
+        Assert.Equal(Value.Number(1040m), configuration.ValueOf("SzerokoscMM"));
+        Assert.Equal(
+            [new RuleViolation("SzerokoscMM", "MaxSzerokosc", Reaction.Correct, "Maksymalna szerokość to 1044 mm.")],
+            configuration.Violations);
+    }
+
+    [Fact]
+    public void Correct_keeps_the_value_on_the_step_above_the_minimum()
+    {
+        var configuration = Start(catalog => catalog
+                .Rule("MinSzerokosc", rule => rule.Min("SzerokoscMM", Number(602m)).OnViolation(Reaction.Correct, "Minimalna szerokość to 602 mm."))
+                .Rule("KrokSzerokosci", rule => rule.Step("SzerokoscMM", Number(5m)).OnViolation(Reaction.Correct, "Szerokość co 5 mm.")))
+            .Set("SzerokoscMM", Value.Number(500m));
+
+        Assert.Equal(Value.Number(605m), configuration.ValueOf("SzerokoscMM"));
+    }
+
+    // One correction fixes every limit the value broke, and each broken limit is reported once.
+    [Fact]
+    public void Correct_reports_every_limit_the_value_broke()
+    {
+        var configuration = Start(catalog => MaxWidth(Reaction.Correct)(catalog)
+                .Rule("KrokSzerokosci", rule => rule.Step("SzerokoscMM", Number(5m)).OnViolation(Reaction.Correct, "Szerokość co 5 mm.")))
+            .Set("SzerokoscMM", Value.Number(1103m));
+
+        Assert.Equal(Value.Number(1040m), configuration.ValueOf("SzerokoscMM"));
+        Assert.Equal(
+            [
+                new RuleViolation("SzerokoscMM", "KrokSzerokosci", Reaction.Correct, "Szerokość co 5 mm."),
+                new RuleViolation("SzerokoscMM", "MaxSzerokosc", Reaction.Correct, "Maksymalna szerokość to 1044 mm."),
+            ],
+            configuration.Violations);
+    }
+
     // The corrected value is still the user's choice, only adjusted.
     [Fact]
     public void Corrected_value_stays_the_users_value()

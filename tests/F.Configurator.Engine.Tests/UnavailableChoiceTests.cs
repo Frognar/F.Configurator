@@ -93,6 +93,27 @@ public class UnavailableChoiceTests
         Assert.Equal([new RuleViolation("Norma", "VerteTylkoPL", Reaction.Error, null)], configuration.Violations);
     }
 
+    // G18: an option missing from the rows of an allowed-combinations table reacts like a forbidden one.
+    [Fact]
+    public void Choice_left_out_by_a_table_reacts_like_a_forbidden_one()
+    {
+        var configuration = Start(catalog => catalog
+                .AllowedCombinations("DozwoloneNormy", ["Model"], "Norma", table => table
+                    .Row("PORTA", "PL")
+                    .Row("PORTA", "CZ")
+                    .Row("VERTE", "PL")
+                    .Row("VERTE", "DE"))
+                .Rule("NormaZTabeli", rule => rule
+                    .OnlyFrom("Norma", "DozwoloneNormy")
+                    .OnViolation(Reaction.Correct, "Tej normy nie ma dla modelu.")))
+            .Set("Model", Value.Option("VERTE"));
+
+        Assert.Equal(Value.Missing, configuration.ValueOf("Norma"));
+        Assert.Equal(
+            [new RuleViolation("Norma", "NormaZTabeli", Reaction.Correct, "Tej normy nie ma dla modelu.")],
+            configuration.Violations);
+    }
+
     // Grammar 4.1: a rule without `przy naruszeniu` uses the catalog's `reakcja`.
     [Fact]
     public void Rule_without_its_own_reaction_uses_the_catalog_reaction()
