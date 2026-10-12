@@ -145,53 +145,62 @@ public sealed class Configuration
     private Configuration Settled()
     {
         var hidden = HiddenFeatures.ToHashSet();
-        var forcedValues = ForcedValues()
-            .Where(x => !hidden.Contains(x.Feature))
-            .ToEquatableDictionary();
-
+        var forcedValues = Winners(ForcedValues());
         var userValues = _userValues
             .Where(kvp => !hidden.Contains(kvp.Key) && !forcedValues.ContainsKey(kvp.Key))
             .ToEquatableDictionary();
 
-        var defaultValues = DefaultValues()
-            .Where(x => !hidden.Contains(x.Feature) &&
-                        !userValues.ContainsKey(x.Feature) &&
-                        !forcedValues.ContainsKey(x.Feature))
-            .DistinctBy(x => x.Feature)
-            .ToEquatableDictionary();
+        var defaultValues = Winners(DefaultValues()
+            .Where(x => !hidden.Contains(x.Feature)));
 
         var next = new Configuration(_catalog, _collection, userValues, forcedValues, defaultValues);
         return next._values.Equals(_values) ? next : next.Settled();
     }
 
-    private IEnumerable<(string Feature, Value Value)> ForcedValues() =>
-        ActiveRules.SelectMany(r => r.Effects.OfType<SetEffect>())
-            .Select(e => (e.Feature, e.Value.Evaluate(_values)))
-            .Where(x => x.Item2 is not MissingValue);
+    private sealed record Candidate(string Feature, Value Value, int Priority, string RuleName);
 
-    private IEnumerable<(string Feature, Value Option)> DefaultValues() =>
+    private static EquatableDictionary<string, Value> Winners(IEnumerable<Candidate> candidates) =>
+        candidates
+            .GroupBy(c => c.Feature)
+            .Select(feature =>
+            {
+                var top = feature.GroupBy(c => c.Priority).MaxBy(p => p.Key)!.ToList();
+                return top.Select(c => c.Value).Distinct().Count() == 1
+                    ? (feature.Key, top[0].Value)
+                    : throw new InvalidOperationException(
+                        $"Feature '{feature.Key}' gets different values from rules " +
+                        $"{string.Join(", ", top.Select(c => $"'{c.RuleName}'"))} with the same priority.");
+            })
+            .ToEquatableDictionary();
+
+    private IEnumerable<Candidate> ForcedValues() =>
+        ActiveRules.SelectMany(r => r.Effects.OfType<SetEffect>()
+            .Select(e => (e.Feature, Option: e.Value.Evaluate(_values)))
+            .Where(x => x.Option is not MissingValue)
+            .Select(x => new Candidate(x.Feature, x.Option, r.Priority, r.Name)));
+
+    private IEnumerable<Candidate> DefaultValues() =>
         DefaultsFromRules().Concat(DefaultsFromTables()).Concat(SingleOptionsFromTables())
-            .Where(x => x.Option is not MissingValue);
+            .Where(x => x.Value is not MissingValue);
 
-    private IEnumerable<(string Feature, Value Option)> DefaultsFromRules() =>
-        ActiveRules.OrderByDescending(r => r.Priority)
-            .SelectMany(r => r.Effects.OfType<DefaultEffect>())
-            .Select(e => (e.Feature, e.Value.Evaluate(_values)));
+    private IEnumerable<Candidate> DefaultsFromRules() =>
+        ActiveRules.SelectMany(r => r.Effects.OfType<DefaultEffect>()
+            .Select(e => new Candidate(e.Feature, e.Value.Evaluate(_values), r.Priority, r.Name)));
 
-    private IEnumerable<(string Feature, Value Option)> DefaultsFromTables() =>
-        ActiveRules.SelectMany(r => r.Effects.OfType<DefaultsFromTableEffect>())
+    private IEnumerable<Candidate> DefaultsFromTables() =>
+        ActiveRules.SelectMany(r => r.Effects.OfType<DefaultsFromTableEffect>()
             .SelectMany(e =>
             {
                 var table = _catalog.Tables[e.Table];
                 EquatableList<Value> key = [.. table.KeyColumns.Select(ValueOf)];
-                return e.Features.Select(f => (f, table.Lookup(key, f)));
-            });
+                return e.Features.Select(f => new Candidate(f, table.Lookup(key, f), int.MinValue, r.Name));
+            }));
 
-    private IEnumerable<(string Feature, Value Option)> SingleOptionsFromTables() =>
-        ActiveRules.SelectMany(r => r.Effects.OfType<OnlyFromTableEffect>())
+    private IEnumerable<Candidate> SingleOptionsFromTables() =>
+        ActiveRules.SelectMany(r => r.Effects.OfType<OnlyFromTableEffect>()
             .Select(e => (e.Feature, Options: OptionsFromTable(e)))
             .Where(x => x.Options is [_])
-            .Select(x => (x.Feature, x.Options![0]));
+            .Select(x => new Candidate(x.Feature, x.Options![0], int.MinValue, r.Name)));
 
     private static bool Accepts(Feature feature, Value value) =>
         (feature, value) switch
