@@ -5,6 +5,8 @@ namespace F.Configurator.Engine;
 
 public sealed class Configuration
 {
+    private const int TablePriority = int.MinValue;
+
     private readonly ProductCatalog _catalog;
     private readonly Collection _collection;
     private readonly EquatableDictionary<string, Value> _userValues;
@@ -206,14 +208,15 @@ public sealed class Configuration
             {
                 var table = _catalog.Tables[x.Effect.Table];
                 EquatableList<Value> key = [.. table.KeyColumns.Select(ValueOf)];
-                return x.Effect.Features.Select(f => new Candidate(f, table.Lookup(key, f), int.MinValue, x.Rule.Name));
+                return x.Effect.Features.Select(f =>
+                    new Candidate(f, table.Lookup(key, f), TablePriority, x.Rule.Name));
             });
 
     private IEnumerable<Candidate> SingleOptionsFromTables() =>
         Effects<OnlyFromTableEffect>()
             .Select(x => (x.Rule, x.Effect.Feature, Options: OptionsFromTable(x.Effect)))
             .Where(x => x.Options is [_])
-            .Select(x => new Candidate(x.Feature, x.Options![0], int.MinValue, x.Rule.Name));
+            .Select(x => new Candidate(x.Feature, x.Options![0], TablePriority, x.Rule.Name));
 
     private static bool Accepts(Feature feature, Value value) =>
         (feature, value) switch
