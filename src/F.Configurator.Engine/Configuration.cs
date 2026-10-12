@@ -51,8 +51,9 @@ public sealed class Configuration
 
     public EquatableList<string> LockedFeatures =>
     [
-        .. ActiveRules.SelectMany(r => r.Effects.OfType<LockEffect>().SelectMany(e => e.Features)),
-        .. ActiveRules.SelectMany(r => r.Effects.OfType<SetEffect>().Select(e => e.Feature))
+        .. ActiveRules.SelectMany(r => r.Effects.OfType<LockEffect>().SelectMany(e => e.Features))
+            .Concat(ActiveRules.SelectMany(r => r.Effects.OfType<SetEffect>().Select(e => e.Feature)))
+            .Distinct()
     ];
 
     public static Configuration Start(ProductCatalog catalog, string collectionName)
