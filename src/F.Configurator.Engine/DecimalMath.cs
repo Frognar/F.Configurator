@@ -1,6 +1,6 @@
 namespace F.Configurator.Engine;
 
-public class DecimalMath
+internal static class DecimalMath
 {
     // Least common multiple of positive decimals: scale both to integers, use the integer LCM, scale back.
     public static decimal LeastCommonMultiple(decimal a, decimal b)
