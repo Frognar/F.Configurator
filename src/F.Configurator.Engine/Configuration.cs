@@ -189,13 +189,11 @@ public sealed class Configuration
             .ToEquatableDictionary();
 
     private IEnumerable<Candidate> ForcedValues() =>
-        Effects<SetEffect>().Select(x => (x.Rule, x.Effect.Feature, Option: x.Effect.Value.Evaluate(_values)))
-            .Where(x => x.Option is not MissingValue)
-            .Select(x => new Candidate(x.Feature, x.Option, x.Rule.Priority, x.Rule.Name));
+        Effects<SetEffect>().Select(x => (x.Rule, x.Effect.Feature, Value: x.Effect.Value.Evaluate(_values)))
+            .Select(x => new Candidate(x.Feature, x.Value, x.Rule.Priority, x.Rule.Name));
 
     private IEnumerable<Candidate> DefaultValues() =>
-        DefaultsFromRules().Concat(DefaultsFromTables()).Concat(SingleOptionsFromTables())
-            .Where(x => x.Value is not MissingValue);
+        DefaultsFromRules().Concat(DefaultsFromTables()).Concat(SingleOptionsFromTables());
 
     private IEnumerable<Candidate> DefaultsFromRules() =>
         Effects<DefaultEffect>()
