@@ -5,12 +5,38 @@ namespace F.Configurator.Engine;
 
 public sealed class Configuration
 {
+    private const int TablePriority = int.MinValue;
+
     private readonly ProductCatalog _catalog;
     private readonly Collection _collection;
+    private readonly EquatableDictionary<string, Value> _userValues;
+    private readonly EquatableDictionary<string, Value> _forcedValues;
+    private readonly EquatableDictionary<string, Value> _defaultValues;
     private readonly EquatableDictionary<string, Value> _values;
+    private readonly EquatableList<Rule> _activeRules;
 
-    private Configuration(ProductCatalog catalog, Collection collection, EquatableDictionary<string, Value> values) =>
-        (_catalog, _collection, _values) = (catalog, collection, values);
+    private Configuration(
+        ProductCatalog catalog,
+        Collection collection,
+        EquatableDictionary<string, Value> userValues,
+        EquatableDictionary<string, Value> forcedValues,
+        EquatableDictionary<string, Value> defaultValues)
+    {
+        _catalog = catalog;
+        _collection = collection;
+        _userValues = userValues;
+        _forcedValues = forcedValues;
+        _defaultValues = defaultValues;
+        _values = userValues.Concat(forcedValues)
+            .Aggregate(defaultValues, (values, kvp) => values.SetItem(kvp.Key, kvp.Value));
+
+        _activeRules =
+        [
+            .. _catalog.Rules.Where(r =>
+                (r.Collections.Count == 0 || r.Collections.Contains(_collection.Name)) &&
+                (r.Condition is null || r.Condition.Evaluate(_values) is BooleanValue { IsTrue: true }))
+        ];
+    }
 
     private int CurrentStageIndex
     {
@@ -25,28 +51,37 @@ public sealed class Configuration
 
     public string CurrentStage => _collection.Stages[CurrentStageIndex].Name;
 
-    private IEnumerable<Rule> ActiveRules =>
-        _catalog.Rules.Where(r =>
-            (r.Collections.Count == 0 || r.Collections.Contains(_collection.Name)) &&
-            (r.Condition is null || r.Condition.Evaluate(_values) is BooleanValue { IsTrue: true }));
+    private IEnumerable<(Rule Rule, T Effect)> Effects<T>() where T : Effect =>
+        _activeRules.SelectMany(r => r.Effects.OfType<T>().Select(e => (r, e)));
 
     private IEnumerable<string> HiddenFeatures =>
-        ActiveRules.SelectMany(r => r.Effects.OfType<HideEffect>()).SelectMany(e => e.Features)
-            .Concat(ActiveRules.SelectMany(r => r.Effects.OfType<OnlyFromTableEffect>())
-                .Where(e => OptionsFromTable(e) is { Count: 0 }).Select(e => e.Feature));
+        Effects<HideEffect>().SelectMany(e => e.Effect.Features)
+            .Concat(Effects<OnlyFromTableEffect>()
+                .Where(x => OptionsFromTable(x.Effect) is { Count: 0 })
+                .Select(x => x.Effect.Feature));
 
     public EquatableList<string> VisibleFeatures =>
         [.. _collection.Stages.Take(CurrentStageIndex + 1).SelectMany(s => s.Features).Except(HiddenFeatures)];
 
     public EquatableList<string> LockedFeatures =>
-        [.. ActiveRules.SelectMany(r => r.Effects.OfType<LockEffect>().SelectMany(e => e.Features))];
+    [
+        .. Effects<LockEffect>().SelectMany(x => x.Effect.Features)
+            .Concat(Effects<SetEffect>().Select(x => x.Effect.Feature))
+            .Distinct()
+    ];
 
     public static Configuration Start(ProductCatalog catalog, string collectionName)
     {
         var collection = catalog.Collections.FirstOrDefault(c => c.Name == collectionName);
         return collection is null
             ? throw new ArgumentException($"Collection '{collectionName}' not found in catalog.")
-            : new Configuration(catalog, collection, EquatableDictionary<string, Value>.Empty);
+            : new Configuration(
+                    catalog,
+                    collection,
+                    EquatableDictionary<string, Value>.Empty,
+                    EquatableDictionary<string, Value>.Empty,
+                    EquatableDictionary<string, Value>.Empty)
+                .Settled();
     }
 
     public EquatableList<string> AvailableOptions(string featureName) =>
@@ -68,11 +103,13 @@ public sealed class Configuration
         ?? throw new ArgumentException($"Feature '{featureName}' is not a choice feature in catalog.");
 
     private Rule? ExcludingRule(string featureName, Value option) =>
-        ActiveRules.FirstOrDefault(r => r.Effects.Any(e => e switch
+        _activeRules.FirstOrDefault(r => r.Effects.Any(e => e switch
         {
             OnlyEffect only => only.Feature == featureName && !only.Options.Contains(option),
             ForbidEffect forbid => forbid.Feature == featureName && forbid.Options.Contains(option),
-            OnlyFromTableEffect onlyFromTable => onlyFromTable.Feature == featureName && !(OptionsFromTable(onlyFromTable)?.Contains(option) ?? true),
+            OnlyFromTableEffect onlyFromTable => onlyFromTable.Feature == featureName &&
+                                                 OptionsFromTable(onlyFromTable) is { } allowed &&
+                                                 !allowed.Contains(option),
             _ => false,
         }));
 
@@ -112,30 +149,75 @@ public sealed class Configuration
             throw new ArgumentException($"Feature '{featureName}' does not accept {value}.");
         }
 
-        return new Configuration(_catalog, _collection, _values.SetItem(featureName, value)).Settled();
+        return new Configuration(
+                _catalog,
+                _collection,
+                _userValues.SetItem(featureName, value),
+                _forcedValues,
+                _defaultValues)
+            .Settled();
     }
 
     private Configuration Settled()
     {
-        var withoutHidden = new Configuration(
-            _catalog,
-            _collection,
-            _values
-                .Where(kvp => !HiddenFeatures.Contains(kvp.Key))
-                .ToEquatableDictionary());
+        var hidden = HiddenFeatures.ToHashSet();
+        var forcedValues = Winners(ForcedValues());
+        var userValues = _userValues
+            .Where(kvp => !hidden.Contains(kvp.Key) && !forcedValues.ContainsKey(kvp.Key))
+            .ToEquatableDictionary();
 
-        return withoutHidden.SingleOptionsFromTables().FirstOrDefault() is ({ } feature, { } option)
-            ? new Configuration(_catalog, _collection, _values.SetItem(feature, option)).Settled()
-            : withoutHidden;
+        var defaultValues = Winners(DefaultValues()
+            .Where(x => !hidden.Contains(x.Feature) &&
+                        !userValues.ContainsKey(x.Feature) &&
+                        !forcedValues.ContainsKey(x.Feature)));
+
+        var next = new Configuration(_catalog, _collection, userValues, forcedValues, defaultValues);
+        return next._values.Equals(_values) ? next : next.Settled();
     }
 
-    private IEnumerable<(string Feature, Value Option)> SingleOptionsFromTables() =>
-        ActiveRules.SelectMany(r => r.Effects.OfType<OnlyFromTableEffect>())
-            .Where(e => !_values.ContainsKey(e.Feature))
-            .Select(e => (e.Feature, Options: OptionsFromTable(e)))
-            .Where(x => x.Options is [_])
-            .Select(x => (x.Feature, x.Options![0]));
+    private sealed record Candidate(string Feature, Value Value, int Priority, string RuleName);
 
+    private static EquatableDictionary<string, Value> Winners(IEnumerable<Candidate> candidates) =>
+        candidates
+            .GroupBy(c => c.Feature)
+            .Select(feature =>
+            {
+                var top = feature.GroupBy(c => c.Priority).MaxBy(p => p.Key)!.ToList();
+                return top.Select(c => c.Value).Distinct().Count() == 1
+                    ? (feature.Key, top[0].Value)
+                    : throw new InvalidOperationException(
+                        $"Feature '{feature.Key}' gets different values from rules " +
+                        $"{string.Join(", ", top.Select(c => $"'{c.RuleName}'"))} with the same priority.");
+            })
+            .ToEquatableDictionary();
+
+    private IEnumerable<Candidate> ForcedValues() =>
+        Effects<SetEffect>().Select(x => (x.Rule, x.Effect.Feature, Value: x.Effect.Value.Evaluate(_values)))
+            .Select(x => new Candidate(x.Feature, x.Value, x.Rule.Priority, x.Rule.Name));
+
+    private IEnumerable<Candidate> DefaultValues() =>
+        DefaultsFromRules().Concat(DefaultsFromTables()).Concat(SingleOptionsFromTables());
+
+    private IEnumerable<Candidate> DefaultsFromRules() =>
+        Effects<DefaultEffect>()
+            .Select(x =>
+                new Candidate(x.Effect.Feature, x.Effect.Value.Evaluate(_values), x.Rule.Priority, x.Rule.Name));
+
+    private IEnumerable<Candidate> DefaultsFromTables() =>
+        Effects<DefaultsFromTableEffect>()
+            .SelectMany(x =>
+            {
+                var table = _catalog.Tables[x.Effect.Table];
+                EquatableList<Value> key = [.. table.KeyColumns.Select(ValueOf)];
+                return x.Effect.Features.Select(f =>
+                    new Candidate(f, table.Lookup(key, f), TablePriority, x.Rule.Name));
+            });
+
+    private IEnumerable<Candidate> SingleOptionsFromTables() =>
+        Effects<OnlyFromTableEffect>()
+            .Select(x => (x.Rule, x.Effect.Feature, Options: OptionsFromTable(x.Effect)))
+            .Where(x => x.Options is [_])
+            .Select(x => new Candidate(x.Feature, x.Options![0], TablePriority, x.Rule.Name));
 
     private static bool Accepts(Feature feature, Value value) =>
         (feature, value) switch
@@ -144,6 +226,21 @@ public sealed class Configuration
             (ChoiceFeature choice, OptionValue selected) => choice.Options.Any(o => o.Id == selected.Id),
             _ => false,
         };
+
+    public ValueSource? SourceOf(string featureName) => featureName switch
+    {
+        _ when _forcedValues.ContainsKey(featureName) => ValueSource.Forced,
+        _ when _userValues.ContainsKey(featureName) => ValueSource.User,
+        _ when _defaultValues.ContainsKey(featureName) => ValueSource.Default,
+        _ => null,
+    };
 }
 
 public sealed record UnavailableOption(string Id, string RuleName);
+
+public enum ValueSource
+{
+    Default,
+    User,
+    Forced,
+}

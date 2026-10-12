@@ -126,6 +126,62 @@ public class AllowedCombinationsRuleTests
         Assert.Equal(Value.Option("GALKA"), configuration.ValueOf("Uchwyt"));
     }
 
+    // The single option is not the user's choice, so it behaves like a default.
+    [Fact]
+    public void Single_allowed_option_is_a_default()
+    {
+        var configuration = Start()
+            .Set("Model", Value.Option("PORTA"))
+            .Set("ZamekDolny", Value.Option("BRAK"));
+
+        Assert.Equal(ValueSource.Default, configuration.SourceOf("Uchwyt"));
+    }
+
+    // Analysis 3.2: a value not from the user is recomputed, so it goes once the table allows more.
+    [Fact]
+    public void Single_allowed_option_goes_when_the_table_allows_more()
+    {
+        var configuration = Start()
+            .Set("Model", Value.Option("PORTA"))
+            .Set("ZamekDolny", Value.Option("BRAK"))
+            .Set("ZamekDolny", Value.Option("KLUCZ"));
+
+        Assert.Equal(Value.Missing, configuration.ValueOf("Uchwyt"));
+    }
+
+    [Fact]
+    public void Single_allowed_option_follows_the_key()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Choice("Model", feature => feature.Option("PORTA", "Porta").Option("VERTE", "Verte"))
+            .Choice("Uchwyt", feature => feature.Option("KLAMKA", "Klamka").Option("GALKA", "Gałka"))
+            .AllowedCombinations("DozwoloneUchwyt", ["Model"], "Uchwyt", table => table
+                .Row("PORTA", "GALKA")
+                .Row("VERTE", "KLAMKA"))
+            .Rule("UchwytZTabeli", rule => rule.OnlyFrom("Uchwyt", "DozwoloneUchwyt"))
+            .Collection("Basic", collection => collection.Stage("Drzwi", "Model", "Uchwyt"))
+            .Build();
+
+        var configuration = Configuration.Start(catalog, "Basic")
+            .Set("Model", Value.Option("PORTA"))
+            .Set("Model", Value.Option("VERTE"));
+
+        Assert.Equal(Value.Option("KLAMKA"), configuration.ValueOf("Uchwyt"));
+    }
+
+    // The user may still pick the single option; from then on it is the user's value.
+    [Fact]
+    public void User_may_set_the_single_allowed_option()
+    {
+        var configuration = Start()
+            .Set("Model", Value.Option("PORTA"))
+            .Set("ZamekDolny", Value.Option("BRAK"))
+            .Set("Uchwyt", Value.Option("GALKA"));
+
+        Assert.Equal(Value.Option("GALKA"), configuration.ValueOf("Uchwyt"));
+        Assert.Equal(ValueSource.User, configuration.SourceOf("Uchwyt"));
+    }
+
     // A rule that does not apply leaves the table out, like any other effect.
     [Fact]
     public void Table_of_a_rule_that_does_not_match_narrows_nothing()
