@@ -281,7 +281,7 @@ public sealed record UnavailableOption(string Id, string RuleName);
 
 public sealed record NumberLimits(decimal? Min, decimal? Max, decimal? Step);
 
-public sealed record RuleViolation;
+public sealed record RuleViolation(string Feature, string? RuleName, Reaction Reaction, string? Message);
 
 public enum ValueSource
 {
