@@ -245,7 +245,12 @@ public sealed class Configuration
 
         var min = Limit<MinEffect>(featureName, e => (e.Feature, e.Value), Enumerable.Max, number.Min);
         var max = Limit<MaxEffect>(featureName, e => (e.Feature, e.Value), Enumerable.Min, number.Max);
-        var step = Limit<StepEffect>(featureName, e => (e.Feature, e.Value), Enumerable.Min, number.Step);
+        var step = Limit<StepEffect>(featureName,
+            e => (e.Feature, e.Value),
+            steps => steps.Aggregate(DecimalMath.LeastCommonMultiple),
+            number.Step,
+            step => step > 0);
+
         return new NumberLimits(min, max, step);
     }
 
@@ -253,13 +258,14 @@ public sealed class Configuration
         string featureName,
         Func<T, (string Feature, Expression Value)> parts,
         Func<IEnumerable<decimal>, decimal> mostRestrictive,
-        decimal? declared) where T : Effect
+        decimal? declared,
+        Func<decimal, bool>? accepts = null) where T : Effect
     {
         var top = Effects<T>()
             .Select(x => (x.Rule.Priority, Parts: parts(x.Effect)))
             .Where(x => x.Parts.Feature == featureName)
             .Select(x => (x.Priority, Value: x.Parts.Value.Evaluate(_values)))
-            .Where(x => x.Value is NumberValue)
+            .Where(x => x.Value is NumberValue number && (accepts?.Invoke(number.Amount) ?? true))
             .GroupBy(x => x.Priority)
             .MaxBy(g => g.Key);
 
