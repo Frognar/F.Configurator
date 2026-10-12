@@ -120,6 +120,35 @@ public class NumberLimitsTests
         Assert.Equal(1044m, configuration.LimitsOf("SzerokoscMM").Max);
     }
 
+    // Two independent steps work together: only values that keep both are left, so the step is their least
+    // common multiple (decided 2026-10-12).
+    [Theory]
+    [InlineData(2, 5, 10)]
+    [InlineData(2, 10, 10)]
+    [InlineData(0.5, 0.2, 1)]
+    [InlineData(0.3, 0.2, 0.6)]
+    public void Tie_of_steps_takes_their_least_common_multiple(decimal first, decimal second, decimal expected)
+    {
+        var configuration = Start(catalog => catalog
+            .Rule("KrokA", rule => rule.Step("SzerokoscMM", Number(first)))
+            .Rule("KrokB", rule => rule.Step("SzerokoscMM", Number(second))));
+
+        Assert.Equal(expected, configuration.LimitsOf("SzerokoscMM").Step);
+    }
+
+    // A rule whose limit has no value gives no limit, so it does not hide the limits of lower priority.
+    [Fact]
+    public void Rule_without_a_value_leaves_the_limit_of_lower_priority()
+    {
+        var configuration = Start(catalog => catalog
+            .Rule("MaxWysokosc", rule => rule.Max("WysokoscMM", Number(2100m)))
+            .Rule("WysokoscDoSzerokosci", rule => rule
+                .Priority(10)
+                .Max("WysokoscMM", Add(Reference("SzerokoscMM"), Number(1200m)))));
+
+        Assert.Equal(2100m, configuration.LimitsOf("WysokoscMM").Max);
+    }
+
     [Fact]
     public void Limits_of_a_feature_that_is_not_a_number_are_rejected()
     {
