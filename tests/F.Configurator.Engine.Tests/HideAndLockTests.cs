@@ -164,6 +164,16 @@ public class HideAndLockTests
     }
 
     [Fact]
+    public void Feature_locked_by_several_rules_is_listed_once()
+    {
+        var configuration = Start(catalog => catalog
+            .Rule("BlokadaA", rule => rule.Lock("SzerokoscMM"))
+            .Rule("BlokadaB", rule => rule.Lock("SzerokoscMM")));
+
+        Assert.Equal(["SzerokoscMM"], configuration.LockedFeatures);
+    }
+
+    [Fact]
     public void Setting_a_locked_feature_is_rejected()
     {
         var configuration = CompleteSkrzydlo(StartWithFelcXRule())

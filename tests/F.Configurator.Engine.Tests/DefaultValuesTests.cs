@@ -183,6 +183,19 @@ public class DefaultValuesTests
         Assert.Equal(ValueSource.Forced, configuration.SourceOf("Norma"));
     }
 
+    // Layers: default < user < forced; the source names the layer that gave the value.
+    [Fact]
+    public void Forced_value_wins_over_a_default()
+    {
+        var configuration = Start(catalog => catalog
+                .Rule("NormaPL", rule => rule.Default("Norma", Option("PL")))
+                .Rule("VerteNormaCZ", rule => rule.When(ModelVerte).Set("Norma", Option("CZ"))))
+            .Set("Model", Value.Option("VERTE"));
+
+        Assert.Equal(Value.Option("CZ"), configuration.ValueOf("Norma"));
+        Assert.Equal(ValueSource.Forced, configuration.SourceOf("Norma"));
+    }
+
     private static Configuration StartWithDimensionsTable()
     {
         var wymiary = TableBuilder.Create(["Model", "Norma"], ["SzerokoscMM", "WysokoscMM"])

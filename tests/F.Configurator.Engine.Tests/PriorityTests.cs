@@ -78,6 +78,20 @@ public class PriorityTests
         Assert.Contains("'WysokoscVerteB'", error.Message);
     }
 
+    // Defaults are never used for a feature the user has set, so their tie is not a conflict.
+    [Fact]
+    public void Tie_on_a_feature_set_by_the_user_is_not_a_conflict()
+    {
+        var configuration = Start(catalog => catalog
+                .Rule("WysokoscVerteA", rule => rule.When(ModelVerte).Default("WysokoscMM", Number(2000m)))
+                .Rule("WysokoscVerteB", rule => rule.When(ModelVerte).Default("WysokoscMM", Number(2050m))))
+            .Set("Model", Value.Option("PORTA"))
+            .Set("WysokoscMM", Value.Number(2100m))
+            .Set("Model", Value.Option("VERTE"));
+
+        Assert.Equal(Value.Number(2100m), configuration.ValueOf("WysokoscMM"));
+    }
+
     // Only the winning priority counts; a tie below it is never used.
     [Fact]
     public void Tie_below_the_winner_is_not_a_conflict()
