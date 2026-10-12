@@ -235,7 +235,11 @@ public sealed class Configuration
         _ => null,
     };
 
-    public NumberLimits LimitsOf(string featureName) => new(null, null, null);
+    public NumberLimits LimitsOf(string featureName)
+    {
+        var number = _catalog.Features.OfType<NumberFeature>().First(f => f.Name == featureName);
+        return new NumberLimits(number.Min, number.Max, number.Step);
+    }
 }
 
 public sealed record UnavailableOption(string Id, string RuleName);
