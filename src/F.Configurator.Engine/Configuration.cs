@@ -50,7 +50,10 @@ public sealed class Configuration
         [.. _collection.Stages.Take(CurrentStageIndex + 1).SelectMany(s => s.Features).Except(HiddenFeatures)];
 
     public EquatableList<string> LockedFeatures =>
-        [.. ActiveRules.SelectMany(r => r.Effects.OfType<LockEffect>().SelectMany(e => e.Features))];
+    [
+        .. ActiveRules.SelectMany(r => r.Effects.OfType<LockEffect>().SelectMany(e => e.Features)),
+        .. ActiveRules.SelectMany(r => r.Effects.OfType<SetEffect>().Select(e => e.Feature))
+    ];
 
     public static Configuration Start(ProductCatalog catalog, string collectionName)
     {
@@ -154,16 +157,33 @@ public sealed class Configuration
         return next._values.Equals(_values) ? next : next.Settled();
     }
 
-    private IEnumerable<(string Feature, Value Option)> ForcedValues() =>
+    private IEnumerable<(string Feature, Value Value)> ForcedValues() =>
+        ActiveRules.SelectMany(r => r.Effects.OfType<SetEffect>())
+            .Select(e => (e.Feature, e.Value.Evaluate(_values)))
+            .Where(x => x.Item2 is not MissingValue);
+
+    private IEnumerable<(string Feature, Value Option)> DefaultValues() =>
+        DefaultsFromRules().Concat(DefaultsFromTables()).Concat(SingleOptionsFromTables())
+            .Where(x => x.Option is not MissingValue);
+
+    private IEnumerable<(string Feature, Value Option)> DefaultsFromRules() =>
+        ActiveRules.SelectMany(r => r.Effects.OfType<DefaultEffect>())
+            .Select(e => (e.Feature, e.Value.Evaluate(_values)));
+
+    private IEnumerable<(string Feature, Value Option)> DefaultsFromTables() =>
+        ActiveRules.SelectMany(r => r.Effects.OfType<DefaultsFromTableEffect>())
+            .SelectMany(e =>
+            {
+                var table = _catalog.Tables[e.Table];
+                EquatableList<Value> key = [.. table.KeyColumns.Select(ValueOf)];
+                return e.Features.Select(f => (f, table.Lookup(key, f)));
+            });
+
+    private IEnumerable<(string Feature, Value Option)> SingleOptionsFromTables() =>
         ActiveRules.SelectMany(r => r.Effects.OfType<OnlyFromTableEffect>())
             .Select(e => (e.Feature, Options: OptionsFromTable(e)))
             .Where(x => x.Options is [_])
             .Select(x => (x.Feature, x.Options![0]));
-
-    private IEnumerable<(string Feature, Value Option)> DefaultValues() =>
-        ActiveRules.SelectMany(r => r.Effects.OfType<DefaultEffect>())
-            .Select(e => (e.Feature, Option: e.Value.Evaluate(_values)))
-            .Where(e => e.Option is not null and not MissingValue);
 
     private static bool Accepts(Feature feature, Value value) =>
         (feature, value) switch
@@ -176,9 +196,11 @@ public sealed class Configuration
     public ValueSource? SourceOf(string featureName) =>
         _userValues.ContainsKey(featureName)
             ? ValueSource.User
-            : _values.ContainsKey(featureName)
+            : _defaultValues.ContainsKey(featureName)
                 ? ValueSource.Default
-                : null;
+                : _forcedValues.ContainsKey(featureName)
+                    ? ValueSource.Forced
+                    : null;
 }
 
 public sealed record UnavailableOption(string Id, string RuleName);
@@ -187,4 +209,5 @@ public enum ValueSource
 {
     Default,
     User,
+    Forced,
 }
