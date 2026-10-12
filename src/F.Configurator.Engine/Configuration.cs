@@ -237,13 +237,22 @@ public sealed class Configuration
 
     public NumberLimits LimitsOf(string featureName)
     {
-        var number = _catalog.Features.OfType<NumberFeature>().First(f => f.Name == featureName);
+        var number = _catalog.Features.OfType<NumberFeature>().FirstOrDefault(f => f.Name == featureName);
+        if (number is null)
+        {
+            throw new ArgumentException($"Feature '{featureName}' is not a number feature.");
+        }
+
         var minValue = Effects<MinEffect>()
             .OrderByDescending(x => x.Rule.Priority)
-            .FirstOrDefault(x => x.Effect.Feature == featureName)
-            .Effect?.Value.Evaluate(_values) is NumberValue { Amount: var min }
-            ? min
-            : number.Min;
+            .Where(x => x.Effect.Feature == featureName)
+            .Select(x => x.Effect.Value.Evaluate(_values))
+            .OfType<NumberValue>()
+            .Select(n => n.Amount)
+            .OrderDescending()
+            .Cast<decimal?>()
+            .DefaultIfEmpty(number.Min)
+            .First();
 
         var maxValue = Effects<MaxEffect>()
             .OrderByDescending(x => x.Rule.Priority)
