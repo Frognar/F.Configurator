@@ -244,15 +244,12 @@ public sealed class Configuration
         }
 
         var minValue = Effects<MinEffect>()
-            .OrderByDescending(x => x.Rule.Priority)
             .Where(x => x.Effect.Feature == featureName)
+            .OrderByDescending(x => x.Rule.Priority)
             .Select(x => x.Effect.Value.Evaluate(_values))
             .OfType<NumberValue>()
-            .Select(n => n.Amount)
-            .OrderDescending()
-            .Cast<decimal?>()
-            .DefaultIfEmpty(number.Min)
-            .First();
+            .OrderByDescending(n => n.Amount)
+            .FirstOrDefault()?.Amount ?? number.Min;
 
         var maxValue = Effects<MaxEffect>()
             .OrderByDescending(x => x.Rule.Priority)
