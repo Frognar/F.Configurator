@@ -180,6 +180,7 @@ public class DefaultValuesTests
             .Set("Model", Value.Option("VERTE"));
 
         Assert.Equal(Value.Option("PL"), configuration.ValueOf("Norma"));
+        Assert.Equal(ValueSource.Forced, configuration.SourceOf("Norma"));
     }
 
     private static Configuration StartWithDimensionsTable()
