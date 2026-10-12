@@ -238,7 +238,25 @@ public sealed class Configuration
     public NumberLimits LimitsOf(string featureName)
     {
         var number = _catalog.Features.OfType<NumberFeature>().First(f => f.Name == featureName);
-        return new NumberLimits(number.Min, number.Max, number.Step);
+        var minValue = Effects<MinEffect>()
+            .FirstOrDefault(x => x.Effect.Feature == featureName)
+            .Effect?.Value.Evaluate(_values) is NumberValue { Amount: var min }
+            ? min
+            : number.Min;
+
+        var maxValue = Effects<MaxEffect>()
+            .FirstOrDefault(x => x.Effect.Feature == featureName)
+            .Effect?.Value.Evaluate(_values) is NumberValue { Amount: var max }
+            ? max
+            : number.Max;
+
+        var stepValue = Effects<StepEffect>()
+            .FirstOrDefault(x => x.Effect.Feature == featureName)
+            .Effect?.Value.Evaluate(_values) is NumberValue { Amount: var step }
+            ? step
+            : number.Step;
+
+        return new NumberLimits(minValue, maxValue, stepValue);
     }
 }
 
