@@ -382,16 +382,3 @@ public sealed class Configuration
         return (amount, top.FirstOrDefault(x => x.Amount == amount).Rule ?? top.First().Rule);
     }
 }
-
-public sealed record UnavailableOption(string Id, string RuleName);
-
-public sealed record NumberLimits(decimal? Min, decimal? Max, decimal? Step);
-
-public sealed record RuleViolation(string Feature, string? RuleName, Reaction Reaction, string? Message);
-
-public enum ValueSource
-{
-    Default,
-    User,
-    Forced,
-}
