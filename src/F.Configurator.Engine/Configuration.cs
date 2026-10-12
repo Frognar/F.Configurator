@@ -77,7 +77,7 @@ public sealed class Configuration
     public EquatableList<RuleViolation> Violations =>
     [
         .. _corrections,
-        .. LimitViolations().Where(v => v.Violation.Reaction != Reaction.Correct).Select(v => v.Violation)
+        .. ValueViolations().Where(v => v.Violation.Reaction != Reaction.Correct).Select(v => v.Violation)
     ];
 
     public bool CanFinish =>
@@ -205,9 +205,10 @@ public sealed class Configuration
     {
         var hidden = HiddenFeatures.ToHashSet();
         var forcedValues = Winners(ForcedValues());
-        var corrections = LimitViolations().Where(v => v.Violation.Reaction == Reaction.Correct).ToList();
+        var corrections = ValueViolations().Where(v => v.Violation.Reaction == Reaction.Correct).ToList();
         var userValues = corrections
             .Aggregate(_userValues, (values, c) => values.SetItem(c.Violation.Feature, c.Corrected))
+            .Where(kvp => kvp.Value is not MissingValue)
             .Where(kvp => !hidden.Contains(kvp.Key) && !forcedValues.ContainsKey(kvp.Key))
             .ToEquatableDictionary();
 
@@ -221,6 +222,16 @@ public sealed class Configuration
 
         return next;
     }
+
+    private IEnumerable<(RuleViolation Violation, Value Corrected)> ValueViolations() =>
+        LimitViolations().Concat(OptionViolations());
+
+    private IEnumerable<(RuleViolation Violation, Value Corrected)> OptionViolations() =>
+        _userValues
+            .Where(kvp => kvp.Value is OptionValue)
+            .Select(kvp => (Feature: kvp.Key, Rule: ExcludingRule(kvp.Key, kvp.Value)))
+            .Where(x => x.Rule is not null)
+            .Select(x => (ViolationOf(x.Feature, x.Rule), (Value)Value.Missing));
 
     private IEnumerable<(RuleViolation Violation, Value Corrected)> LimitViolations() =>
         _userValues
@@ -239,17 +250,17 @@ public sealed class Configuration
 
         if (step is { } s && amount % s != 0)
         {
-            yield return (ViolationOf(number, stepRule), corrected);
+            yield return (ViolationOf(number.Name, stepRule), corrected);
         }
 
         if (amount < min)
         {
-            yield return (ViolationOf(number, minRule), corrected);
+            yield return (ViolationOf(number.Name, minRule), corrected);
         }
 
         if (amount > max)
         {
-            yield return (ViolationOf(number, maxRule), corrected);
+            yield return (ViolationOf(number.Name, maxRule), corrected);
         }
     }
 
@@ -259,8 +270,8 @@ public sealed class Configuration
     private static decimal Clamp(decimal amount, decimal? min, decimal? max) =>
         Math.Min(Math.Max(amount, min ?? amount), max ?? decimal.MaxValue);
 
-    private RuleViolation ViolationOf(NumberFeature number, Rule? rule) =>
-        new(number.Name,
+    private RuleViolation ViolationOf(string featureName, Rule? rule) =>
+        new(featureName,
             rule?.Name,
             rule?.Violation?.Reaction ?? _catalog.DefaultReaction ?? Reaction.Error,
             rule?.Violation?.Message);
