@@ -174,7 +174,8 @@ public sealed class Configuration
             .Where(x => x.Option is not MissingValue);
 
     private IEnumerable<(string Feature, Value Option)> DefaultsFromRules() =>
-        ActiveRules.SelectMany(r => r.Effects.OfType<DefaultEffect>())
+        ActiveRules.OrderByDescending(r => r.Priority)
+            .SelectMany(r => r.Effects.OfType<DefaultEffect>())
             .Select(e => (e.Feature, e.Value.Evaluate(_values)));
 
     private IEnumerable<(string Feature, Value Option)> DefaultsFromTables() =>
