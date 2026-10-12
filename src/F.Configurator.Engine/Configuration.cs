@@ -243,29 +243,27 @@ public sealed class Configuration
             throw new ArgumentException($"Feature '{featureName}' is not a number feature.");
         }
 
-        var minValue = Effects<MinEffect>()
-            .Where(x => x.Effect.Feature == featureName)
-            .OrderByDescending(x => x.Rule.Priority)
-            .Select(x => x.Effect.Value.Evaluate(_values))
-            .OfType<NumberValue>()
-            .OrderByDescending(n => n.Amount)
-            .FirstOrDefault()?.Amount ?? number.Min;
+        var min = Limit<MinEffect>(featureName, e => (e.Feature, e.Value), Enumerable.Max, number.Min);
+        var max = Limit<MaxEffect>(featureName, e => (e.Feature, e.Value), Enumerable.Min, number.Max);
+        var step = Limit<StepEffect>(featureName, e => (e.Feature, e.Value), Enumerable.Min, number.Step);
+        return new NumberLimits(min, max, step);
+    }
 
-        var maxValue = Effects<MaxEffect>()
-            .OrderByDescending(x => x.Rule.Priority)
-            .FirstOrDefault(x => x.Effect.Feature == featureName)
-            .Effect?.Value.Evaluate(_values) is NumberValue { Amount: var max }
-            ? max
-            : number.Max;
+    private decimal? Limit<T>(
+        string featureName,
+        Func<T, (string Feature, Expression Value)> parts,
+        Func<IEnumerable<decimal>, decimal> mostRestrictive,
+        decimal? declared) where T : Effect
+    {
+        var top = Effects<T>()
+            .Select(x => (x.Rule.Priority, Parts: parts(x.Effect)))
+            .Where(x => x.Parts.Feature == featureName)
+            .Select(x => (x.Priority, Value: x.Parts.Value.Evaluate(_values)))
+            .Where(x => x.Value is NumberValue)
+            .GroupBy(x => x.Priority)
+            .MaxBy(g => g.Key);
 
-        var stepValue = Effects<StepEffect>()
-            .OrderByDescending(x => x.Rule.Priority)
-            .FirstOrDefault(x => x.Effect.Feature == featureName)
-            .Effect?.Value.Evaluate(_values) is NumberValue { Amount: var step }
-            ? step
-            : number.Step;
-
-        return new NumberLimits(minValue, maxValue, stepValue);
+        return top is null ? declared : mostRestrictive(top.Select(x => ((NumberValue)x.Value).Amount));
     }
 }
 
