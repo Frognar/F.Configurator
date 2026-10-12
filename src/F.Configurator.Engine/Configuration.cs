@@ -12,9 +12,9 @@ public sealed class Configuration
     private readonly EquatableDictionary<string, Value> _userValues;
     private readonly EquatableDictionary<string, Value> _forcedValues;
     private readonly EquatableDictionary<string, Value> _defaultValues;
+    private readonly EquatableList<RuleViolation> _corrections;
     private readonly EquatableDictionary<string, Value> _values;
     private readonly EquatableList<Rule> _activeRules;
-    private readonly EquatableList<RuleViolation> _corrections;
     private readonly HashSet<string> _hiddenFeatures;
 
     private Configuration(
@@ -53,21 +53,22 @@ public sealed class Configuration
 
     public static Configuration Start(ProductCatalog catalog, string collectionName)
     {
-        var collection = catalog.Collections.FirstOrDefault(c => c.Name == collectionName);
-        return collection is null
-            ? throw new ArgumentException($"Collection '{collectionName}' not found in catalog.")
-            : new Configuration(
-                    catalog,
-                    collection,
-                    EquatableDictionary<string, Value>.Empty,
-                    EquatableDictionary<string, Value>.Empty,
-                    EquatableDictionary<string, Value>.Empty)
-                .Settled();
+        var collection = catalog.Collections.FirstOrDefault(c => c.Name == collectionName)
+                         ?? throw new ArgumentException($"Collection '{collectionName}' not found in catalog.");
+
+        return new Configuration(
+                catalog,
+                collection,
+                EquatableDictionary<string, Value>.Empty,
+                EquatableDictionary<string, Value>.Empty,
+                EquatableDictionary<string, Value>.Empty)
+            .Settled();
     }
 
     public Configuration Set(string featureName, Value value)
     {
         EnsureCanSet(featureName, value);
+
         return new Configuration(
                 _catalog,
                 _collection,
@@ -89,7 +90,7 @@ public sealed class Configuration
             .Distinct()
     ];
 
-    public Value ValueOf(string featureName) => _values.TryGetValue(featureName, out var value) ? value : Value.Missing;
+    public Value ValueOf(string featureName) => _values.GetValueOrDefault(featureName, Value.Missing);
 
     public ValueSource? SourceOf(string featureName) => featureName switch
     {
@@ -125,7 +126,7 @@ public sealed class Configuration
         .. ValueViolations().Where(v => v.Violation.Reaction != Reaction.Correct).Select(v => v.Violation)
     ];
 
-    public bool CanFinish => AllSet(_collection.Features) && Violations.All(e => e.Reaction != Reaction.Error);
+    public bool CanFinish => AllSet(_collection.Features) && Violations.All(v => v.Reaction != Reaction.Error);
 
     private int CurrentStageIndex
     {
@@ -183,7 +184,6 @@ public sealed class Configuration
         _catalog.Features.OfType<NumberFeature>().FirstOrDefault(f => f.Name == featureName)
         ?? throw new ArgumentException($"Feature '{featureName}' is not a number feature.");
 
-
     private IEnumerable<(Rule Rule, T Effect)> Effects<T>() where T : Effect =>
         _activeRules.SelectMany(r => r.Effects.OfType<T>().Select(e => (r, e)));
 
@@ -201,7 +201,7 @@ public sealed class Configuration
     private EquatableList<Value>? OptionsFromTable(OnlyFromTableEffect onlyFromTable)
     {
         var table = _catalog.AllowedCombinations[onlyFromTable.Table];
-        return table.AllowedFor([.. table.KeyColumns.Select(ValueOf)]);
+        return table.AllowedFor(KeyOf(table.KeyColumns));
     }
 
     private EquatableList<Value> KeyOf(IEnumerable<string> keyColumns) => [.. keyColumns.Select(ValueOf)];
@@ -238,24 +238,22 @@ public sealed class Configuration
 
     private Configuration Round()
     {
-        var hidden = _hiddenFeatures.ToHashSet();
         var forcedValues = Winners(ForcedValues());
         var corrections = ValueViolations().Where(v => v.Violation.Reaction == Reaction.Correct).ToList();
         var userValues = corrections
             .Aggregate(_userValues, (values, c) => values.SetItem(c.Violation.Feature, c.Corrected))
-            .Where(kvp => kvp.Value is not MissingValue)
-            .Where(kvp => !hidden.Contains(kvp.Key) && !forcedValues.ContainsKey(kvp.Key))
+            .Where(kvp => kvp.Value is not MissingValue &&
+                          !_hiddenFeatures.Contains(kvp.Key) &&
+                          !forcedValues.ContainsKey(kvp.Key))
             .ToEquatableDictionary();
 
         var defaultValues = Winners(DefaultValues()
-            .Where(x => !hidden.Contains(x.Feature) &&
+            .Where(x => !_hiddenFeatures.Contains(x.Feature) &&
                         !userValues.ContainsKey(x.Feature) &&
                         !forcedValues.ContainsKey(x.Feature)));
 
-        var next = new Configuration(_catalog, _collection, userValues, forcedValues, defaultValues,
+        return new Configuration(_catalog, _collection, userValues, forcedValues, defaultValues,
             [.. _corrections, .. corrections.Select(c => c.Violation)]);
-
-        return next;
     }
 
     private sealed record Candidate(string Feature, Value Value, int Priority, string RuleName);
@@ -275,8 +273,9 @@ public sealed class Configuration
             .ToEquatableDictionary();
 
     private IEnumerable<Candidate> ForcedValues() =>
-        Effects<SetEffect>().Select(x => (x.Rule, x.Effect.Feature, Value: x.Effect.Value.Evaluate(_values)))
-            .Select(x => new Candidate(x.Feature, x.Value, x.Rule.Priority, x.Rule.Name));
+        Effects<SetEffect>()
+            .Select(x =>
+                new Candidate(x.Effect.Feature, x.Effect.Value.Evaluate(_values), x.Rule.Priority, x.Rule.Name));
 
     private IEnumerable<Candidate> DefaultValues() =>
         DefaultsFromRules().Concat(DefaultsFromTables()).Concat(SingleOptionsFromTables());
@@ -291,9 +290,9 @@ public sealed class Configuration
             .SelectMany(x =>
             {
                 var table = _catalog.Tables[x.Effect.Table];
-                EquatableList<Value> key = [.. table.KeyColumns.Select(ValueOf)];
-                return x.Effect.Features.Select(f =>
-                    new Candidate(f, table.Lookup(key, f), TablePriority, x.Rule.Name));
+                var key = KeyOf(table.KeyColumns);
+                return x.Effect.Features
+                    .Select(f => new Candidate(f, table.Lookup(key, f), TablePriority, x.Rule.Name));
             });
 
     private IEnumerable<Candidate> SingleOptionsFromTables() =>
@@ -345,8 +344,8 @@ public sealed class Configuration
             .Where(x => x.Value is NumberValue)
             .SelectMany(x => LimitViolations(x.Number, ((NumberValue)x.Value!).Amount));
 
-
-    private IEnumerable<(RuleViolation Violation, Value Corrected)> LimitViolations(NumberFeature number,
+    private IEnumerable<(RuleViolation Violation, Value Corrected)> LimitViolations(
+        NumberFeature number,
         decimal amount)
     {
         var (min, minRule) = MinOf(number);
@@ -381,7 +380,7 @@ public sealed class Configuration
         step is { } s ? Math.Round(amount / s, MidpointRounding.AwayFromZero) * s : amount;
 
     private static decimal Clamp(decimal amount, decimal? min, decimal? max) =>
-        Math.Min(Math.Max(amount, min ?? amount), max ?? decimal.MaxValue);
+        Math.Min(Math.Max(amount, min ?? decimal.MinValue), max ?? decimal.MaxValue);
 
     private RuleViolation ViolationOf(string featureName, Rule? rule) =>
         new(featureName,
