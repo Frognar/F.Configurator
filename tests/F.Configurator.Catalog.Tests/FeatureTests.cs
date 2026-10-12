@@ -109,7 +109,24 @@ public class FeatureTests
     {
         var catalog = CatalogBuilder.Create("Drzwi").Text("Uwagi").Build();
 
-        Assert.Equal([new TextFeature("Uwagi")], catalog.Features);
+        Assert.Equal([new TextFeature("Uwagi", null, null)], catalog.Features);
+    }
+
+    // Grammar 4.2: `cecha Grawer : tekst` with `długość 0..20`. A length that depends on other features is a rule.
+    [Fact]
+    public void Text_feature_keeps_its_length()
+    {
+        var grawer = TextFeatureBuilder.Create("Grawer").Length(0, 20).Build();
+
+        Assert.Equal(new TextFeature("Grawer", 0, 20), grawer);
+    }
+
+    [Fact]
+    public void Catalog_creates_a_text_feature_with_its_settings()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi").Text("Grawer", feature => feature.Length(0, 20)).Build();
+
+        Assert.Equal([new TextFeature("Grawer", 0, 20)], catalog.Features);
     }
 
     // A computed feature has no input from the user; its value comes from an expression.

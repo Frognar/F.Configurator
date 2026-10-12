@@ -56,8 +56,8 @@ public sealed class CatalogBuilder
     public CatalogBuilder Boolean(string name) =>
         AddFeature(new BooleanFeature(name));
 
-    public CatalogBuilder Text(string name) =>
-        AddFeature(new TextFeature(name));
+    public CatalogBuilder Text(string name, Func<TextFeatureBuilder, TextFeatureBuilder>? setupFeature = null) =>
+        AddFeature((setupFeature ?? (f => f))(TextFeatureBuilder.Create(name)).Build());
 
     public CatalogBuilder Computed(string name, Expression expression) =>
         AddFeature(new ComputedFeature(name, expression));

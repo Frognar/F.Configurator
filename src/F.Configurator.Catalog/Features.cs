@@ -82,6 +82,19 @@ public sealed class NumberFeatureBuilder
 
 public sealed record BooleanFeature(string Name) : Feature(Name);
 
-public sealed record TextFeature(string Name) : Feature(Name);
+public sealed record TextFeature(string Name, int? MinLength, int? MaxLength) : Feature(Name);
+
+public sealed class TextFeatureBuilder
+{
+    private readonly TextFeature _feature;
+
+    private TextFeatureBuilder(TextFeature feature) => _feature = feature;
+
+    public static TextFeatureBuilder Create(string name) =>
+        new(new TextFeature(name, null, null));
+
+    public TextFeatureBuilder Length(int min, int max) => new(_feature with { MinLength = min, MaxLength = max });
+    public TextFeature Build() => _feature;
+}
 
 public sealed record ComputedFeature(string Name, Expression Expression) : Feature(Name);

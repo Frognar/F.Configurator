@@ -120,6 +120,12 @@ public sealed class Configuration
         return new NumberLimits(MinOf(number).Amount, MaxOf(number).Amount, StepOf(number).Amount);
     }
 
+    public TextLength LengthOf(string featureName)
+    {
+        var text = TextFeatureOf(featureName);
+        return new TextLength(MinLengthOf(text).Amount, MaxLengthOf(text).Amount);
+    }
+
     public EquatableList<RuleViolation> Violations =>
     [
         .. _corrections,
@@ -172,6 +178,7 @@ public sealed class Configuration
         (feature, value) switch
         {
             (NumberFeature, NumberValue) => true,
+            (TextFeature, TextValue) => true,
             (ChoiceFeature choice, OptionValue selected) => choice.Options.Any(o => o.Id == selected.Id),
             _ => false,
         };
@@ -183,6 +190,10 @@ public sealed class Configuration
     private NumberFeature NumberFeatureOf(string featureName) =>
         _catalog.Features.OfType<NumberFeature>().FirstOrDefault(f => f.Name == featureName)
         ?? throw new ArgumentException($"Feature '{featureName}' is not a number feature.");
+
+    private TextFeature TextFeatureOf(string featureName) =>
+        _catalog.Features.OfType<TextFeature>().FirstOrDefault(f => f.Name == featureName)
+        ?? throw new ArgumentException($"Feature '{featureName}' is not a text feature.");
 
     private IEnumerable<(Rule Rule, T Effect)> Effects<T>() where T : Effect =>
         _activeRules.SelectMany(r => r.Effects.OfType<T>().Select(e => (r, e)));
@@ -335,8 +346,37 @@ public sealed class Configuration
         return (amount, top.FirstOrDefault(x => x.Amount == amount).Rule ?? top.First().Rule);
     }
 
+    private (int? Amount, Rule? Rule) MinLengthOf(TextFeature text) =>
+        LengthLimit(text.Name, range => range.Min, Enumerable.Max, text.MinLength);
+
+    private (int? Amount, Rule? Rule) MaxLengthOf(TextFeature text) =>
+        LengthLimit(text.Name, range => range.Max, Enumerable.Min, text.MaxLength);
+
+    private (int? Amount, Rule? Rule) LengthLimit(
+        string featureName,
+        Func<RangeValue, decimal> bound,
+        Func<IEnumerable<decimal>, decimal> mostRestrictive,
+        int? declared)
+    {
+        var top = Effects<LengthEffect>()
+            .Where(x => x.Effect.Feature == featureName)
+            .Select(x => (x.Rule, Value: x.Effect.Value.Evaluate(_values)))
+            .Where(x => x.Value is RangeValue)
+            .Select(x => (x.Rule, Amount: bound((RangeValue)x.Value)))
+            .GroupBy(x => x.Rule.Priority)
+            .MaxBy(g => g.Key);
+
+        if (top is null)
+        {
+            return (declared, null);
+        }
+
+        var amount = mostRestrictive(top.Select(x => x.Amount));
+        return (decimal.ToInt32(amount), top.First(x => x.Amount == amount).Rule);
+    }
+
     private IEnumerable<(RuleViolation Violation, Value Corrected)> ValueViolations() =>
-        LimitViolations().Concat(OptionViolations());
+        LimitViolations().Concat(LengthViolations()).Concat(OptionViolations());
 
     private IEnumerable<(RuleViolation Violation, Value Corrected)> LimitViolations() =>
         _catalog.Features.OfType<NumberFeature>()
@@ -351,7 +391,7 @@ public sealed class Configuration
         var (min, minRule) = MinOf(number);
         var (max, maxRule) = MaxOf(number);
         var (step, stepRule) = StepOf(number);
-        var corrected = Value.Number(Clamp(RoundToStep(amount, step), min, max));
+        var corrected = Value.Number(OnStepWithin(RoundToStep(amount, step), min, max, step));
 
         if (step is { } s && amount % s != 0)
         {
@@ -369,6 +409,29 @@ public sealed class Configuration
         }
     }
 
+    private IEnumerable<(RuleViolation Violation, Value Corrected)> LengthViolations() =>
+        _catalog.Features.OfType<TextFeature>()
+            .Select(text => (Text: text, Value: _userValues.GetValueOrDefault(text.Name)))
+            .Where(x => x.Value is TextValue)
+            .SelectMany(x => LengthViolations(x.Text, ((TextValue)x.Value!).Content));
+
+    // A too short text has no nearest allowed text, so the correction clears it; a too long one keeps its start.
+    private IEnumerable<(RuleViolation Violation, Value Corrected)> LengthViolations(TextFeature text, string content)
+    {
+        var (min, minRule) = MinLengthOf(text);
+        var (max, maxRule) = MaxLengthOf(text);
+
+        if (content.Length < min)
+        {
+            yield return (ViolationOf(text.Name, minRule), Value.Missing);
+        }
+
+        if (content.Length > max)
+        {
+            yield return (ViolationOf(text.Name, maxRule), Value.Text(content[..max.Value]));
+        }
+    }
+
     private IEnumerable<(RuleViolation Violation, Value Corrected)> OptionViolations() =>
         _userValues
             .Where(kvp => kvp.Value is OptionValue)
@@ -379,8 +442,13 @@ public sealed class Configuration
     private static decimal RoundToStep(decimal amount, decimal? step) =>
         step is { } s ? Math.Round(amount / s, MidpointRounding.AwayFromZero) * s : amount;
 
-    private static decimal Clamp(decimal amount, decimal? min, decimal? max) =>
-        Math.Min(Math.Max(amount, min ?? decimal.MinValue), max ?? decimal.MaxValue);
+    // Outside the limits the value goes to the nearest multiple of the step that lies inside them.
+    private static decimal OnStepWithin(decimal amount, decimal? min, decimal? max, decimal? step) => amount switch
+    {
+        _ when amount > max => step is { } s ? Math.Floor(max.Value / s) * s : max.Value,
+        _ when amount < min => step is { } s ? Math.Ceiling(min.Value / s) * s : min.Value,
+        _ => amount,
+    };
 
     private RuleViolation ViolationOf(string featureName, Rule? rule) =>
         new(featureName,
