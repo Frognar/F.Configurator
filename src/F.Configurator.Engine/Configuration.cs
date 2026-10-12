@@ -152,7 +152,9 @@ public sealed class Configuration
             .ToEquatableDictionary();
 
         var defaultValues = Winners(DefaultValues()
-            .Where(x => !hidden.Contains(x.Feature)));
+            .Where(x => !hidden.Contains(x.Feature) &&
+                        !userValues.ContainsKey(x.Feature) &&
+                        !forcedValues.ContainsKey(x.Feature)));
 
         var next = new Configuration(_catalog, _collection, userValues, forcedValues, defaultValues);
         return next._values.Equals(_values) ? next : next.Settled();
