@@ -20,7 +20,8 @@ public sealed class Configuration
         EquatableDictionary<string, Value> defaultValues) =>
         (_catalog, _collection, _userValues, _forcedValues, _defaultValues, _values) =
         (catalog, collection, userValues, forcedValues, defaultValues,
-            userValues.Concat(forcedValues).Concat(defaultValues).DistinctBy(kvp => kvp.Key).ToEquatableDictionary());
+            userValues.Concat(forcedValues)
+                .Aggregate(defaultValues, (values, kvp) => values.SetItem(kvp.Key, kvp.Value)));
 
     private int CurrentStageIndex
     {
