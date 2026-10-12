@@ -136,6 +136,17 @@ public class NumberLimitsTests
         Assert.Equal(expected, configuration.LimitsOf("SzerokoscMM").Step);
     }
 
+    // Like `zaokrąglij(x, krok)`, a step that is not positive gives nothing, so other steps still apply.
+    [Fact]
+    public void Step_that_is_not_positive_gives_no_step()
+    {
+        var configuration = Start(
+            catalog => catalog.Rule("KrokZero", rule => rule.Step("SzerokoscMM", Number(0m))),
+            width => width.Step(5m));
+
+        Assert.Equal(5m, configuration.LimitsOf("SzerokoscMM").Step);
+    }
+
     // A rule whose limit has no value gives no limit, so it does not hide the limits of lower priority.
     [Fact]
     public void Rule_without_a_value_leaves_the_limit_of_lower_priority()
