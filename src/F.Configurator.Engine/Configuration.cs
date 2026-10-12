@@ -145,10 +145,17 @@ public sealed class Configuration
     private Configuration Settled()
     {
         var hidden = HiddenFeatures.ToHashSet();
-        var userValues = _userValues.Where(kvp => !hidden.Contains(kvp.Key)).ToEquatableDictionary();
-        var forcedValues = ForcedValues().Where(x => !hidden.Contains(x.Feature)).ToEquatableDictionary();
+        var forcedValues = ForcedValues()
+            .Where(x => !hidden.Contains(x.Feature))
+            .ToEquatableDictionary();
+
+        var userValues = _userValues
+            .Where(kvp => !hidden.Contains(kvp.Key) && !forcedValues.ContainsKey(kvp.Key))
+            .ToEquatableDictionary();
+
         var defaultValues = DefaultValues()
-            .Where(x => !hidden.Contains(x.Feature) && !userValues.ContainsKey(x.Feature) &&
+            .Where(x => !hidden.Contains(x.Feature) &&
+                        !userValues.ContainsKey(x.Feature) &&
                         !forcedValues.ContainsKey(x.Feature))
             .DistinctBy(x => x.Feature)
             .ToEquatableDictionary();
