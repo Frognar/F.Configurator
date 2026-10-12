@@ -156,12 +156,18 @@ public sealed class Configuration
             _ => false,
         };
 
-    public ValueSource? SourceOf(string featureName) => ValueSource.Default;
+    public ValueSource? SourceOf(string featureName) =>
+        _valuesSetByUser.ContainsKey(featureName)
+            ? ValueSource.User
+            : _otherSetValues.ContainsKey(featureName)
+                ? ValueSource.Default
+                : null;
 }
 
 public sealed record UnavailableOption(string Id, string RuleName);
 
 public enum ValueSource
 {
-    Default
+    Default,
+    User,
 }
