@@ -234,9 +234,13 @@ public sealed class Configuration
         _ when _defaultValues.ContainsKey(featureName) => ValueSource.Default,
         _ => null,
     };
+
+    public NumberLimits LimitsOf(string featureName) => new(null, null, null);
 }
 
 public sealed record UnavailableOption(string Id, string RuleName);
+
+public sealed record NumberLimits(decimal? Min, decimal? Max, decimal? Step);
 
 public enum ValueSource
 {
