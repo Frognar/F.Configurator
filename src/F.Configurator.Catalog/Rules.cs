@@ -50,6 +50,8 @@ public sealed class RuleBuilder
 
     public RuleBuilder Step(string feature, Expression value) => AddEffect(new StepEffect(feature, value));
 
+    public RuleBuilder Length(string feature, Expression value) => AddEffect(new LengthEffect(feature, value));
+
     public RuleBuilder DefaultsFrom(IEnumerable<string> features, string table) =>
         AddEffect(new DefaultsFromTableEffect([.. features], table));
 
@@ -86,6 +88,8 @@ public sealed record MinEffect(string Feature, Expression Value) : LimitEffect(F
 public sealed record MaxEffect(string Feature, Expression Value) : LimitEffect(Feature, Value);
 
 public sealed record StepEffect(string Feature, Expression Value) : LimitEffect(Feature, Value);
+
+public sealed record LengthEffect(string Feature, Expression Value) : Effect;
 
 public sealed record DefaultsFromTableEffect(EquatableList<string> Features, string Table) : Effect;
 
