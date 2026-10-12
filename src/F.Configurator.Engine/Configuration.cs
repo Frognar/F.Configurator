@@ -70,6 +70,10 @@ public sealed class Configuration
             .Distinct()
     ];
 
+    public EquatableList<RuleViolation> Violations => EquatableList<RuleViolation>.Empty;
+
+    public bool CanFinish => true;
+
     public static Configuration Start(ProductCatalog catalog, string collectionName)
     {
         var collection = catalog.Collections.FirstOrDefault(c => c.Name == collectionName);
@@ -276,6 +280,8 @@ public sealed class Configuration
 public sealed record UnavailableOption(string Id, string RuleName);
 
 public sealed record NumberLimits(decimal? Min, decimal? Max, decimal? Step);
+
+public sealed record RuleViolation;
 
 public enum ValueSource
 {
