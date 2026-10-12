@@ -14,13 +14,15 @@ public sealed class Configuration
     private readonly EquatableDictionary<string, Value> _defaultValues;
     private readonly EquatableDictionary<string, Value> _values;
     private readonly EquatableList<Rule> _activeRules;
+    private readonly EquatableList<RuleViolation> _corrections;
 
     private Configuration(
         ProductCatalog catalog,
         Collection collection,
         EquatableDictionary<string, Value> userValues,
         EquatableDictionary<string, Value> forcedValues,
-        EquatableDictionary<string, Value> defaultValues)
+        EquatableDictionary<string, Value> defaultValues,
+        EquatableList<RuleViolation>? corrections = null)
     {
         _catalog = catalog;
         _collection = collection;
@@ -36,6 +38,8 @@ public sealed class Configuration
                 (r.Collections.Count == 0 || r.Collections.Contains(_collection.Name)) &&
                 (r.Condition is null || r.Condition.Evaluate(_values) is BooleanValue { IsTrue: true }))
         ];
+
+        _corrections = corrections ?? [];
     }
 
     private int CurrentStageIndex
@@ -70,7 +74,7 @@ public sealed class Configuration
             .Distinct()
     ];
 
-    public EquatableList<RuleViolation> Violations => EquatableList<RuleViolation>.Empty;
+    public EquatableList<RuleViolation> Violations => _corrections;
 
     public bool CanFinish => true;
 
@@ -166,7 +170,9 @@ public sealed class Configuration
     {
         var hidden = HiddenFeatures.ToHashSet();
         var forcedValues = Winners(ForcedValues());
-        var userValues = _userValues
+        var corrections = Corrections().ToList();
+        var userValues = corrections
+            .Aggregate(_userValues, (values, c) => values.SetItem(c.Violation.Feature, c.Corrected))
             .Where(kvp => !hidden.Contains(kvp.Key) && !forcedValues.ContainsKey(kvp.Key))
             .ToEquatableDictionary();
 
@@ -175,9 +181,24 @@ public sealed class Configuration
                         !userValues.ContainsKey(x.Feature) &&
                         !forcedValues.ContainsKey(x.Feature)));
 
-        var next = new Configuration(_catalog, _collection, userValues, forcedValues, defaultValues);
+        var next = new Configuration(_catalog, _collection, userValues, forcedValues, defaultValues,
+            [.. _corrections, .. corrections.Select(c => c.Violation)]);
         return next._values.Equals(_values) ? next : next.Settled();
     }
+
+    private IEnumerable<(RuleViolation Violation, Value Corrected)> Corrections() =>
+        _userValues
+            .Select(kvp => (Feature: kvp.Key,
+                Number: _catalog.Features.OfType<NumberFeature>().FirstOrDefault(f => f.Name == kvp.Key), kvp.Value))
+            .Where(x => x is { Number: not null, Value: NumberValue })
+            .Select(x => (x.Feature, Amount: ((NumberValue)x.Value).Amount, Max: MaxOf(x.Number!)))
+            .Where(x => x.Max.Amount is { } max && x.Amount > max && ReactionOf(x.Max.Rule) == Reaction.Correct)
+            .Select(x => (
+                new RuleViolation(x.Feature, x.Max.Rule?.Name, Reaction.Correct, x.Max.Rule?.Violation?.Message),
+                Value.Number(x.Max.Amount!.Value)));
+
+    private Reaction ReactionOf(Rule? rule) =>
+        rule?.Violation?.Reaction ?? _catalog.DefaultReaction ?? Reaction.Error;
 
     private sealed record Candidate(string Feature, Value Value, int Priority, string RuleName);
 
@@ -247,18 +268,20 @@ public sealed class Configuration
             throw new ArgumentException($"Feature '{featureName}' is not a number feature.");
         }
 
-        var min = Limit<MinEffect>(featureName, e => (e.Feature, e.Value), Enumerable.Max, number.Min);
-        var max = Limit<MaxEffect>(featureName, e => (e.Feature, e.Value), Enumerable.Min, number.Max);
-        var step = Limit<StepEffect>(featureName,
-            e => (e.Feature, e.Value),
-            steps => steps.Aggregate(DecimalMath.LeastCommonMultiple),
-            number.Step,
-            step => step > 0);
-
-        return new NumberLimits(min, max, step);
+        return new NumberLimits(MinOf(number).Amount, MaxOf(number).Amount, StepOf(number).Amount);
     }
 
-    private decimal? Limit<T>(
+    private (decimal? Amount, Rule? Rule) MinOf(NumberFeature number) =>
+        Limit<MinEffect>(number.Name, e => (e.Feature, e.Value), Enumerable.Max, number.Min);
+
+    private (decimal? Amount, Rule? Rule) MaxOf(NumberFeature number) =>
+        Limit<MaxEffect>(number.Name, e => (e.Feature, e.Value), Enumerable.Min, number.Max);
+
+    private (decimal? Amount, Rule? Rule) StepOf(NumberFeature number) =>
+        Limit<StepEffect>(number.Name, e => (e.Feature, e.Value),
+            steps => steps.Aggregate(DecimalMath.LeastCommonMultiple), number.Step, step => step > 0);
+
+    private (decimal? Amount, Rule? Rule) Limit<T>(
         string featureName,
         Func<T, (string Feature, Expression Value)> parts,
         Func<IEnumerable<decimal>, decimal> mostRestrictive,
@@ -266,14 +289,21 @@ public sealed class Configuration
         Func<decimal, bool>? accepts = null) where T : Effect
     {
         var top = Effects<T>()
-            .Select(x => (x.Rule.Priority, Parts: parts(x.Effect)))
+            .Select(x => (x.Rule, Parts: parts(x.Effect)))
             .Where(x => x.Parts.Feature == featureName)
-            .Select(x => (x.Priority, Value: x.Parts.Value.Evaluate(_values)))
+            .Select(x => (x.Rule, Value: x.Parts.Value.Evaluate(_values)))
             .Where(x => x.Value is NumberValue number && (accepts?.Invoke(number.Amount) ?? true))
-            .GroupBy(x => x.Priority)
+            .Select(x => (x.Rule, ((NumberValue)x.Value).Amount))
+            .GroupBy(x => x.Rule.Priority)
             .MaxBy(g => g.Key);
 
-        return top is null ? declared : mostRestrictive(top.Select(x => ((NumberValue)x.Value).Amount));
+        if (top is null)
+        {
+            return (declared, null);
+        }
+
+        var amount = mostRestrictive(top.Select(x => x.Amount));
+        return (amount, top.FirstOrDefault(x => x.Amount == amount).Rule ?? top.First().Rule);
     }
 }
 
