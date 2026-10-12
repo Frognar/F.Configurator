@@ -174,6 +174,35 @@ public sealed class Configuration
 
     private Configuration Settled()
     {
+        var limit = _collection.Features.Count * 2 + 2;
+        var current = this;
+        for (var i = 0; i < limit; i++)
+        {
+            var next = current.Round();
+            if (next._values.Equals(current._values))
+            {
+                return next;
+            }
+
+            current = next;
+        }
+
+        var changing = new HashSet<string>();
+        for (var i = 0; i < limit; i++)
+        {
+            var next = current.Round();
+            changing.UnionWith(next._values.Keys.Union(current._values.Keys)
+                .Where(feature => !Equals(next.ValueOf(feature), current.ValueOf(feature))));
+
+            current = next;
+        }
+
+        throw new InvalidOperationException(
+            $"Values of {string.Join(", ", changing.Order().Select(f => $"'{f}'"))} keep changing.");
+    }
+
+    private Configuration Round()
+    {
         var hidden = HiddenFeatures.ToHashSet();
         var forcedValues = Winners(ForcedValues());
         var corrections = LimitViolations().Where(v => v.Violation.Reaction == Reaction.Correct).ToList();
@@ -189,7 +218,8 @@ public sealed class Configuration
 
         var next = new Configuration(_catalog, _collection, userValues, forcedValues, defaultValues,
             [.. _corrections, .. corrections.Select(c => c.Violation)]);
-        return next._values.Equals(_values) ? next : next.Settled();
+
+        return next;
     }
 
     private IEnumerable<(RuleViolation Violation, Value Corrected)> LimitViolations() =>
