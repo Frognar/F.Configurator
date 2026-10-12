@@ -303,27 +303,26 @@ public sealed class Configuration
             .Select(x => new Candidate(x.Feature, x.Options![0], TablePriority, x.Rule.Name));
 
     private (decimal? Amount, Rule? Rule) MinOf(NumberFeature number) =>
-        Limit<MinEffect>(number.Name, e => (e.Feature, e.Value), Enumerable.Max, number.Min);
+        Limit<MinEffect>(number.Name, Enumerable.Max, number.Min);
 
     private (decimal? Amount, Rule? Rule) MaxOf(NumberFeature number) =>
-        Limit<MaxEffect>(number.Name, e => (e.Feature, e.Value), Enumerable.Min, number.Max);
+        Limit<MaxEffect>(number.Name, Enumerable.Min, number.Max);
 
     private (decimal? Amount, Rule? Rule) StepOf(NumberFeature number) =>
-        Limit<StepEffect>(number.Name, e => (e.Feature, e.Value),
-            steps => steps.Aggregate(DecimalMath.LeastCommonMultiple), number.Step, step => step > 0);
+        Limit<StepEffect>(number.Name, steps => steps.Aggregate(DecimalMath.LeastCommonMultiple), number.Step,
+            step => step > 0);
 
     private (decimal? Amount, Rule? Rule) Limit<T>(
         string featureName,
-        Func<T, (string Feature, Expression Value)> parts,
         Func<IEnumerable<decimal>, decimal> mostRestrictive,
         decimal? declared,
-        Func<decimal, bool>? accepts = null) where T : Effect
+        Func<decimal, bool>? accepts = null) where T : LimitEffect
     {
+        accepts ??= _ => true;
         var top = Effects<T>()
-            .Select(x => (x.Rule, Parts: parts(x.Effect)))
-            .Where(x => x.Parts.Feature == featureName)
-            .Select(x => (x.Rule, Value: x.Parts.Value.Evaluate(_values)))
-            .Where(x => x.Value is NumberValue number && (accepts?.Invoke(number.Amount) ?? true))
+            .Where(x => x.Effect.Feature == featureName)
+            .Select(x => (x.Rule, Value: x.Effect.Value.Evaluate(_values)))
+            .Where(x => x.Value is NumberValue number && accepts(number.Amount))
             .Select(x => (x.Rule, ((NumberValue)x.Value).Amount))
             .GroupBy(x => x.Rule.Priority)
             .MaxBy(g => g.Key);
