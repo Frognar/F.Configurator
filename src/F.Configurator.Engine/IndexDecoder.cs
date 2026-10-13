@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using F.Configurator.Catalog;
 using F.Configurator.Expressions;
 
@@ -13,27 +14,33 @@ public static class IndexDecoder
             return [];
         }
 
-        var configuration = Configuration.Start(catalog, collectionName);
-        var rest = index;
-        foreach (var symbol in Segments(pattern).Cast<OptionAttribute>())
-        {
-            var feature = ((Reference)symbol.Selected).Name;
-            var option = catalog.Features.OfType<ChoiceFeature>().First(f => f.Name == feature).Options
-                .FirstOrDefault(o => rest.StartsWith(SymbolOf(symbol, o.Id)));
-            if (option is null)
-            {
-                return [];
-            }
-
-            configuration = configuration.Set(feature, Value.Option(option.Id));
-            rest = rest[SymbolOf(symbol, option.Id).Length..];
-        }
-
-        return [configuration];
+        var start = Configuration.Start(catalog, collectionName);
+        return
+        [
+            .. Readings(catalog, pattern, index, [])
+                .Where(reading => reading.Unread == "")
+                .Select(reading => reading.Values.Aggregate(
+                    start, (configuration, value) => configuration.Set(value.Feature, value.Value)))
+        ];
     }
 
-    private static IEnumerable<Expression> Segments(Expression pattern) =>
-        pattern is Add add ? Segments(add.Left).Concat(Segments(add.Right)) : [pattern];
+    // Each way the pattern can read the start of the text: the values it read and the text it left.
+    private static IEnumerable<(ImmutableList<(string Feature, Value Value)> Values, string Unread)> Readings(
+        ProductCatalog catalog,
+        Expression pattern,
+        string text,
+        ImmutableList<(string Feature, Value Value)> values) =>
+        pattern switch
+        {
+            Add add => Readings(catalog, add.Left, text, values)
+                .SelectMany(reading => Readings(catalog, add.Right, reading.Unread, reading.Values)),
+            OptionAttribute { Selected: Reference feature } symbol => catalog.Features.OfType<ChoiceFeature>()
+                .First(f => f.Name == feature.Name).Options
+                .Select(option => (Option: option.Id, Symbol: SymbolOf(symbol, option.Id)))
+                .Where(x => text.StartsWith(x.Symbol))
+                .Select(x => (values.Add((feature.Name, Value.Option(x.Option))), text[x.Symbol.Length..])),
+            _ => [],
+        };
 
     private static string SymbolOf(OptionAttribute symbol, string option) =>
         ((TextValue)symbol.ValuesByOption[option]).Content;
