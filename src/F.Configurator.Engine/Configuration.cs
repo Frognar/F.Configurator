@@ -328,6 +328,7 @@ public sealed class Configuration
     private Rule? ExcludingRule(string featureName, Value option) =>
         _activeRules
             .OrderByDescending(r => r.Priority)
+            .ThenByDescending(ReactionOf)
             .FirstOrDefault(r => r.Effects.Any(e => e switch
             {
                 OnlyEffect only => only.Feature == featureName && !only.Options.Contains(option),
@@ -627,6 +628,8 @@ public sealed class Configuration
         _ when amount < min => step is { } s ? Math.Ceiling(min.Value / s) * s : min.Value,
         _ => amount,
     };
+
+    private Reaction ReactionOf(Rule rule) => rule.Violation?.Reaction ?? _catalog.DefaultReaction ?? Reaction.Error;
 
     private RuleViolation ViolationOf(string featureName, Rule? rule) =>
         new(featureName,
