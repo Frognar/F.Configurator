@@ -47,6 +47,8 @@ public static class IndexDecoder
                         (feature.Name, Value.Number(decimal.Parse(text[..length], CultureInfo.InvariantCulture)))),
                     text[length..])),
             Pad pad => Readings(catalog, pad.Operand, text, values),
+            If conditional => Readings(catalog, conditional.Then, text, values),
+            Text literal => text.StartsWith(literal.Content) ? [(values, text[literal.Content.Length..])] : [],
             _ => [],
         };
 
