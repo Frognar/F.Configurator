@@ -9,8 +9,8 @@ public static class IndexDecoder
 {
     public static IReadOnlyList<Configuration> Decode(ProductCatalog catalog, string collectionName, string index)
     {
-        var pattern = catalog.Collections.First(c => c.Name == collectionName).Index;
-        if (pattern is null)
+        var collection = catalog.Collections.First(c => c.Name == collectionName);
+        if (collection.Index is null)
         {
             return [];
         }
@@ -18,9 +18,9 @@ public static class IndexDecoder
         var start = Configuration.Start(catalog, collectionName);
         return
         [
-            .. Readings(catalog, pattern, index, [])
+            .. Readings(catalog, collection.Index, index, [])
                 .Where(reading => reading.Unread == "")
-                .Select(reading => reading.Values.Aggregate(
+                .Select(reading => reading.Values.Where(value => collection.Features.Contains(value.Feature)).Aggregate(
                     start,
                     (configuration, value) => configuration.ValueOf(value.Feature) == value.Value
                         ? configuration
