@@ -2,11 +2,13 @@ namespace F.Configurator.Expressions;
 
 public abstract record Expression
 {
-    public abstract Value Evaluate(IReadOnlyDictionary<string, Value> values);
+    private static readonly IReadOnlyDictionary<string, Value> NoContext = new Dictionary<string, Value>();
 
-    public virtual Value Evaluate(IReadOnlyDictionary<string, Value> values,
-        IReadOnlyDictionary<string, Value> context) =>
-        Evaluate(values);
+    public Value Evaluate(IReadOnlyDictionary<string, Value> values) => Evaluate(values, NoContext);
+
+    public abstract Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context);
 
     public static Expression Number(decimal number) => new Number(number);
     public static Expression Text(string text) => new Text(text);
