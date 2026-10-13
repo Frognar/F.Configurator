@@ -96,15 +96,19 @@ public sealed class Configuration
         return next.WithChanges(
         [
             .. _collection.Features
+                .Concat(_catalog.Features.OfType<ComputedFeature>().Select(computed => computed.Name))
+                .Distinct()
                 .Select(f => (Feature: f, Before: f == featureName ? value : ValueOf(f), After: next.ValueOf(f)))
                 .Where(x => !Equals(x.Before, x.After))
                 .Select(x => next._corrections.FirstOrDefault(c => c.Feature == x.Feature) is { } correction
                     ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Corrected, correction.RuleName)
-                    : next._forcedValues.ContainsKey(x.Feature)
-                        ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Forced,
-                            WinningRule(next.ForcedValues(), x.Feature))
-                        : new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Default,
-                            WinningRule(next.DefaultValues(), x.Feature)))
+                    : IsComputed(x.Feature)
+                        ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Computed, null)
+                        : next._forcedValues.ContainsKey(x.Feature)
+                            ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Forced,
+                                WinningRule(next.ForcedValues(), x.Feature))
+                            : new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Default,
+                                WinningRule(next.DefaultValues(), x.Feature)))
         ]);
     }
 
