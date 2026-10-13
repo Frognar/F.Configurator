@@ -528,7 +528,7 @@ public sealed class Configuration
             .ThenBy(x => x.Rule.Name, StringComparer.Ordinal)
             .Select(x => x.Rule)
             .FirstOrDefault();
-        return (amount, rule ?? top.First().Rule);
+        return (amount, rule ?? top.OrderByDescending(x => ReactionOf(x.Rule)).First().Rule);
     }
 
     private (int? Amount, Rule? Rule) MinLengthOf(TextFeature text) =>
