@@ -40,6 +40,7 @@ public class OptionalFeaturesTests
     {
         var configuration = Start()
             .Set("Model", Value.Option("PORTA"))
+            .Set("SzerokoscMM", Value.Number(900m))
             .Set("KrawedzBP", Value.Option("TAK"));
 
         Assert.Equal(Value.Option("TAK"), configuration.ValueOf("KrawedzBP"));
