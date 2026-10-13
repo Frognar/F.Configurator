@@ -80,6 +80,15 @@ public sealed record Length(Expression Operand) : Expression
             TextValue { Content: var str } => Value.Number(str.Length),
             _ => Value.Missing,
         };
+
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        Operand.Evaluate(values, context) switch
+        {
+            TextValue { Content: var str } => Value.Number(str.Length),
+            _ => Value.Missing,
+        };
 }
 
 public sealed record Pad(Expression Operand, Expression TotalWidth, Expression PaddingChar) : Expression
