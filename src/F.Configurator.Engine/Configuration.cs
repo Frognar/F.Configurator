@@ -33,6 +33,7 @@ public sealed class Configuration
         _corrections = corrections ?? [];
 
         var values = userValues.Concat(forcedValues)
+            .Concat(defaultValues.Select(kvp => KeyValuePair.Create(DefaultOf.KeyOf(kvp.Key), kvp.Value)))
             .Aggregate(defaultValues, (all, kvp) => all.SetItem(kvp.Key, kvp.Value));
 
         // Each computed feature sees the ones declared before it.
