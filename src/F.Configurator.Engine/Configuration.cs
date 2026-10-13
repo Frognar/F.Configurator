@@ -192,7 +192,7 @@ public sealed class Configuration
                     m.RuleName,
                     null))
             ],
-            false);
+            AllSet(_collection.Features));
 
     public bool CanFinish =>
         AllSet(_collection.Features) && Violations.All(v => v.Reaction != Reaction.Error) &&
