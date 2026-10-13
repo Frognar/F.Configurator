@@ -4,6 +4,10 @@ public abstract record Expression
 {
     public abstract Value Evaluate(IReadOnlyDictionary<string, Value> values);
 
+    public virtual Value Evaluate(IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        Evaluate(values);
+
     public static Expression Number(decimal number) => new Number(number);
     public static Expression Text(string text) => new Text(text);
     public static Expression Option(string id) => new Option(id);
@@ -14,6 +18,9 @@ public abstract record Expression
 
     public static Expression Reference(string name) => new Reference(name);
     public static Expression DefaultOf(string feature) => new DefaultOf(feature);
+
+    public static Expression ContextValue(string context, string? attribute = null) =>
+        new ContextValue(context, attribute);
 
     public static Expression OptionAttribute(Expression selected, EquatableDictionary<string, Value> valuesByOption) =>
         new OptionAttribute(selected, valuesByOption);

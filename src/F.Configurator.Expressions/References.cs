@@ -14,6 +14,11 @@ public sealed record DefaultOf(string Feature) : Expression
         values.GetValueOrDefault(KeyOf(Feature), Value.Missing);
 }
 
+public sealed record ContextValue(string Context, string? Attribute) : Expression
+{
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) => Value.Missing;
+}
+
 public sealed record OptionAttribute(
     Expression Selected,
     EquatableDictionary<string, Value> ValuesByOption) : Expression

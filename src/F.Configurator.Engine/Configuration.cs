@@ -80,6 +80,12 @@ public sealed class Configuration
             .Settled();
     }
 
+    public static Configuration Start(
+        ProductCatalog catalog,
+        string collectionName,
+        IReadOnlyDictionary<string, Value> context) =>
+        Start(catalog, collectionName);
+
     public Configuration Set(string featureName, Value value)
     {
         EnsureCanSet(featureName, value);
@@ -164,6 +170,7 @@ public sealed class Configuration
         new(_catalog.Name,
             _catalog.Version,
             _collection.Name,
+            EquatableDictionary<string, Value>.Empty,
             [.. ResultFeatures.Select(FeatureResultOf)],
             [
                 .. Violations.Select(v => new StepMessage(KindOf(v.Reaction), v.Message, v.RuleName, v.Feature)),

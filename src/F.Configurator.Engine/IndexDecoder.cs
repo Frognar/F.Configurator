@@ -25,6 +25,13 @@ public static class IndexDecoder
         ];
     }
 
+    public static IReadOnlyList<Configuration> Decode(
+        ProductCatalog catalog,
+        string collectionName,
+        string index,
+        IReadOnlyDictionary<string, Value> context) =>
+        Decode(catalog, collectionName, index);
+
     // Each way the pattern can read the start of the unread text.
     private static IEnumerable<IndexReading> Readings(
         ProductCatalog catalog,
