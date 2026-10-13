@@ -36,6 +36,15 @@ public sealed record OptionAttribute(
             OptionValue option => ValuesByOption.TryGetValue(option.Id, out var value) ? value : Value.Missing,
             _ => Value.Missing,
         };
+
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        Selected.Evaluate(values, context) switch
+        {
+            OptionValue option => ValuesByOption.TryGetValue(option.Id, out var value) ? value : Value.Missing,
+            _ => Value.Missing,
+        };
 }
 
 public sealed record TableLookup(Table Table, EquatableList<Expression> Keys, string Column) : Expression
