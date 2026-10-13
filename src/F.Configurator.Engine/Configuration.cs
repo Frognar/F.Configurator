@@ -432,7 +432,7 @@ public sealed class Configuration
 
         var defaults = DefaultValues()
             .Where(x => !_hiddenFeatures.Contains(x.Feature))
-            .Where(x => !(x.Value is OptionValue && ExcludingRule(x.Feature, x.Value) is not null))
+            .Where(x => WithinDomain(x.Feature, x.Value))
             .ToList();
         var defaultValues = Winners(defaults
             .Where(x => !userValues.ContainsKey(x.Feature) && !forcedValues.ContainsKey(x.Feature)));
@@ -574,6 +574,15 @@ public sealed class Configuration
             .First().Rule;
         return (decimal.ToInt32(amount), rule);
     }
+
+    private bool WithinDomain(string featureName, Value value) => value switch
+    {
+        OptionValue => ExcludingRule(featureName, value) is null,
+        NumberValue number => NumberFeatureOf(featureName) is var feature &&
+                              !(number.Amount < MinOf(feature).Amount) &&
+                              !(number.Amount > MaxOf(feature).Amount),
+        _ => true,
+    };
 
     private IEnumerable<(RuleViolation Violation, Value Corrected)> ValueViolations() =>
         LimitViolations().Concat(LengthViolations()).Concat(OptionViolations());
