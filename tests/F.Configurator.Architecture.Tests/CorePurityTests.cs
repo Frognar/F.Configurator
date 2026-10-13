@@ -12,7 +12,7 @@ public class CorePurityTests
         "F.Configurator.Expressions",
         "F.Configurator.Catalog",
         "F.Configurator.Engine",
-        "F.Configurator.StepResult",
+        "F.Configurator.Results",
         "F.Configurator.Pricing",
     };
 

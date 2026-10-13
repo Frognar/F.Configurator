@@ -19,7 +19,7 @@
     <Using Include="Xunit" />
     <Using Include="F.Configurator.Catalog" />
     <Using Include="F.Configurator.Expressions" />
-    <Using Include="F.Configurator.StepResult" />
+    <Using Include="F.Configurator.Results" />
     <Using Include="F.Configurator.Expressions.Expression" Static="true" />
   </ItemGroup>
 

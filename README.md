@@ -88,7 +88,7 @@ var next = configuration.Set("Rama", Value.Option("KARBON")); // a new state; th
 | `F.Configurator.Expressions` | Values and expressions (logic, arithmetic, comparisons, functions, tables) | done |
 | `F.Configurator.Catalog` | Catalog model and builder: features, collections, stages, rules, tables | done |
 | `F.Configurator.Engine` | Engine: configuration state, visibility, rules, default values | in progress |
-| `F.Configurator.StepResult` | Step result passed to pricing and the UI | skeleton |
+| `F.Configurator.Results` | Step result passed to pricing and the UI | done |
 | `F.Configurator.Pricing` | Price lists and pricing | skeleton |
 | `F.Configurator.Dsl` | Parser for `.kfg` files | skeleton |
 | `F.Configurator.Validation` | Catalog validation and golden tests | skeleton |
@@ -97,7 +97,7 @@ var next = configuration.Set("Rama", Value.Option("KARBON")); // a new state; th
 Tests live in `tests/`, one project per module, plus `F.Configurator.Architecture.Tests`, which guard two rules:
 
 - modules depend only on the modules they are allowed to;
-- core modules (`Expressions`, `Catalog`, `Engine`, `StepResult`, `Pricing`) use no I/O, no ambient clock and no ambient culture, so they are deterministic and fully unit-testable.
+- core modules (`Expressions`, `Catalog`, `Engine`, `Results`, `Pricing`) use no I/O, no ambient clock and no ambient culture, so they are deterministic and fully unit-testable.
 
 ## Getting started
 

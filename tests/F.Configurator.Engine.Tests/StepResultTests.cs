@@ -4,7 +4,7 @@ namespace F.Configurator.Engine.Tests;
 // enough to price a configuration without asking the engine or the catalog: catalog and collection, every feature
 // with its value, symbol, source and visibility, computed features, attributes of chosen options, messages and
 // completeness.
-public class StepOutcomeTests
+public class StepResultTests
 {
     private static readonly Expression ModelVerte = Equal(Reference("Model"), Option("VERTE"));
 
@@ -27,96 +27,96 @@ public class StepOutcomeTests
         return Configuration.Start((addRules?.Invoke(catalog) ?? catalog).Build(), "Basic");
     }
 
-    private static FeatureOutcome FeatureOf(StepOutcome outcome, string name) =>
-        outcome.Features.Single(feature => feature.Name == name);
+    private static FeatureResult FeatureOf(StepResult result, string name) =>
+        result.Features.Single(feature => feature.Name == name);
 
     [Fact]
     public void Result_names_the_catalog_its_version_and_the_collection()
     {
-        var outcome = Start().Outcome;
+        var result = Start().Result;
 
-        Assert.Equal(("Drzwi", "2026.10", "Basic"), (outcome.Catalog, outcome.Version, outcome.Collection));
+        Assert.Equal(("Drzwi", "2026.10", "Basic"), (result.Catalog, result.Version, result.Collection));
     }
 
     // Features come in stage order; a feature without a value is listed too, with a missing value.
     [Fact]
     public void Result_has_the_value_of_every_feature_of_the_collection()
     {
-        var outcome = Start().Set("Model", Value.Option("PORTA")).Outcome;
+        var result = Start().Set("Model", Value.Option("PORTA")).Result;
 
         Assert.Equal(
             [("Model", Value.Option("PORTA")), ("SzerokoscMM", Value.Number(944m)), ("Prog", Value.Missing)],
-            outcome.Features.Select(feature => (feature.Name, feature.Value)));
+            result.Features.Select(feature => (feature.Name, feature.Value)));
     }
 
     [Fact]
     public void Result_gives_the_source_of_each_value()
     {
-        var outcome = Start().Set("Model", Value.Option("PORTA")).Outcome;
+        var result = Start().Set("Model", Value.Option("PORTA")).Result;
 
         Assert.Equal(
             [("Model", ValueSource.User), ("SzerokoscMM", ValueSource.Default), ("Prog", (ValueSource?)null)],
-            outcome.Features.Select(feature => (feature.Name, feature.Source)));
+            result.Features.Select(feature => (feature.Name, feature.Source)));
     }
 
     [Fact]
     public void Result_tells_which_features_are_visible()
     {
-        var outcome = Start().Set("Model", Value.Option("VERTE")).Outcome;
+        var result = Start().Set("Model", Value.Option("VERTE")).Result;
 
         Assert.Equal(
             [("Model", true), ("SzerokoscMM", true), ("Prog", false)],
-            outcome.Features.Select(feature => (feature.Name, feature.IsVisible)));
+            result.Features.Select(feature => (feature.Name, feature.IsVisible)));
     }
 
     // Grammar 4.2: the symbol of an option goes to the index; other values have no symbol.
     [Fact]
     public void Result_gives_the_symbol_of_a_chosen_option()
     {
-        var outcome = Start().Set("Model", Value.Option("VERTE")).Outcome;
+        var result = Start().Set("Model", Value.Option("VERTE")).Result;
 
         Assert.Equal(
             [("Model", "V"), ("SzerokoscMM", null), ("Prog", (string?)null)],
-            outcome.Features.Select(feature => (feature.Name, feature.Symbol)));
+            result.Features.Select(feature => (feature.Name, feature.Symbol)));
     }
 
     // Prices read attributes like `Model.Seria` from the result, not from the catalog.
     [Fact]
     public void Result_gives_the_attributes_of_a_chosen_option()
     {
-        var outcome = Start().Set("Model", Value.Option("PORTA")).Outcome;
+        var result = Start().Set("Model", Value.Option("PORTA")).Result;
 
-        Assert.Equal(new Dictionary<string, Value> { ["Seria"] = Value.Text("ASTORIA") }, FeatureOf(outcome, "Model").Attributes);
-        Assert.Empty(FeatureOf(outcome, "SzerokoscMM").Attributes);
+        Assert.Equal(new Dictionary<string, Value> { ["Seria"] = Value.Text("ASTORIA") }, FeatureOf(result, "Model").Attributes);
+        Assert.Empty(FeatureOf(result, "SzerokoscMM").Attributes);
     }
 
     // Computed features are not in the stages, so they come after the features of the collection.
     [Fact]
     public void Result_lists_computed_features_after_the_features_of_the_collection()
     {
-        var outcome = Start(catalog => catalog.Computed("SzerokoscOscieznicyMM", Add(Reference("SzerokoscMM"), Number(60m))))
+        var result = Start(catalog => catalog.Computed("SzerokoscOscieznicyMM", Add(Reference("SzerokoscMM"), Number(60m))))
             .Set("Model", Value.Option("PORTA"))
-            .Outcome;
+            .Result;
 
-        Assert.Equal(["Model", "SzerokoscMM", "Prog", "SzerokoscOscieznicyMM"], outcome.Features.Select(feature => feature.Name));
+        Assert.Equal(["Model", "SzerokoscMM", "Prog", "SzerokoscOscieznicyMM"], result.Features.Select(feature => feature.Name));
         Assert.Equal(
             (Value.Number(1004m), (ValueSource?)ValueSource.Computed),
-            (FeatureOf(outcome, "SzerokoscOscieznicyMM").Value, FeatureOf(outcome, "SzerokoscOscieznicyMM").Source));
+            (FeatureOf(result, "SzerokoscOscieznicyMM").Value, FeatureOf(result, "SzerokoscOscieznicyMM").Source));
     }
 
     [Fact]
     public void Result_has_the_violations_of_the_step()
     {
-        var outcome = Start(catalog => catalog.Rule("MaxSzerokosc", rule => rule
+        var result = Start(catalog => catalog.Rule("MaxSzerokosc", rule => rule
                 .Max("SzerokoscMM", Number(1044m))
                 .OnViolation(Reaction.Error, "Maksymalna szerokość to 1044 mm.")))
             .Set("Model", Value.Option("PORTA"))
             .Set("SzerokoscMM", Value.Number(1100m))
-            .Outcome;
+            .Result;
 
         Assert.Equal(
             [new StepMessage(MessageKind.Error, "Maksymalna szerokość to 1044 mm.", "MaxSzerokosc", "SzerokoscMM")],
-            outcome.Messages);
+            result.Messages);
     }
 
     // A correction tells the user what changed; a warning reaction keeps the value and warns.
@@ -126,28 +126,28 @@ public class StepOutcomeTests
     [InlineData(Reaction.Error, MessageKind.Error)]
     public void Reaction_gives_the_kind_of_its_message(Reaction reaction, MessageKind kind)
     {
-        var outcome = Start(catalog => catalog.Rule("MaxSzerokosc", rule => rule
+        var result = Start(catalog => catalog.Rule("MaxSzerokosc", rule => rule
                 .Max("SzerokoscMM", Number(1044m))
                 .OnViolation(reaction, "Maksymalna szerokość to 1044 mm.")))
             .Set("Model", Value.Option("PORTA"))
             .Set("SzerokoscMM", Value.Number(1100m))
-            .Outcome;
+            .Result;
 
-        Assert.Equal([kind], outcome.Messages.Select(message => message.Kind));
+        Assert.Equal([kind], result.Messages.Select(message => message.Kind));
     }
 
     [Fact]
     public void Result_has_the_rule_messages()
     {
-        var outcome = Start(catalog => catalog.Rule("VerteInfo", rule => rule
+        var result = Start(catalog => catalog.Rule("VerteInfo", rule => rule
                 .When(ModelVerte)
                 .Inform("Verte ma ościeżnicę regulowaną.")))
             .Set("Model", Value.Option("VERTE"))
-            .Outcome;
+            .Result;
 
         Assert.Equal(
             [new StepMessage(MessageKind.Information, "Verte ma ościeżnicę regulowaną.", "VerteInfo", null)],
-            outcome.Messages);
+            result.Messages);
     }
 
     [Theory]
@@ -156,16 +156,16 @@ public class StepOutcomeTests
     [InlineData(Severity.Error, MessageKind.Error)]
     public void Rule_message_keeps_its_severity(Severity severity, MessageKind kind)
     {
-        var outcome = Start(catalog => catalog.Rule("VerteKomunikat", rule => severity switch
+        var result = Start(catalog => catalog.Rule("VerteKomunikat", rule => severity switch
             {
                 Severity.Information => rule.Inform("Verte."),
                 Severity.Warning => rule.Warn("Verte."),
                 _ => rule.Error("Verte."),
             }))
             .Set("Model", Value.Option("VERTE"))
-            .Outcome;
+            .Result;
 
-        Assert.Equal([kind], outcome.Messages.Select(message => message.Kind));
+        Assert.Equal([kind], result.Messages.Select(message => message.Kind));
     }
 
     // Complete means every visible feature has a value; errors are in the messages.
@@ -174,7 +174,7 @@ public class StepOutcomeTests
     {
         var start = Start();
 
-        Assert.False(start.Set("Model", Value.Option("PORTA")).Outcome.IsComplete);
-        Assert.True(start.Set("Model", Value.Option("VERTE")).Outcome.IsComplete);
+        Assert.False(start.Set("Model", Value.Option("PORTA")).Result.IsComplete);
+        Assert.True(start.Set("Model", Value.Option("VERTE")).Result.IsComplete);
     }
 }
