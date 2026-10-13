@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\F.Configurator.Engine\F.Configurator.Engine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="F.Configurator.Catalog" />
+    <Using Include="F.Configurator.Expressions" />
+    <Using Include="F.Configurator.Expressions.Expression" Static="true" />
+  </ItemGroup>
+
+</Project>
