@@ -15,6 +15,7 @@ public sealed class Configuration
     private readonly EquatableDictionary<string, Value> _defaultValues;
     private readonly EquatableDictionary<string, Value> _defaultsOf;
     private readonly EquatableList<RuleViolation> _corrections;
+    private readonly EquatableList<ValueChange> _changes;
     private readonly EquatableDictionary<string, Value> _values;
     private readonly EquatableList<Rule> _activeRules;
     private readonly HashSet<string> _hiddenFeatures;
@@ -26,7 +27,8 @@ public sealed class Configuration
         EquatableDictionary<string, Value> forcedValues,
         EquatableDictionary<string, Value> defaultValues,
         EquatableDictionary<string, Value> defaultsOf,
-        EquatableList<RuleViolation>? corrections = null)
+        EquatableList<RuleViolation>? corrections = null,
+        EquatableList<ValueChange>? changes = null)
     {
         _catalog = catalog;
         _collection = collection;
@@ -35,6 +37,7 @@ public sealed class Configuration
         _defaultValues = defaultValues;
         _defaultsOf = defaultsOf;
         _corrections = corrections ?? [];
+        _changes = changes ?? [];
 
         var values = userValues.Concat(forcedValues)
             .Concat(defaultsOf.Select(kvp => KeyValuePair.Create(DefaultOf.KeyOf(kvp.Key), kvp.Value)))
@@ -81,7 +84,7 @@ public sealed class Configuration
     {
         EnsureCanSet(featureName, value);
 
-        return new Configuration(
+        var next = new Configuration(
                 _catalog,
                 _collection,
                 _userValues.SetItem(featureName, value),
@@ -89,6 +92,8 @@ public sealed class Configuration
                 _defaultValues,
                 _defaultsOf)
             .Settled();
+
+        return next.WithChanges(ChangesTo(next, featureName, value));
     }
 
     public string CurrentStage => _collection.Stages[CurrentStageIndex].Name;
@@ -150,19 +155,18 @@ public sealed class Configuration
     public EquatableList<RuleMessage> Messages =>
         [.. Effects<MessageEffect>().Select(x => new RuleMessage(x.Rule.Name, x.Effect.Severity, x.Effect.Text))];
 
+    public EquatableList<ValueChange> Changes => _changes;
+
     public StepResult Result =>
         new(_catalog.Name,
             _catalog.Version,
             _collection.Name,
-            [
-                .. _collection.Features
-                    .Concat(_catalog.Features.OfType<ComputedFeature>().Select(computed => computed.Name))
-                    .Select(FeatureResultOf)
-            ],
+            [.. ResultFeatures.Select(FeatureResultOf)],
             [
                 .. Violations.Select(v => new StepMessage(KindOf(v.Reaction), v.Message, v.RuleName, v.Feature)),
                 .. Messages.Select(m => new StepMessage(KindOf(m.Severity), m.Text, m.RuleName, null))
             ],
+            Changes,
             AllSet(_collection.Features));
 
     public bool CanFinish =>
@@ -221,6 +225,12 @@ public sealed class Configuration
     private bool IsComputed(string featureName) =>
         _catalog.Features.OfType<ComputedFeature>().Any(f => f.Name == featureName);
 
+    // Computed features are not always in the stages, so they come after the features of the collection.
+    private IEnumerable<string> ResultFeatures =>
+        _collection.Features
+            .Concat(_catalog.Features.OfType<ComputedFeature>().Select(computed => computed.Name))
+            .Distinct();
+
     private FeatureResult FeatureResultOf(string featureName)
     {
         var chosen = ValueOf(featureName) is OptionValue option
@@ -276,6 +286,13 @@ public sealed class Configuration
             _ => false,
         }));
 
+    private Rule? HidingRule(string featureName) =>
+        Effects<HideEffect>().Where(x => x.Effect.Features.Contains(featureName)).Select(x => x.Rule)
+            .Concat(Effects<OnlyFromTableEffect>()
+                .Where(x => x.Effect.Feature == featureName && OptionsFromTable(x.Effect) is { Count: 0 })
+                .Select(x => x.Rule))
+            .FirstOrDefault();
+
     private EquatableList<Value>? OptionsFromTable(OnlyFromTableEffect onlyFromTable)
     {
         var table = _catalog.AllowedCombinations[onlyFromTable.Table];
@@ -283,6 +300,36 @@ public sealed class Configuration
     }
 
     private EquatableList<Value> KeyOf(IEnumerable<string> keyColumns) => [.. keyColumns.Select(ValueOf)];
+
+    private Configuration WithChanges(EquatableList<ValueChange> changes) =>
+        new(_catalog, _collection, _userValues, _forcedValues, _defaultValues, _defaultsOf, _corrections, changes);
+
+    // The changed feature counts from the entered value, so a rule that changes it is listed.
+    private EquatableList<ValueChange> ChangesTo(Configuration next, string featureName, Value entered) =>
+    [
+        .. ResultFeatures
+            .Select(f => (Feature: f, Before: f == featureName ? entered : ValueOf(f), After: next.ValueOf(f)))
+            .Where(x => !Equals(x.Before, x.After))
+            .Select(x => next.ChangeOf(x.Feature, x.Before, x.After))
+    ];
+
+    private ValueChange ChangeOf(string featureName, Value before, Value after)
+    {
+        var (cause, rule) = featureName switch
+        {
+            _ when _corrections.FirstOrDefault(c => c.Feature == featureName) is { } correction =>
+                (ChangeCause.Corrected, correction.RuleName),
+            _ when _hiddenFeatures.Contains(featureName) => (ChangeCause.Hidden, HidingRule(featureName)?.Name),
+            _ when IsComputed(featureName) => (ChangeCause.Computed, null),
+            _ when _forcedValues.ContainsKey(featureName) =>
+                (ChangeCause.Forced, WinningRule(ForcedValues(), featureName)),
+            _ when _defaultValues.ContainsKey(featureName) =>
+                (ChangeCause.Default, WinningRule(DefaultValues(), featureName)),
+            _ => (ChangeCause.Removed, null),
+        };
+
+        return new ValueChange(featureName, before, after, cause, rule);
+    }
 
     private Configuration Settled()
     {
@@ -357,6 +404,9 @@ public sealed class Configuration
             .Where(x => x.Values is [_])
             .Select(x => (x.Key, x.Values[0]))
             .ToEquatableDictionary();
+
+    private static string? WinningRule(IEnumerable<Candidate> candidates, string featureName) =>
+        candidates.Where(c => c.Feature == featureName).GroupBy(c => c.Priority).MaxBy(p => p.Key)?.First().RuleName;
 
     private IEnumerable<Candidate> ForcedValues() =>
         Effects<SetEffect>()
