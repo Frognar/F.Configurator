@@ -23,6 +23,11 @@ public sealed record NotEqual(Expression Left, Expression Right) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         new Not(new Equal(Left, Right)).Evaluate(values);
+
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        new Not(new Equal(Left, Right)).Evaluate(values, context);
 }
 
 public abstract record BinaryComparison(Expression Left, Expression Right) : Expression
