@@ -100,4 +100,9 @@ public sealed record NotIn(Expression Left, Expression Right) : Expression
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         new Not(new In(Left, Right)).Evaluate(values);
+
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        new Not(new In(Left, Right)).Evaluate(values, context);
 }
