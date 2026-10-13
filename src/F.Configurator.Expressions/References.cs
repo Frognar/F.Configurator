@@ -45,4 +45,9 @@ public sealed record TableLookup(Table Table, EquatableList<Expression> Keys, st
         var evaluatedKeys = Keys.Select(k => k.Evaluate(values));
         return Table.Lookup([.. evaluatedKeys], Column);
     }
+
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        Table.Lookup([.. Keys.Select(k => k.Evaluate(values, context))], Column);
 }
