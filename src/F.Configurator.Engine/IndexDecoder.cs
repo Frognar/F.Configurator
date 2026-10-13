@@ -45,6 +45,7 @@ public static class IndexDecoder
                     values.Add(
                         (feature.Name, Value.Number(decimal.Parse(text[..length], CultureInfo.InvariantCulture)))),
                     text[length..])),
+            Pad pad => Readings(catalog, pad.Operand, text, values),
             _ => [],
         };
 
