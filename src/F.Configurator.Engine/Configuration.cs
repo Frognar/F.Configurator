@@ -576,27 +576,27 @@ public sealed class Configuration
         return (decimal.ToInt32(amount), rule);
     }
 
-    private bool WithinDomain(string featureName, Value value) => value switch
-    {
-        OptionValue => ExcludingRule(featureName, value) is null,
-        NumberValue number => NumberFeatureOf(featureName) is var feature &&
-                              !(number.Amount < MinOf(feature).Amount) &&
-                              !(number.Amount > MaxOf(feature).Amount) &&
-                              (StepOf(feature).Amount is not { } step || number.Amount % step == 0),
-        TextValue text => TextFeatureOf(featureName) is var feature &&
-                          !(text.Content.Length < MinLengthOf(feature).Amount) &&
-                          !(text.Content.Length > MaxLengthOf(feature).Amount),
-        _ => true,
-    };
+    private bool WithinDomain(string featureName, Value value) => !DomainViolations(featureName, value).Any();
 
     private IEnumerable<(RuleViolation Violation, Value Corrected)> ValueViolations() =>
-        LimitViolations().Concat(LengthViolations()).Concat(OptionViolations());
+        DomainViolations(_userValues);
 
-    private IEnumerable<(RuleViolation Violation, Value Corrected)> LimitViolations() =>
-        _catalog.Features.OfType<NumberFeature>()
-            .Select(number => (Number: number, Value: _userValues.GetValueOrDefault(number.Name)))
-            .Where(x => x.Value is NumberValue)
-            .SelectMany(x => LimitViolations(x.Number, ((NumberValue)x.Value!).Amount));
+    private IEnumerable<(RuleViolation Violation, Value Corrected)> DomainViolations(
+        IReadOnlyDictionary<string, Value> values) =>
+        _catalog.Features
+            .Where(feature => values.ContainsKey(feature.Name))
+            .SelectMany(feature => DomainViolations(feature.Name, values[feature.Name]));
+
+    private IEnumerable<(RuleViolation Violation, Value Corrected)> DomainViolations(string featureName, Value value) =>
+        value switch
+        {
+            OptionValue => ExcludingRule(featureName, value) is { } rule
+                ? [(ViolationOf(featureName, rule), Value.Missing)]
+                : [],
+            NumberValue number => LimitViolations(NumberFeatureOf(featureName), number.Amount),
+            TextValue text => LengthViolations(TextFeatureOf(featureName), text.Content),
+            _ => [],
+        };
 
     private IEnumerable<(RuleViolation Violation, Value Corrected)> LimitViolations(
         NumberFeature number,
@@ -623,12 +623,6 @@ public sealed class Configuration
         }
     }
 
-    private IEnumerable<(RuleViolation Violation, Value Corrected)> LengthViolations() =>
-        _catalog.Features.OfType<TextFeature>()
-            .Select(text => (Text: text, Value: _userValues.GetValueOrDefault(text.Name)))
-            .Where(x => x.Value is TextValue)
-            .SelectMany(x => LengthViolations(x.Text, ((TextValue)x.Value!).Content));
-
     // A too short text has no nearest allowed text, so the correction clears it; a too long one keeps its start.
     private IEnumerable<(RuleViolation Violation, Value Corrected)> LengthViolations(TextFeature text, string content)
     {
@@ -646,24 +640,9 @@ public sealed class Configuration
         }
     }
 
-    private IEnumerable<(RuleViolation Violation, Value Corrected)> OptionViolations() =>
-        _userValues
-            .Where(kvp => kvp.Value is OptionValue)
-            .Select(kvp => (Feature: kvp.Key, Rule: ExcludingRule(kvp.Key, kvp.Value)))
-            .Where(x => x.Rule is not null)
-            .Select(x => (ViolationOf(x.Feature, x.Rule), (Value)Value.Missing));
-
     // A forced value cannot be skipped like a default, so outside its domain the catalog contradicts itself.
     private IEnumerable<RuleViolation> ForcedViolations() =>
-        _forcedValues
-            .SelectMany(kvp => kvp.Value switch
-            {
-                OptionValue => ExcludingRule(kvp.Key, kvp.Value) is { } rule ? [ViolationOf(kvp.Key, rule)] : [],
-                NumberValue number => LimitViolations(NumberFeatureOf(kvp.Key), number.Amount).Select(v => v.Violation),
-                TextValue text => LengthViolations(TextFeatureOf(kvp.Key), text.Content).Select(v => v.Violation),
-                _ => [],
-            })
-            .Select(violation => violation with { Reaction = Reaction.Error });
+        DomainViolations(_forcedValues).Select(v => v.Violation with { Reaction = Reaction.Error });
 
     private static decimal RoundToStep(decimal amount, decimal? step) =>
         step is { } s ? Math.Round(amount / s, MidpointRounding.AwayFromZero) * s : amount;
