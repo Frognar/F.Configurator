@@ -155,18 +155,20 @@ public sealed class Configuration
             _catalog.Version,
             _collection.Name,
             [
-                .. _collection.Features.Select(f =>
-                    new FeatureOutcome(
-                        f,
-                        ValueOf(f),
-                        ValueOf(f) is OptionValue option
-                            ? ChoiceFeatureOf(f).Options.First(o => o.Id == option.Id).Symbol
-                            : null,
-                        SourceOf(f),
-                        VisibleFeatures.Contains(f),
-                        ValueOf(f) is OptionValue chosen
-                            ? ChoiceFeatureOf(f).Options.First(o => o.Id == chosen.Id).Attributes
-                            : EquatableDictionary<string, Value>.Empty))
+                .. _collection.Features
+                    .Concat(_catalog.Features.OfType<ComputedFeature>().Select(computed => computed.Name))
+                    .Select(f =>
+                        new FeatureOutcome(
+                            f,
+                            ValueOf(f),
+                            ValueOf(f) is OptionValue option
+                                ? ChoiceFeatureOf(f).Options.First(o => o.Id == option.Id).Symbol
+                                : null,
+                            SourceOf(f),
+                            VisibleFeatures.Contains(f),
+                            ValueOf(f) is OptionValue chosen
+                                ? ChoiceFeatureOf(f).Options.First(o => o.Id == chosen.Id).Attributes
+                                : EquatableDictionary<string, Value>.Empty))
             ],
             [],
             false);
