@@ -14,7 +14,12 @@ public static class IndexDecoder
         {
             var feature = ((Reference)symbol.Selected).Name;
             var option = catalog.Features.OfType<ChoiceFeature>().First(f => f.Name == feature).Options
-                .First(o => rest.StartsWith(SymbolOf(symbol, o.Id)));
+                .FirstOrDefault(o => rest.StartsWith(SymbolOf(symbol, o.Id)));
+            if (option is null)
+            {
+                return [];
+            }
+
             configuration = configuration.Set(feature, Value.Option(option.Id));
             rest = rest[SymbolOf(symbol, option.Id).Length..];
         }
