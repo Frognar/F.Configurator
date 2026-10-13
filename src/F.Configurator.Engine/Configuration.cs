@@ -87,6 +87,14 @@ public sealed class Configuration
             throw new ArgumentException($"Context value '{undeclared}' is not declared in catalog.");
         }
 
+        var mistyped = catalog.Contexts.Values
+            .SelectMany(c => c.Attributes.Select(a => (Name: $"{c.Name}.{a.Name}", a.Type)))
+            .FirstOrDefault(a => context.TryGetValue(a.Name, out var value) && !IsOfType(value, a.Type));
+        if (mistyped.Name is not null)
+        {
+            throw new ArgumentException($"Context value '{mistyped.Name}' is not of type {mistyped.Type}.");
+        }
+
         return new Configuration(
                 catalog,
                 collection,
@@ -236,6 +244,15 @@ public sealed class Configuration
             throw new ArgumentException($"Feature '{featureName}' does not accept {value}.");
         }
     }
+
+    private static bool IsOfType(Value value, AttributeType type) =>
+        (value, type) switch
+        {
+            (TextValue, AttributeType.Text) => true,
+            (BooleanValue, AttributeType.Boolean) => true,
+            (NumberValue, AttributeType.Number) => true,
+            _ => false,
+        };
 
     private static bool Accepts(Feature feature, Value value) =>
         (feature, value) switch
