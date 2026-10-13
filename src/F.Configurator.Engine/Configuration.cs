@@ -435,8 +435,8 @@ public sealed class Configuration
 
     private IEnumerable<Candidate> DefaultsFromRules() =>
         Effects<DefaultEffect>()
-            .Select(x =>
-                new Candidate(x.Effect.Feature, x.Effect.Value.Evaluate(_values), x.Rule.Priority, x.Rule.Name));
+            .Select(x => new Candidate(
+                x.Effect.Feature, x.Effect.Value.Evaluate(_values, _context), x.Rule.Priority, x.Rule.Name));
 
     private IEnumerable<Candidate> DefaultsFromTables() =>
         Effects<DefaultsFromTableEffect>()
