@@ -104,8 +104,7 @@ public sealed class Configuration
                     ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Corrected, correction.RuleName)
                     : next._hiddenFeatures.Contains(x.Feature)
                         ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Hidden,
-                            next.Effects<HideEffect>()
-                                .FirstOrDefault(h => h.Effect.Features.Contains(x.Feature)).Rule?.Name)
+                            next.HidingRule(x.Feature)?.Name)
                         : IsComputed(x.Feature)
                             ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Computed, null)
                             : next._forcedValues.ContainsKey(x.Feature)
@@ -304,6 +303,13 @@ public sealed class Configuration
                                                  !allowed.Contains(option),
             _ => false,
         }));
+
+    private Rule? HidingRule(string featureName) =>
+        Effects<HideEffect>().Where(x => x.Effect.Features.Contains(featureName)).Select(x => x.Rule)
+            .Concat(Effects<OnlyFromTableEffect>()
+                .Where(x => x.Effect.Feature == featureName && OptionsFromTable(x.Effect) is { Count: 0 })
+                .Select(x => x.Rule))
+            .FirstOrDefault();
 
     private EquatableList<Value>? OptionsFromTable(OnlyFromTableEffect onlyFromTable)
     {
