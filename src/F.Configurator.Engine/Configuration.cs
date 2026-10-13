@@ -1,5 +1,6 @@
 using F.Configurator.Catalog;
 using F.Configurator.Expressions;
+using F.Configurator.StepResult;
 
 namespace F.Configurator.Engine;
 
@@ -145,6 +146,10 @@ public sealed class Configuration
         .. _corrections,
         .. ValueViolations().Where(v => v.Violation.Reaction != Reaction.Correct).Select(v => v.Violation)
     ];
+
+    public EquatableList<RuleMessage> Messages => [];
+
+    public StepOutcome Outcome => throw new NotImplementedException();
 
     public bool CanFinish => AllSet(_collection.Features) && Violations.All(v => v.Reaction != Reaction.Error);
 

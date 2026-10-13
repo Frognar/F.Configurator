@@ -2,4 +2,8 @@
   <PropertyGroup>
     <IsCoreModule>true</IsCoreModule>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\F.Configurator.Expressions\F.Configurator.Expressions.csproj"/>
+  </ItemGroup>
 </Project>
