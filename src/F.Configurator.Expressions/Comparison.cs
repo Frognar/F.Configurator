@@ -8,6 +8,15 @@ public sealed record Equal(Expression Left, Expression Right) : Expression
             (MissingValue, _) or (_, MissingValue) => BooleanValue.False,
             ({ } l, { } r) => Value.Boolean(l == r),
         };
+
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        (Left.Evaluate(values, context), Right.Evaluate(values, context)) switch
+        {
+            (MissingValue, _) or (_, MissingValue) => BooleanValue.False,
+            ({ } l, { } r) => Value.Boolean(l == r),
+        };
 }
 
 public sealed record NotEqual(Expression Left, Expression Right) : Expression
