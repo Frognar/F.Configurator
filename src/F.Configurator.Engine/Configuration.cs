@@ -147,7 +147,8 @@ public sealed class Configuration
         .. ValueViolations().Where(v => v.Violation.Reaction != Reaction.Correct).Select(v => v.Violation)
     ];
 
-    public EquatableList<RuleMessage> Messages => [];
+    public EquatableList<RuleMessage> Messages =>
+        [.. Effects<MessageEffect>().Select(x => new RuleMessage(x.Rule.Name, x.Effect.Severity, x.Effect.Text))];
 
     public StepOutcome Outcome => throw new NotImplementedException();
 
