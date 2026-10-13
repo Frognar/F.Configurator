@@ -12,7 +12,7 @@
     <Project Path="src/F.Configurator.Expressions/F.Configurator.Expressions.csproj" />
     <Project Path="src/F.Configurator.Persistence/F.Configurator.Persistence.csproj" />
     <Project Path="src/F.Configurator.Pricing/F.Configurator.Pricing.csproj" />
-    <Project Path="src/F.Configurator.StepResult/F.Configurator.StepResult.csproj" />
+    <Project Path="src/F.Configurator.Results/F.Configurator.Results.csproj"/>
     <Project Path="src/F.Configurator.Validation/F.Configurator.Validation.csproj" />
   </Folder>
   <Folder Name="/tests/">

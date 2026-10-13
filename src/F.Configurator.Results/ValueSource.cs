@@ -1,4 +1,4 @@
-namespace F.Configurator.StepResult;
+namespace F.Configurator.Results;
 
 public enum ValueSource
 {

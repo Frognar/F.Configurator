@@ -6,6 +6,6 @@
   <ItemGroup>
     <ProjectReference Include="..\F.Configurator.Catalog\F.Configurator.Catalog.csproj" />
     <ProjectReference Include="..\F.Configurator.Expressions\F.Configurator.Expressions.csproj" />
-    <ProjectReference Include="..\F.Configurator.StepResult\F.Configurator.StepResult.csproj"/>
+    <ProjectReference Include="..\F.Configurator.Results\F.Configurator.Results.csproj"/>
   </ItemGroup>
 </Project>

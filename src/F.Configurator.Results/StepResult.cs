@@ -1,11 +1,11 @@
 using F.Configurator.Expressions;
 
-namespace F.Configurator.StepResult;
+namespace F.Configurator.Results;
 
-public sealed record StepOutcome(
+public sealed record StepResult(
     string Catalog,
     string? Version,
     string Collection,
-    EquatableList<FeatureOutcome> Features,
+    EquatableList<FeatureResult> Features,
     EquatableList<StepMessage> Messages,
     bool IsComplete);

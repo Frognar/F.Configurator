@@ -1,6 +1,6 @@
 using F.Configurator.Catalog;
 using F.Configurator.Expressions;
-using F.Configurator.StepResult;
+using F.Configurator.Results;
 
 namespace F.Configurator.Engine;
 
@@ -150,14 +150,14 @@ public sealed class Configuration
     public EquatableList<RuleMessage> Messages =>
         [.. Effects<MessageEffect>().Select(x => new RuleMessage(x.Rule.Name, x.Effect.Severity, x.Effect.Text))];
 
-    public StepOutcome Outcome =>
+    public StepResult Result =>
         new(_catalog.Name,
             _catalog.Version,
             _collection.Name,
             [
                 .. _collection.Features
                     .Concat(_catalog.Features.OfType<ComputedFeature>().Select(computed => computed.Name))
-                    .Select(FeatureOutcomeOf)
+                    .Select(FeatureResultOf)
             ],
             [
                 .. Violations.Select(v => new StepMessage(KindOf(v.Reaction), v.Message, v.RuleName, v.Feature)),
@@ -221,13 +221,13 @@ public sealed class Configuration
     private bool IsComputed(string featureName) =>
         _catalog.Features.OfType<ComputedFeature>().Any(f => f.Name == featureName);
 
-    private FeatureOutcome FeatureOutcomeOf(string featureName)
+    private FeatureResult FeatureResultOf(string featureName)
     {
         var chosen = ValueOf(featureName) is OptionValue option
             ? ChoiceFeatureOf(featureName).Options.First(o => o.Id == option.Id)
             : null;
 
-        return new FeatureOutcome(
+        return new FeatureResult(
             featureName,
             ValueOf(featureName),
             chosen?.Symbol,
