@@ -14,6 +14,7 @@ public sealed class Configuration
     private readonly EquatableDictionary<string, Value> _forcedValues;
     private readonly EquatableDictionary<string, Value> _defaultValues;
     private readonly EquatableDictionary<string, Value> _defaultsOf;
+    private readonly EquatableDictionary<string, Value> _context;
     private readonly EquatableList<RuleViolation> _corrections;
     private readonly EquatableList<ValueChange> _changes;
     private readonly EquatableDictionary<string, Value> _values;
@@ -28,7 +29,8 @@ public sealed class Configuration
         EquatableDictionary<string, Value> defaultValues,
         EquatableDictionary<string, Value> defaultsOf,
         EquatableList<RuleViolation>? corrections = null,
-        EquatableList<ValueChange>? changes = null)
+        EquatableList<ValueChange>? changes = null,
+        EquatableDictionary<string, Value>? context = null)
     {
         _catalog = catalog;
         _collection = collection;
@@ -38,6 +40,7 @@ public sealed class Configuration
         _defaultsOf = defaultsOf;
         _corrections = corrections ?? [];
         _changes = changes ?? [];
+        _context = context ?? EquatableDictionary<string, Value>.Empty;
 
         var values = userValues.Concat(forcedValues)
             .Concat(defaultsOf.Select(kvp => KeyValuePair.Create(DefaultOf.KeyOf(kvp.Key), kvp.Value)))
@@ -53,7 +56,7 @@ public sealed class Configuration
         [
             .. _catalog.Rules.Where(r =>
                 (r.Collections.Count == 0 || r.Collections.Contains(_collection.Name)) &&
-                (r.Condition is null || r.Condition.Evaluate(_values) is BooleanValue { IsTrue: true }))
+                (r.Condition is null || r.Condition.Evaluate(_values, _context) is BooleanValue { IsTrue: true }))
         ];
 
         _hiddenFeatures =
@@ -65,7 +68,13 @@ public sealed class Configuration
         ];
     }
 
-    public static Configuration Start(ProductCatalog catalog, string collectionName)
+    public static Configuration Start(ProductCatalog catalog, string collectionName) =>
+        Start(catalog, collectionName, EquatableDictionary<string, Value>.Empty);
+
+    public static Configuration Start(
+        ProductCatalog catalog,
+        string collectionName,
+        IReadOnlyDictionary<string, Value> context)
     {
         var collection = catalog.Collections.FirstOrDefault(c => c.Name == collectionName)
                          ?? throw new ArgumentException($"Collection '{collectionName}' not found in catalog.");
@@ -76,15 +85,10 @@ public sealed class Configuration
                 EquatableDictionary<string, Value>.Empty,
                 EquatableDictionary<string, Value>.Empty,
                 EquatableDictionary<string, Value>.Empty,
-                EquatableDictionary<string, Value>.Empty)
+                EquatableDictionary<string, Value>.Empty,
+                context: context.ToEquatableDictionary())
             .Settled();
     }
-
-    public static Configuration Start(
-        ProductCatalog catalog,
-        string collectionName,
-        IReadOnlyDictionary<string, Value> context) =>
-        Start(catalog, collectionName);
 
     public Configuration Set(string featureName, Value value)
     {
@@ -388,7 +392,7 @@ public sealed class Configuration
             .Where(x => !userValues.ContainsKey(x.Feature) && !forcedValues.ContainsKey(x.Feature)));
 
         return new Configuration(_catalog, _collection, userValues, forcedValues, defaultValues, Unanimous(defaults),
-            [.. _corrections, .. corrections.Select(c => c.Violation)]);
+            [.. _corrections, .. corrections.Select(c => c.Violation)], context: _context);
     }
 
     private sealed record Candidate(string Feature, Value Value, int Priority, string RuleName);
