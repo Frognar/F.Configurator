@@ -461,7 +461,8 @@ public sealed class Configuration
             .ToEquatableDictionary();
 
     private static string? WinningRule(IEnumerable<Candidate> candidates, string featureName) =>
-        candidates.Where(c => c.Feature == featureName).GroupBy(c => c.Priority).MaxBy(p => p.Key)?.First().RuleName;
+        candidates.Where(c => c.Feature == featureName).GroupBy(c => c.Priority).MaxBy(p => p.Key)?
+            .Select(c => c.RuleName).Order(StringComparer.Ordinal).First();
 
     private IEnumerable<Candidate> ForcedValues() =>
         Effects<SetEffect>()
