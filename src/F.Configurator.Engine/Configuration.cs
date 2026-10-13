@@ -93,26 +93,7 @@ public sealed class Configuration
                 _defaultsOf)
             .Settled();
 
-        return next.WithChanges(
-        [
-            .. ResultFeatures
-                .Select(f => (Feature: f, Before: f == featureName ? value : ValueOf(f), After: next.ValueOf(f)))
-                .Where(x => !Equals(x.Before, x.After))
-                .Select(x => next._corrections.FirstOrDefault(c => c.Feature == x.Feature) is { } correction
-                    ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Corrected, correction.RuleName)
-                    : next._hiddenFeatures.Contains(x.Feature)
-                        ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Hidden,
-                            next.HidingRule(x.Feature)?.Name)
-                        : IsComputed(x.Feature)
-                            ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Computed, null)
-                            : next._forcedValues.ContainsKey(x.Feature)
-                                ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Forced,
-                                    WinningRule(next.ForcedValues(), x.Feature))
-                                : next._defaultValues.ContainsKey(x.Feature)
-                                    ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Default,
-                                        WinningRule(next.DefaultValues(), x.Feature))
-                                    : new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Removed, null))
-        ]);
+        return next.WithChanges(ChangesTo(next, featureName, value));
     }
 
     public string CurrentStage => _collection.Stages[CurrentStageIndex].Name;
@@ -322,6 +303,33 @@ public sealed class Configuration
 
     private Configuration WithChanges(EquatableList<ValueChange> changes) =>
         new(_catalog, _collection, _userValues, _forcedValues, _defaultValues, _defaultsOf, _corrections, changes);
+
+    // The changed feature counts from the entered value, so a rule that changes it is listed.
+    private EquatableList<ValueChange> ChangesTo(Configuration next, string featureName, Value entered) =>
+    [
+        .. ResultFeatures
+            .Select(f => (Feature: f, Before: f == featureName ? entered : ValueOf(f), After: next.ValueOf(f)))
+            .Where(x => !Equals(x.Before, x.After))
+            .Select(x => next.ChangeOf(x.Feature, x.Before, x.After))
+    ];
+
+    private ValueChange ChangeOf(string featureName, Value before, Value after)
+    {
+        var (cause, rule) = featureName switch
+        {
+            _ when _corrections.FirstOrDefault(c => c.Feature == featureName) is { } correction =>
+                (ChangeCause.Corrected, correction.RuleName),
+            _ when _hiddenFeatures.Contains(featureName) => (ChangeCause.Hidden, HidingRule(featureName)?.Name),
+            _ when IsComputed(featureName) => (ChangeCause.Computed, null),
+            _ when _forcedValues.ContainsKey(featureName) =>
+                (ChangeCause.Forced, WinningRule(ForcedValues(), featureName)),
+            _ when _defaultValues.ContainsKey(featureName) =>
+                (ChangeCause.Default, WinningRule(DefaultValues(), featureName)),
+            _ => (ChangeCause.Removed, null),
+        };
+
+        return new ValueChange(featureName, before, after, cause, rule);
+    }
 
     private Configuration Settled()
     {
