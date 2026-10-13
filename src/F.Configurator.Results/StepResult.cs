@@ -8,4 +8,5 @@ public sealed record StepResult(
     string Collection,
     EquatableList<FeatureResult> Features,
     EquatableList<StepMessage> Messages,
+    EquatableList<ValueChange> Changes,
     bool IsComplete);

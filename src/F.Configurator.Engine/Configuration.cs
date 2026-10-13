@@ -150,6 +150,8 @@ public sealed class Configuration
     public EquatableList<RuleMessage> Messages =>
         [.. Effects<MessageEffect>().Select(x => new RuleMessage(x.Rule.Name, x.Effect.Severity, x.Effect.Text))];
 
+    public EquatableList<ValueChange> Changes => [];
+
     public StepResult Result =>
         new(_catalog.Name,
             _catalog.Version,
@@ -163,6 +165,7 @@ public sealed class Configuration
                 .. Violations.Select(v => new StepMessage(KindOf(v.Reaction), v.Message, v.RuleName, v.Feature)),
                 .. Messages.Select(m => new StepMessage(KindOf(m.Severity), m.Text, m.RuleName, null))
             ],
+            [],
             AllSet(_collection.Features));
 
     public bool CanFinish =>
