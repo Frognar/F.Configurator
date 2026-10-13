@@ -192,7 +192,7 @@ public sealed class Configuration
                 .. Violations.Select(v => new StepMessage(KindOf(v.Reaction), v.Message, v.RuleName, v.Feature)),
                 .. Messages.Select(m => new StepMessage(KindOf(m.Severity), m.Text, m.RuleName, null))
             ],
-            [],
+            Changes,
             AllSet(_collection.Features));
 
     public bool CanFinish =>
