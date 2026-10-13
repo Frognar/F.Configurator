@@ -656,10 +656,13 @@ public sealed class Configuration
     // A forced value cannot be skipped like a default, so outside its domain the catalog contradicts itself.
     private IEnumerable<RuleViolation> ForcedViolations() =>
         _forcedValues
-            .Where(kvp => kvp.Value is OptionValue)
-            .Select(kvp => (Feature: kvp.Key, Rule: ExcludingRule(kvp.Key, kvp.Value)))
-            .Where(x => x.Rule is not null)
-            .Select(x => ViolationOf(x.Feature, x.Rule) with { Reaction = Reaction.Error });
+            .SelectMany(kvp => kvp.Value switch
+            {
+                OptionValue => ExcludingRule(kvp.Key, kvp.Value) is { } rule ? [ViolationOf(kvp.Key, rule)] : [],
+                NumberValue number => LimitViolations(NumberFeatureOf(kvp.Key), number.Amount).Select(v => v.Violation),
+                _ => [],
+            })
+            .Select(violation => violation with { Reaction = Reaction.Error });
 
     private static decimal RoundToStep(decimal amount, decimal? step) =>
         step is { } s ? Math.Round(amount / s, MidpointRounding.AwayFromZero) * s : amount;
