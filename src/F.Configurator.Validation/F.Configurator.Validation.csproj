@@ -11,7 +11,7 @@
     <ProjectReference Include="..\F.Configurator.Engine\F.Configurator.Engine.csproj" />
     <ProjectReference Include="..\F.Configurator.Expressions\F.Configurator.Expressions.csproj" />
     <ProjectReference Include="..\F.Configurator.Pricing\F.Configurator.Pricing.csproj" />
-    <ProjectReference Include="..\F.Configurator.StepResult\F.Configurator.StepResult.csproj" />
+    <ProjectReference Include="..\F.Configurator.Results\F.Configurator.Results.csproj"/>
   </ItemGroup>
 
 </Project>

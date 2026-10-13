@@ -1,8 +1,8 @@
 using F.Configurator.Expressions;
 
-namespace F.Configurator.StepResult;
+namespace F.Configurator.Results;
 
-public sealed record FeatureOutcome(
+public sealed record FeatureResult(
     string Name,
     Value Value,
     string? Symbol,
