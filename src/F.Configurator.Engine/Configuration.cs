@@ -502,7 +502,7 @@ public sealed class Configuration
     {
         var top = Effects<LengthEffect>()
             .Where(x => x.Effect.Feature == featureName)
-            .Select(x => (x.Rule, Value: x.Effect.Value.Evaluate(_values)))
+            .Select(x => (x.Rule, Value: x.Effect.Value.Evaluate(_values, _context)))
             .Where(x => x.Value is RangeValue)
             .Select(x => (x.Rule, Amount: bound((RangeValue)x.Value)))
             .GroupBy(x => x.Rule.Priority)
