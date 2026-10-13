@@ -59,6 +59,18 @@ public class ComputedFeaturesTests
         Assert.Equal(["SzerokoscMM"], configuration.VisibleFeatures);
     }
 
+    // A condition sees all values at once: computed values do not replace the others.
+    [Fact]
+    public void Rule_condition_sees_computed_values_together_with_the_others()
+    {
+        var configuration = Start(catalog => catalog.Rule("NietypowaBezProgu", rule => rule
+                .When(NotEqual(Reference("SzerokoscMM"), Number(900m)))
+                .Hide("Prog")))
+            .Set("SzerokoscMM", Value.Number(900m));
+
+        Assert.Equal(["SzerokoscMM", "Prog"], configuration.VisibleFeatures);
+    }
+
     // Like `OdchylkaSzerokosc` used by `Nietyp`: a computed feature may use one declared before it.
     [Fact]
     public void Computed_feature_uses_a_computed_feature_declared_before_it()
