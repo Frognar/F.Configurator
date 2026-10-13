@@ -180,7 +180,8 @@ public sealed class Configuration
                     },
                     v.Message,
                     v.RuleName,
-                    v.Feature))
+                    v.Feature)),
+                .. Messages.Select(m => new StepMessage(MessageKind.Information, m.Text, m.RuleName, null))
             ],
             false);
 
