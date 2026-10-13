@@ -79,21 +79,7 @@ public sealed class Configuration
     {
         var collection = catalog.Collections.FirstOrDefault(c => c.Name == collectionName)
                          ?? throw new ArgumentException($"Collection '{collectionName}' not found in catalog.");
-        var declared = catalog.Contexts.Values.SelectMany(c => c.Attributes.Select(a => $"{c.Name}.{a.Name}"))
-            .Concat(["Kontrahent", "Język"]);
-        var undeclared = context.Keys.FirstOrDefault(name => !declared.Contains(name));
-        if (undeclared is not null)
-        {
-            throw new ArgumentException($"Context value '{undeclared}' is not declared in catalog.");
-        }
-
-        var mistyped = catalog.Contexts.Values
-            .SelectMany(c => c.Attributes.Select(a => (Name: $"{c.Name}.{a.Name}", a.Type)))
-            .FirstOrDefault(a => context.TryGetValue(a.Name, out var value) && !IsOfType(value, a.Type));
-        if (mistyped.Name is not null)
-        {
-            throw new ArgumentException($"Context value '{mistyped.Name}' is not of type {mistyped.Type}.");
-        }
+        EnsureDeclared(catalog, context);
 
         return new Configuration(
                 catalog,
@@ -242,6 +228,29 @@ public sealed class Configuration
         if (!Accepts(feature, value))
         {
             throw new ArgumentException($"Feature '{featureName}' does not accept {value}.");
+        }
+    }
+
+    // Grammar 4.6: `Kontrahent` and `Język` are built in; other context values are declared attributes.
+    private static readonly string[] BuiltInContext = ["Kontrahent", "Język"];
+
+    private static void EnsureDeclared(ProductCatalog catalog, IReadOnlyDictionary<string, Value> context)
+    {
+        var attributes = catalog.Contexts.Values
+            .SelectMany(c => c.Attributes.Select(a => (Name: $"{c.Name}.{a.Name}", a.Type)))
+            .ToDictionary(a => a.Name, a => a.Type);
+
+        foreach (var (name, value) in context)
+        {
+            if (attributes.TryGetValue(name, out var type) && !IsOfType(value, type))
+            {
+                throw new ArgumentException($"Context value '{name}' is not of type {type}.");
+            }
+
+            if (!attributes.ContainsKey(name) && !BuiltInContext.Contains(name))
+            {
+                throw new ArgumentException($"Context value '{name}' is not declared in catalog.");
+            }
         }
     }
 
