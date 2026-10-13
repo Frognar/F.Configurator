@@ -157,6 +157,8 @@ public sealed class Configuration
 
     public EquatableList<ValueChange> Changes => _changes;
 
+    public string? Index => null;
+
     public StepResult Result =>
         new(_catalog.Name,
             _catalog.Version,
@@ -167,6 +169,7 @@ public sealed class Configuration
                 .. Messages.Select(m => new StepMessage(KindOf(m.Severity), m.Text, m.RuleName, null))
             ],
             Changes,
+            null,
             AllSet(_collection.Features));
 
     public bool CanFinish =>

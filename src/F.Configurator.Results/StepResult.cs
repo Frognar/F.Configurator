@@ -9,4 +9,5 @@ public sealed record StepResult(
     EquatableList<FeatureResult> Features,
     EquatableList<StepMessage> Messages,
     EquatableList<ValueChange> Changes,
+    string? Index,
     bool IsComplete);
