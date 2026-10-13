@@ -96,9 +96,13 @@ public sealed class Configuration
         return next.WithChanges(
         [
             .. _collection.Features
-                .Where(f => f != featureName && !Equals(ValueOf(f), next.ValueOf(f)))
-                .Select(f => new ValueChange(
-                    f, ValueOf(f), next.ValueOf(f), ChangeCause.Default, WinningRule(next.DefaultValues(), f)))
+                .Select(f => (Feature: f, Before: f == featureName ? value : ValueOf(f), After: next.ValueOf(f)))
+                .Where(x => !Equals(x.Before, x.After))
+                .Select(x => x.Feature == featureName
+                    ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Corrected,
+                        next._corrections.First(c => c.Feature == featureName).RuleName)
+                    : new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Default,
+                        WinningRule(next.DefaultValues(), x.Feature)))
         ]);
     }
 
