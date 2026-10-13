@@ -22,6 +22,7 @@ public static class IndexDecoder
                 .Where(reading => reading.Unread == "")
                 .Select(reading => reading.Values.Aggregate(
                     start, (configuration, value) => configuration.Set(value.Feature, value.Value)))
+                .Where(configuration => configuration.Index == index)
         ];
     }
 
