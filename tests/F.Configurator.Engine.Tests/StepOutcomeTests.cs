@@ -150,6 +150,24 @@ public class StepOutcomeTests
             outcome.Messages);
     }
 
+    [Theory]
+    [InlineData(Severity.Information, MessageKind.Information)]
+    [InlineData(Severity.Warning, MessageKind.Warning)]
+    [InlineData(Severity.Error, MessageKind.Error)]
+    public void Rule_message_keeps_its_severity(Severity severity, MessageKind kind)
+    {
+        var outcome = Start(catalog => catalog.Rule("VerteKomunikat", rule => severity switch
+            {
+                Severity.Information => rule.Inform("Verte."),
+                Severity.Warning => rule.Warn("Verte."),
+                _ => rule.Error("Verte."),
+            }))
+            .Set("Model", Value.Option("VERTE"))
+            .Outcome;
+
+        Assert.Equal([kind], outcome.Messages.Select(message => message.Kind));
+    }
+
     // Complete means every visible feature has a value; errors are in the messages.
     [Fact]
     public void Result_is_complete_when_every_visible_feature_has_a_value()
