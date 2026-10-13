@@ -13,6 +13,7 @@ public sealed class Configuration
     private readonly EquatableDictionary<string, Value> _forcedValues;
     private readonly EquatableDictionary<string, Value> _defaultValues;
     private readonly EquatableList<RuleViolation> _corrections;
+    private readonly EquatableDictionary<string, Value> _computedValues;
     private readonly EquatableDictionary<string, Value> _values;
     private readonly EquatableList<Rule> _activeRules;
     private readonly HashSet<string> _hiddenFeatures;
@@ -32,8 +33,15 @@ public sealed class Configuration
         _defaultValues = defaultValues;
         _corrections = corrections ?? [];
 
-        _values = userValues.Concat(forcedValues)
-            .Aggregate(defaultValues, (values, kvp) => values.SetItem(kvp.Key, kvp.Value));
+        var values = userValues.Concat(forcedValues)
+            .Aggregate(defaultValues, (all, kvp) => all.SetItem(kvp.Key, kvp.Value));
+
+        _computedValues = _catalog.Features.OfType<ComputedFeature>()
+            .Select(f => (f.Name, Value: f.Expression.Evaluate(values)))
+            .Where(x => x.Value is not MissingValue)
+            .ToEquatableDictionary();
+
+        _values = _computedValues.Aggregate(values, (all, kvp) => all.SetItem(kvp.Key, kvp.Value));
 
         var computedValues = _catalog.Features.OfType<ComputedFeature>()
             .Select(f => (f.Name, Value: f.Expression.Evaluate(_values)))
@@ -96,18 +104,14 @@ public sealed class Configuration
             .Distinct()
     ];
 
-    public Value ValueOf(string featureName) =>
-        _catalog.Features.OfType<ComputedFeature>().FirstOrDefault(f => f.Name == featureName) is { } computed
-            ? computed.Expression.Evaluate(_values)
-            : _values.GetValueOrDefault(featureName, Value.Missing);
+    public Value ValueOf(string featureName) => _values.GetValueOrDefault(featureName, Value.Missing);
 
     public ValueSource? SourceOf(string featureName) => featureName switch
     {
         _ when _forcedValues.ContainsKey(featureName) => ValueSource.Forced,
         _ when _userValues.ContainsKey(featureName) => ValueSource.User,
         _ when _defaultValues.ContainsKey(featureName) => ValueSource.Default,
-        _ when _catalog.Features.OfType<ComputedFeature>().Any(f => f.Name == featureName) &&
-               ValueOf(featureName) is not MissingValue => ValueSource.Computed,
+        _ when _computedValues.ContainsKey(featureName) => ValueSource.Computed,
         _ => null,
     };
 
