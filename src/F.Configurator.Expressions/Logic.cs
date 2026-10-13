@@ -65,4 +65,13 @@ public sealed record If(Expression Condition, Expression Then, Expression Otherw
             BooleanValue { IsTrue: true } => Then.Evaluate(values),
             _ => Otherwise.Evaluate(values),
         };
+
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        Condition.Evaluate(values, context) switch
+        {
+            BooleanValue { IsTrue: true } => Then.Evaluate(values, context),
+            _ => Otherwise.Evaluate(values, context),
+        };
 }
