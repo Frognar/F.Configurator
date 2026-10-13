@@ -100,7 +100,8 @@ public sealed class Configuration
                 _userValues.SetItem(featureName, value),
                 _forcedValues,
                 _defaultValues,
-                _defaultsOf)
+                _defaultsOf,
+                context: _context)
             .Settled();
 
         return next.WithChanges(ChangesTo(next, featureName, value));
@@ -317,7 +318,8 @@ public sealed class Configuration
     private EquatableList<Value> KeyOf(IEnumerable<string> keyColumns) => [.. keyColumns.Select(ValueOf)];
 
     private Configuration WithChanges(EquatableList<ValueChange> changes) =>
-        new(_catalog, _collection, _userValues, _forcedValues, _defaultValues, _defaultsOf, _corrections, changes);
+        new(_catalog, _collection, _userValues, _forcedValues, _defaultValues, _defaultsOf, _corrections, changes,
+            _context);
 
     // The changed feature counts from the entered value, so a rule that changes it is listed.
     private EquatableList<ValueChange> ChangesTo(Configuration next, string featureName, Value entered) =>
