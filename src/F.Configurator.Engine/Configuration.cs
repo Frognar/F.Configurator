@@ -157,40 +157,11 @@ public sealed class Configuration
             [
                 .. _collection.Features
                     .Concat(_catalog.Features.OfType<ComputedFeature>().Select(computed => computed.Name))
-                    .Select(f =>
-                        new FeatureOutcome(
-                            f,
-                            ValueOf(f),
-                            ValueOf(f) is OptionValue option
-                                ? ChoiceFeatureOf(f).Options.First(o => o.Id == option.Id).Symbol
-                                : null,
-                            SourceOf(f),
-                            VisibleFeatures.Contains(f),
-                            ValueOf(f) is OptionValue chosen
-                                ? ChoiceFeatureOf(f).Options.First(o => o.Id == chosen.Id).Attributes
-                                : EquatableDictionary<string, Value>.Empty))
+                    .Select(FeatureOutcomeOf)
             ],
             [
-                .. Violations.Select(v => new StepMessage(
-                    v.Reaction switch
-                    {
-                        Reaction.Correct => MessageKind.Information,
-                        Reaction.Warning => MessageKind.Warning,
-                        _ => MessageKind.Error,
-                    },
-                    v.Message,
-                    v.RuleName,
-                    v.Feature)),
-                .. Messages.Select(m => new StepMessage(
-                    m.Severity switch
-                    {
-                        Severity.Information => MessageKind.Information,
-                        Severity.Warning => MessageKind.Warning,
-                        _ => MessageKind.Error,
-                    },
-                    m.Text,
-                    m.RuleName,
-                    null))
+                .. Violations.Select(v => new StepMessage(KindOf(v.Reaction), v.Message, v.RuleName, v.Feature)),
+                .. Messages.Select(m => new StepMessage(KindOf(m.Severity), m.Text, m.RuleName, null))
             ],
             AllSet(_collection.Features));
 
@@ -249,6 +220,35 @@ public sealed class Configuration
 
     private bool IsComputed(string featureName) =>
         _catalog.Features.OfType<ComputedFeature>().Any(f => f.Name == featureName);
+
+    private FeatureOutcome FeatureOutcomeOf(string featureName)
+    {
+        var chosen = ValueOf(featureName) is OptionValue option
+            ? ChoiceFeatureOf(featureName).Options.First(o => o.Id == option.Id)
+            : null;
+
+        return new FeatureOutcome(
+            featureName,
+            ValueOf(featureName),
+            chosen?.Symbol,
+            SourceOf(featureName),
+            VisibleFeatures.Contains(featureName),
+            chosen?.Attributes ?? EquatableDictionary<string, Value>.Empty);
+    }
+
+    private static MessageKind KindOf(Reaction reaction) => reaction switch
+    {
+        Reaction.Correct => MessageKind.Information,
+        Reaction.Warning => MessageKind.Warning,
+        _ => MessageKind.Error,
+    };
+
+    private static MessageKind KindOf(Severity severity) => severity switch
+    {
+        Severity.Information => MessageKind.Information,
+        Severity.Warning => MessageKind.Warning,
+        _ => MessageKind.Error,
+    };
 
     private ChoiceFeature ChoiceFeatureOf(string featureName) =>
         _catalog.Features.OfType<ChoiceFeature>().FirstOrDefault(f => f.Name == featureName)
