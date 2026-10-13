@@ -523,7 +523,11 @@ public sealed class Configuration
         }
 
         var amount = mostRestrictive(top.Select(x => x.Amount));
-        return (amount, top.FirstOrDefault(x => x.Amount == amount).Rule ?? top.First().Rule);
+        var rule = top.Where(x => x.Amount == amount)
+            .OrderByDescending(x => ReactionOf(x.Rule))
+            .Select(x => x.Rule)
+            .FirstOrDefault();
+        return (amount, rule ?? top.First().Rule);
     }
 
     private (int? Amount, Rule? Rule) MinLengthOf(TextFeature text) =>
