@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Globalization;
 using F.Configurator.Catalog;
 using F.Configurator.Expressions;
 
@@ -39,6 +40,11 @@ public static class IndexDecoder
                 .Select(option => (Option: option.Id, Symbol: SymbolOf(symbol, option.Id)))
                 .Where(x => text.StartsWith(x.Symbol))
                 .Select(x => (values.Add((feature.Name, Value.Option(x.Option))), text[x.Symbol.Length..])),
+            Reference feature => Enumerable.Range(1, text.TakeWhile(char.IsDigit).Count())
+                .Select(length => (
+                    values.Add(
+                        (feature.Name, Value.Number(decimal.Parse(text[..length], CultureInfo.InvariantCulture)))),
+                    text[length..])),
             _ => [],
         };
 
