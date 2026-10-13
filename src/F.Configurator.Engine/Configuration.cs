@@ -45,17 +45,11 @@ public sealed class Configuration
                 ? all.SetItem(feature.Name, value)
                 : all);
 
-        var computedValues = _catalog.Features.OfType<ComputedFeature>()
-            .Select(f => (f.Name, Value: f.Expression.Evaluate(_values)))
-            .Where(x => x.Value is not MissingValue)
-            .ToEquatableDictionary();
-
         _activeRules =
         [
             .. _catalog.Rules.Where(r =>
                 (r.Collections.Count == 0 || r.Collections.Contains(_collection.Name)) &&
-                (r.Condition is null || r.Condition.Evaluate(_values) is BooleanValue { IsTrue: true } ||
-                 r.Condition.Evaluate(computedValues) is BooleanValue { IsTrue: true }))
+                (r.Condition is null || r.Condition.Evaluate(_values) is BooleanValue { IsTrue: true }))
         ];
 
         _hiddenFeatures =
