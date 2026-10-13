@@ -99,6 +99,7 @@ public sealed class Configuration
     [
         .. Effects<LockEffect>().SelectMany(x => x.Effect.Features)
             .Concat(Effects<SetEffect>().Select(x => x.Effect.Feature))
+            .Concat(_collection.Features.Where(IsComputed))
             .Distinct()
     ];
 
