@@ -156,7 +156,12 @@ public sealed class Configuration
             _collection.Name,
             [
                 .. _collection.Features.Select(f =>
-                    new FeatureOutcome(f, ValueOf(f), null, SourceOf(f), false,
+                    new FeatureOutcome(
+                        f,
+                        ValueOf(f),
+                        null,
+                        SourceOf(f),
+                        VisibleFeatures.Contains(f),
                         EquatableDictionary<string, Value>.Empty))
             ],
             [],
