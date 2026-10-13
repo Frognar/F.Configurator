@@ -180,8 +180,9 @@ public sealed class Configuration
             _context,
             [.. ResultFeatures.Select(FeatureResultOf)],
             [
-                .. Violations.Select(v => new StepMessage(KindOf(v.Reaction), v.Message, v.RuleName, v.Feature)),
-                .. Messages.Select(m => new StepMessage(KindOf(m.Severity), m.Text, m.RuleName, null))
+                .. Violations.Select(v => new StepMessage(KindOf(v.Reaction), v.Message, v.RuleName, v.Feature))
+                    .Concat(Messages.Select(m => new StepMessage(KindOf(m.Severity), m.Text, m.RuleName, null)))
+                    .OrderByDescending(m => m.Kind)
             ],
             Changes,
             Index,
