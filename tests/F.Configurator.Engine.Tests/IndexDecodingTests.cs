@@ -38,6 +38,10 @@ public class IndexDecodingTests
                 .Option("BRAK", "Brak", option => option.Symbol("B")))
             .Number("PrzesuniecieZamkaMM", feature => feature.Unit("mm"))
             .Computed("SzerokoscOscieznicyMM", Add(Reference("SzerokoscMM"), Number(60m)))
+            .Computed("Nietyp", If(
+                NotEqual(Reference("SzerokoscMM"), DefaultOf("SzerokoscMM")),
+                Text("T"),
+                Text("N")))
             .Rule("SzerokoscDomyslna", rule => rule.Default("SzerokoscMM", Number(844m)))
             .Rule("WysokoscDomyslna", rule => rule.Default("WysokoscMM", Number(2030m)))
             .Rule("ZamekDomyslny", rule => rule.Default("ZamekDolny", Option("BRAK")))
@@ -180,6 +184,25 @@ public class IndexDecodingTests
 
         Assert.Equal([Value.Number(900m)], Decode(pattern, "VCZ900-960").Select(c => c.ValueOf("SzerokoscMM")));
         Assert.Empty(Decode(pattern, "VCZ900-999"));
+    }
+
+    // Like `Nietyp` in Basic: a computed feature with a text value. Its text in the index is one of the texts its
+    // expression can give, and as with any computed feature it only has to match the computed one.
+    [Fact]
+    public void Computed_text_feature_in_the_index_is_read_as_one_of_its_texts()
+    {
+        var pattern = Join(ModelSymbol, NormaSymbol, Reference("Nietyp"), Reference("SzerokoscMM"));
+
+        Assert.Equal([Value.Number(844m)], Decode(pattern, "VCZN844").Select(c => c.ValueOf("SzerokoscMM")));
+        Assert.Equal([Value.Number(900m)], Decode(pattern, "VCZT900").Select(c => c.ValueOf("SzerokoscMM")));
+    }
+
+    [Fact]
+    public void Computed_text_feature_that_does_not_match_the_computed_one_is_rejected()
+    {
+        var pattern = Join(ModelSymbol, NormaSymbol, Reference("Nietyp"), Reference("SzerokoscMM"));
+
+        Assert.Empty(Decode(pattern, "VCZN900"));
     }
 
     // The index may list features in another order than the stages; the decoder sets them stage by stage, as a user

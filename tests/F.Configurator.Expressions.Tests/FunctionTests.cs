@@ -193,6 +193,31 @@ public class FunctionTests
         Assert.Equal(Value.Missing, value);
     }
 
+    // Grammar 6.3: `wybrana(Cecha)` is TAK when the feature has a value, e.g. to write a position shift into the index
+    // only when it is filled in.
+    [Fact]
+    public void HasValue_of_a_feature_with_a_value_is_true()
+    {
+        var expression = HasValue(Reference("ZmianaPolozeniaZamka"));
+        var values = new Dictionary<string, Value> { ["ZmianaPolozeniaZamka"] = Value.Number(-21m) };
+
+        var value = expression.Evaluate(values);
+
+        Assert.Equal(BooleanValue.True, value);
+    }
+
+    // Grammar 6.4: `wybrana(A)` checks the missing value directly, so it is the one test that is NIE for it.
+    // Basic also asks it of a table read: `wybrana(WymiaryDomyslne[Norma, Szerokosc].SzerokoscMM)`.
+    [Fact]
+    public void HasValue_of_a_missing_value_is_false()
+    {
+        var expression = HasValue(Reference("ZmianaPolozeniaZamka"));
+
+        var value = expression.Evaluate(NoValues);
+
+        Assert.Equal(BooleanValue.False, value);
+    }
+
     // Indexes are tens of characters long, so `dopełnij` is capped at 1000 characters (agreed 2026-10-09).
     // A wider pad has no value instead of overflowing int or allocating a huge string.
     [Theory]

@@ -140,6 +140,32 @@ public class FeatureTests
         Assert.Equal([new ComputedFeature("SzerokoscOscieznicyMM", formula)], catalog.Features);
     }
 
+    // Grammar 4.2: `wymagana NIE` lets the configuration finish without a value, like the edges and position shifts
+    // in Basic. A feature is required unless marked otherwise.
+    [Fact]
+    public void Optional_choice_feature_is_not_required()
+    {
+        var krawedz = ChoiceFeatureBuilder.Create("KrawedzBP").Option("TAK", "Tak").Optional().Build();
+
+        Assert.False(krawedz.IsRequired);
+    }
+
+    [Fact]
+    public void Optional_number_feature_is_not_required()
+    {
+        var zmiana = NumberFeatureBuilder.Create("ZmianaPolozeniaZamka").Unit("mm").Optional().Build();
+
+        Assert.Equal(new NumberFeature("ZmianaPolozeniaZamka", "mm", null, null, null) { IsRequired = false }, zmiana);
+    }
+
+    [Fact]
+    public void Optional_text_feature_is_not_required()
+    {
+        var grawer = TextFeatureBuilder.Create("Grawer").Optional().Build();
+
+        Assert.Equal(new TextFeature("Grawer", null, null) { IsRequired = false }, grawer);
+    }
+
     [Fact]
     public void Catalog_keeps_features_in_declaration_order()
     {
