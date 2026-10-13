@@ -164,7 +164,9 @@ public sealed class Configuration
                             : null,
                         SourceOf(f),
                         VisibleFeatures.Contains(f),
-                        EquatableDictionary<string, Value>.Empty))
+                        ValueOf(f) is OptionValue chosen
+                            ? ChoiceFeatureOf(f).Options.First(o => o.Id == chosen.Id).Attributes
+                            : EquatableDictionary<string, Value>.Empty))
             ],
             [],
             false);
