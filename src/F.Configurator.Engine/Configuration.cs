@@ -90,7 +90,10 @@ public sealed class Configuration
             .Distinct()
     ];
 
-    public Value ValueOf(string featureName) => _values.GetValueOrDefault(featureName, Value.Missing);
+    public Value ValueOf(string featureName) =>
+        _catalog.Features.OfType<ComputedFeature>().FirstOrDefault(f => f.Name == featureName) is { } computed
+            ? computed.Expression.Evaluate(_values)
+            : _values.GetValueOrDefault(featureName, Value.Missing);
 
     public ValueSource? SourceOf(string featureName) => featureName switch
     {
