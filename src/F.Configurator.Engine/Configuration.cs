@@ -14,6 +14,7 @@ public sealed class Configuration
     private readonly EquatableDictionary<string, Value> _forcedValues;
     private readonly EquatableDictionary<string, Value> _defaultValues;
     private readonly EquatableDictionary<string, Value> _defaultsOf;
+    private readonly EquatableDictionary<string, Value> _context;
     private readonly EquatableList<RuleViolation> _corrections;
     private readonly EquatableList<ValueChange> _changes;
     private readonly EquatableDictionary<string, Value> _values;
@@ -28,7 +29,8 @@ public sealed class Configuration
         EquatableDictionary<string, Value> defaultValues,
         EquatableDictionary<string, Value> defaultsOf,
         EquatableList<RuleViolation>? corrections = null,
-        EquatableList<ValueChange>? changes = null)
+        EquatableList<ValueChange>? changes = null,
+        EquatableDictionary<string, Value>? context = null)
     {
         _catalog = catalog;
         _collection = collection;
@@ -38,6 +40,7 @@ public sealed class Configuration
         _defaultsOf = defaultsOf;
         _corrections = corrections ?? [];
         _changes = changes ?? [];
+        _context = context ?? EquatableDictionary<string, Value>.Empty;
 
         var values = userValues.Concat(forcedValues)
             .Concat(defaultsOf.Select(kvp => KeyValuePair.Create(DefaultOf.KeyOf(kvp.Key), kvp.Value)))
@@ -45,15 +48,16 @@ public sealed class Configuration
 
         // Each computed feature sees the ones declared before it.
         _values = _catalog.Features.OfType<ComputedFeature>()
-            .Aggregate(values, (all, feature) => feature.Expression.Evaluate(all) is var value and not MissingValue
-                ? all.SetItem(feature.Name, value)
-                : all);
+            .Aggregate(values, (all, feature) =>
+                feature.Expression.Evaluate(all, _context) is var value and not MissingValue
+                    ? all.SetItem(feature.Name, value)
+                    : all);
 
         _activeRules =
         [
             .. _catalog.Rules.Where(r =>
                 (r.Collections.Count == 0 || r.Collections.Contains(_collection.Name)) &&
-                (r.Condition is null || r.Condition.Evaluate(_values) is BooleanValue { IsTrue: true }))
+                (r.Condition is null || r.Condition.Evaluate(_values, _context) is BooleanValue { IsTrue: true }))
         ];
 
         _hiddenFeatures =
@@ -65,10 +69,17 @@ public sealed class Configuration
         ];
     }
 
-    public static Configuration Start(ProductCatalog catalog, string collectionName)
+    public static Configuration Start(ProductCatalog catalog, string collectionName) =>
+        Start(catalog, collectionName, EquatableDictionary<string, Value>.Empty);
+
+    public static Configuration Start(
+        ProductCatalog catalog,
+        string collectionName,
+        IReadOnlyDictionary<string, Value> context)
     {
         var collection = catalog.Collections.FirstOrDefault(c => c.Name == collectionName)
                          ?? throw new ArgumentException($"Collection '{collectionName}' not found in catalog.");
+        EnsureDeclared(catalog, context);
 
         return new Configuration(
                 catalog,
@@ -76,7 +87,8 @@ public sealed class Configuration
                 EquatableDictionary<string, Value>.Empty,
                 EquatableDictionary<string, Value>.Empty,
                 EquatableDictionary<string, Value>.Empty,
-                EquatableDictionary<string, Value>.Empty)
+                EquatableDictionary<string, Value>.Empty,
+                context: context.ToEquatableDictionary())
             .Settled();
     }
 
@@ -90,7 +102,8 @@ public sealed class Configuration
                 _userValues.SetItem(featureName, value),
                 _forcedValues,
                 _defaultValues,
-                _defaultsOf)
+                _defaultsOf,
+                context: _context)
             .Settled();
 
         return next.WithChanges(ChangesTo(next, featureName, value));
@@ -149,7 +162,8 @@ public sealed class Configuration
     public EquatableList<RuleViolation> Violations =>
     [
         .. _corrections,
-        .. ValueViolations().Where(v => v.Violation.Reaction != Reaction.Correct).Select(v => v.Violation)
+        .. ValueViolations().Where(v => v.Violation.Reaction != Reaction.Correct).Select(v => v.Violation),
+        .. ForcedViolations()
     ];
 
     public EquatableList<RuleMessage> Messages =>
@@ -164,10 +178,13 @@ public sealed class Configuration
         new(_catalog.Name,
             _catalog.Version,
             _collection.Name,
+            _context,
             [.. ResultFeatures.Select(FeatureResultOf)],
             [
-                .. Violations.Select(v => new StepMessage(KindOf(v.Reaction), v.Message, v.RuleName, v.Feature)),
-                .. Messages.Select(m => new StepMessage(KindOf(m.Severity), m.Text, m.RuleName, null))
+                .. Violations.Select(v => new StepMessage(KindOf(v.Reaction), v.Message, v.RuleName, v.Feature))
+                    .Concat(Messages.Select(m => new StepMessage(KindOf(m.Severity), m.Text, m.RuleName, null)))
+                    .OrderByDescending(m => m.Kind)
+                    .ThenBy(m => m.RuleName, StringComparer.Ordinal)
             ],
             Changes,
             Index,
@@ -216,6 +233,38 @@ public sealed class Configuration
             throw new ArgumentException($"Feature '{featureName}' does not accept {value}.");
         }
     }
+
+    // Grammar 4.6: `Kontrahent` and `Język` are built in; other context values are declared attributes.
+    private static readonly string[] BuiltInContext = ["Kontrahent", "Język"];
+
+    private static void EnsureDeclared(ProductCatalog catalog, IReadOnlyDictionary<string, Value> context)
+    {
+        var attributes = catalog.Contexts.Values
+            .SelectMany(c => c.Attributes.Select(a => (Name: $"{c.Name}.{a.Name}", a.Type)))
+            .ToDictionary(a => a.Name, a => a.Type);
+
+        foreach (var (name, value) in context)
+        {
+            if (attributes.TryGetValue(name, out var type) && !IsOfType(value, type))
+            {
+                throw new ArgumentException($"Context value '{name}' is not of type {type}.");
+            }
+
+            if (!attributes.ContainsKey(name) && !BuiltInContext.Contains(name))
+            {
+                throw new ArgumentException($"Context value '{name}' is not declared in catalog.");
+            }
+        }
+    }
+
+    private static bool IsOfType(Value value, AttributeType type) =>
+        (value, type) switch
+        {
+            (TextValue, AttributeType.Text) => true,
+            (BooleanValue, AttributeType.Boolean) => true,
+            (NumberValue, AttributeType.Number) => true,
+            _ => false,
+        };
 
     private static bool Accepts(Feature feature, Value value) =>
         (feature, value) switch
@@ -280,21 +329,26 @@ public sealed class Configuration
         _activeRules.SelectMany(r => r.Effects.OfType<T>().Select(e => (r, e)));
 
     private Rule? ExcludingRule(string featureName, Value option) =>
-        _activeRules.FirstOrDefault(r => r.Effects.Any(e => e switch
-        {
-            OnlyEffect only => only.Feature == featureName && !only.Options.Contains(option),
-            ForbidEffect forbid => forbid.Feature == featureName && forbid.Options.Contains(option),
-            OnlyFromTableEffect onlyFromTable => onlyFromTable.Feature == featureName &&
-                                                 OptionsFromTable(onlyFromTable) is { } allowed &&
-                                                 !allowed.Contains(option),
-            _ => false,
-        }));
+        _activeRules
+            .OrderByDescending(r => r.Priority)
+            .ThenByDescending(ReactionOf)
+            .ThenBy(r => r.Name, StringComparer.Ordinal)
+            .FirstOrDefault(r => r.Effects.Any(e => e switch
+            {
+                OnlyEffect only => only.Feature == featureName && !only.Options.Contains(option),
+                ForbidEffect forbid => forbid.Feature == featureName && forbid.Options.Contains(option),
+                OnlyFromTableEffect onlyFromTable => onlyFromTable.Feature == featureName &&
+                                                     OptionsFromTable(onlyFromTable) is { } allowed &&
+                                                     !allowed.Contains(option),
+                _ => false,
+            }));
 
     private Rule? HidingRule(string featureName) =>
         Effects<HideEffect>().Where(x => x.Effect.Features.Contains(featureName)).Select(x => x.Rule)
             .Concat(Effects<OnlyFromTableEffect>()
                 .Where(x => x.Effect.Feature == featureName && OptionsFromTable(x.Effect) is { Count: 0 })
                 .Select(x => x.Rule))
+            .OrderBy(r => r.Name, StringComparer.Ordinal)
             .FirstOrDefault();
 
     private EquatableList<Value>? OptionsFromTable(OnlyFromTableEffect onlyFromTable)
@@ -306,7 +360,8 @@ public sealed class Configuration
     private EquatableList<Value> KeyOf(IEnumerable<string> keyColumns) => [.. keyColumns.Select(ValueOf)];
 
     private Configuration WithChanges(EquatableList<ValueChange> changes) =>
-        new(_catalog, _collection, _userValues, _forcedValues, _defaultValues, _defaultsOf, _corrections, changes);
+        new(_catalog, _collection, _userValues, _forcedValues, _defaultValues, _defaultsOf, _corrections, changes,
+            _context);
 
     // The changed feature counts from the entered value, so a rule that changes it is listed.
     private EquatableList<ValueChange> ChangesTo(Configuration next, string featureName, Value entered) =>
@@ -376,12 +431,15 @@ public sealed class Configuration
                           !forcedValues.ContainsKey(kvp.Key))
             .ToEquatableDictionary();
 
-        var defaults = DefaultValues().Where(x => !_hiddenFeatures.Contains(x.Feature)).ToList();
+        var defaults = DefaultValues()
+            .Where(x => !_hiddenFeatures.Contains(x.Feature))
+            .Where(x => WithinDomain(x.Feature, x.Value))
+            .ToList();
         var defaultValues = Winners(defaults
             .Where(x => !userValues.ContainsKey(x.Feature) && !forcedValues.ContainsKey(x.Feature)));
 
         return new Configuration(_catalog, _collection, userValues, forcedValues, defaultValues, Unanimous(defaults),
-            [.. _corrections, .. corrections.Select(c => c.Violation)]);
+            [.. _corrections, .. corrections.Select(c => c.Violation)], context: _context);
     }
 
     private sealed record Candidate(string Feature, Value Value, int Priority, string RuleName);
@@ -410,20 +468,21 @@ public sealed class Configuration
             .ToEquatableDictionary();
 
     private static string? WinningRule(IEnumerable<Candidate> candidates, string featureName) =>
-        candidates.Where(c => c.Feature == featureName).GroupBy(c => c.Priority).MaxBy(p => p.Key)?.First().RuleName;
+        candidates.Where(c => c.Feature == featureName).GroupBy(c => c.Priority).MaxBy(p => p.Key)?
+            .Select(c => c.RuleName).Order(StringComparer.Ordinal).First();
 
     private IEnumerable<Candidate> ForcedValues() =>
         Effects<SetEffect>()
-            .Select(x =>
-                new Candidate(x.Effect.Feature, x.Effect.Value.Evaluate(_values), x.Rule.Priority, x.Rule.Name));
+            .Select(x => new Candidate(
+                x.Effect.Feature, x.Effect.Value.Evaluate(_values, _context), x.Rule.Priority, x.Rule.Name));
 
     private IEnumerable<Candidate> DefaultValues() =>
         DefaultsFromRules().Concat(DefaultsFromTables()).Concat(SingleOptionsFromTables());
 
     private IEnumerable<Candidate> DefaultsFromRules() =>
         Effects<DefaultEffect>()
-            .Select(x =>
-                new Candidate(x.Effect.Feature, x.Effect.Value.Evaluate(_values), x.Rule.Priority, x.Rule.Name));
+            .Select(x => new Candidate(
+                x.Effect.Feature, x.Effect.Value.Evaluate(_values, _context), x.Rule.Priority, x.Rule.Name));
 
     private IEnumerable<Candidate> DefaultsFromTables() =>
         Effects<DefaultsFromTableEffect>()
@@ -460,7 +519,7 @@ public sealed class Configuration
         accepts ??= _ => true;
         var top = Effects<T>()
             .Where(x => x.Effect.Feature == featureName)
-            .Select(x => (x.Rule, Value: x.Effect.Value.Evaluate(_values)))
+            .Select(x => (x.Rule, Value: x.Effect.Value.Evaluate(_values, _context)))
             .Where(x => x.Value is NumberValue number && accepts(number.Amount))
             .Select(x => (x.Rule, ((NumberValue)x.Value).Amount))
             .GroupBy(x => x.Rule.Priority)
@@ -472,7 +531,16 @@ public sealed class Configuration
         }
 
         var amount = mostRestrictive(top.Select(x => x.Amount));
-        return (amount, top.FirstOrDefault(x => x.Amount == amount).Rule ?? top.First().Rule);
+        var rule = top.Where(x => x.Amount == amount)
+            .OrderByDescending(x => ReactionOf(x.Rule))
+            .ThenBy(x => x.Rule.Name, StringComparer.Ordinal)
+            .Select(x => x.Rule)
+            .FirstOrDefault();
+        var combined = top
+            .OrderByDescending(x => ReactionOf(x.Rule))
+            .ThenBy(x => x.Rule.Name, StringComparer.Ordinal)
+            .First().Rule;
+        return (amount, rule ?? combined);
     }
 
     private (int? Amount, Rule? Rule) MinLengthOf(TextFeature text) =>
@@ -489,7 +557,7 @@ public sealed class Configuration
     {
         var top = Effects<LengthEffect>()
             .Where(x => x.Effect.Feature == featureName)
-            .Select(x => (x.Rule, Value: x.Effect.Value.Evaluate(_values)))
+            .Select(x => (x.Rule, Value: x.Effect.Value.Evaluate(_values, _context)))
             .Where(x => x.Value is RangeValue)
             .Select(x => (x.Rule, Amount: bound((RangeValue)x.Value)))
             .GroupBy(x => x.Rule.Priority)
@@ -501,17 +569,34 @@ public sealed class Configuration
         }
 
         var amount = mostRestrictive(top.Select(x => x.Amount));
-        return (decimal.ToInt32(amount), top.First(x => x.Amount == amount).Rule);
+        var rule = top.Where(x => x.Amount == amount)
+            .OrderByDescending(x => ReactionOf(x.Rule))
+            .ThenBy(x => x.Rule.Name, StringComparer.Ordinal)
+            .First().Rule;
+        return (decimal.ToInt32(amount), rule);
     }
 
-    private IEnumerable<(RuleViolation Violation, Value Corrected)> ValueViolations() =>
-        LimitViolations().Concat(LengthViolations()).Concat(OptionViolations());
+    private bool WithinDomain(string featureName, Value value) => !DomainViolations(featureName, value).Any();
 
-    private IEnumerable<(RuleViolation Violation, Value Corrected)> LimitViolations() =>
-        _catalog.Features.OfType<NumberFeature>()
-            .Select(number => (Number: number, Value: _userValues.GetValueOrDefault(number.Name)))
-            .Where(x => x.Value is NumberValue)
-            .SelectMany(x => LimitViolations(x.Number, ((NumberValue)x.Value!).Amount));
+    private IEnumerable<(RuleViolation Violation, Value Corrected)> ValueViolations() =>
+        DomainViolations(_userValues);
+
+    private IEnumerable<(RuleViolation Violation, Value Corrected)> DomainViolations(
+        IReadOnlyDictionary<string, Value> values) =>
+        _catalog.Features
+            .Where(feature => values.ContainsKey(feature.Name))
+            .SelectMany(feature => DomainViolations(feature.Name, values[feature.Name]));
+
+    private IEnumerable<(RuleViolation Violation, Value Corrected)> DomainViolations(string featureName, Value value) =>
+        value switch
+        {
+            OptionValue => ExcludingRule(featureName, value) is { } rule
+                ? [(ViolationOf(featureName, rule), Value.Missing)]
+                : [],
+            NumberValue number => LimitViolations(NumberFeatureOf(featureName), number.Amount),
+            TextValue text => LengthViolations(TextFeatureOf(featureName), text.Content),
+            _ => [],
+        };
 
     private IEnumerable<(RuleViolation Violation, Value Corrected)> LimitViolations(
         NumberFeature number,
@@ -538,12 +623,6 @@ public sealed class Configuration
         }
     }
 
-    private IEnumerable<(RuleViolation Violation, Value Corrected)> LengthViolations() =>
-        _catalog.Features.OfType<TextFeature>()
-            .Select(text => (Text: text, Value: _userValues.GetValueOrDefault(text.Name)))
-            .Where(x => x.Value is TextValue)
-            .SelectMany(x => LengthViolations(x.Text, ((TextValue)x.Value!).Content));
-
     // A too short text has no nearest allowed text, so the correction clears it; a too long one keeps its start.
     private IEnumerable<(RuleViolation Violation, Value Corrected)> LengthViolations(TextFeature text, string content)
     {
@@ -561,12 +640,9 @@ public sealed class Configuration
         }
     }
 
-    private IEnumerable<(RuleViolation Violation, Value Corrected)> OptionViolations() =>
-        _userValues
-            .Where(kvp => kvp.Value is OptionValue)
-            .Select(kvp => (Feature: kvp.Key, Rule: ExcludingRule(kvp.Key, kvp.Value)))
-            .Where(x => x.Rule is not null)
-            .Select(x => (ViolationOf(x.Feature, x.Rule), (Value)Value.Missing));
+    // A forced value cannot be skipped like a default, so outside its domain the catalog contradicts itself.
+    private IEnumerable<RuleViolation> ForcedViolations() =>
+        DomainViolations(_forcedValues).Select(v => v.Violation with { Reaction = Reaction.Error });
 
     private static decimal RoundToStep(decimal amount, decimal? step) =>
         step is { } s ? Math.Round(amount / s, MidpointRounding.AwayFromZero) * s : amount;
@@ -578,6 +654,8 @@ public sealed class Configuration
         _ when amount < min => step is { } s ? Math.Ceiling(min.Value / s) * s : min.Value,
         _ => amount,
     };
+
+    private Reaction ReactionOf(Rule rule) => rule.Violation?.Reaction ?? _catalog.DefaultReaction ?? Reaction.Error;
 
     private RuleViolation ViolationOf(string featureName, Rule? rule) =>
         new(featureName,

@@ -2,10 +2,12 @@ namespace F.Configurator.Expressions;
 
 public abstract record Extremum(EquatableList<Expression> Expressions) : Expression
 {
-    public sealed override Value Evaluate(IReadOnlyDictionary<string, Value> values)
+    public sealed override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context)
     {
         var evaluated = Expressions
-            .Select(expr => expr.Evaluate(values))
+            .Select(expr => expr.Evaluate(values, context))
             .OfType<NumberValue>()
             .ToList();
 
@@ -29,8 +31,10 @@ public sealed record Max(EquatableList<Expression> Expressions) : Extremum(Expre
 
 public sealed record Round(Expression Operand, Expression Step) : Expression
 {
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        (Operand.Evaluate(values), Step.Evaluate(values)) switch
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        (Operand.Evaluate(values, context), Step.Evaluate(values, context)) switch
         {
             (NumberValue number, NumberValue { Amount: > 0 } step) => SafeRound(number, step),
             _ => Value.Missing,
@@ -51,8 +55,10 @@ public sealed record Round(Expression Operand, Expression Step) : Expression
 
 public sealed record Length(Expression Operand) : Expression
 {
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        Operand.Evaluate(values) switch
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        Operand.Evaluate(values, context) switch
         {
             TextValue { Content: var str } => Value.Number(str.Length),
             _ => Value.Missing,
@@ -63,8 +69,14 @@ public sealed record Pad(Expression Operand, Expression TotalWidth, Expression P
 {
     private const decimal MaxWidth = 1000;
 
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        (Operand.Evaluate(values).AsText(), TotalWidth.Evaluate(values), PaddingChar.Evaluate(values)) switch
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        (
+                Operand.Evaluate(values, context).AsText(),
+                TotalWidth.Evaluate(values, context),
+                PaddingChar.Evaluate(values, context)
+            ) switch
         {
             (
                 TextValue { Content: var text },

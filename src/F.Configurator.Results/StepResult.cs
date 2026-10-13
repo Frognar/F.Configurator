@@ -6,6 +6,7 @@ public sealed record StepResult(
     string Catalog,
     string? Version,
     string Collection,
+    EquatableDictionary<string, Value> Context,
     EquatableList<FeatureResult> Features,
     EquatableList<StepMessage> Messages,
     EquatableList<ValueChange> Changes,

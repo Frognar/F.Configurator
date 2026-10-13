@@ -2,8 +2,10 @@ namespace F.Configurator.Expressions;
 
 public sealed record Equal(Expression Left, Expression Right) : Expression
 {
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        (Left.Evaluate(values), Right.Evaluate(values)) switch
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        (Left.Evaluate(values, context), Right.Evaluate(values, context)) switch
         {
             (MissingValue, _) or (_, MissingValue) => BooleanValue.False,
             ({ } l, { } r) => Value.Boolean(l == r),
@@ -12,20 +14,22 @@ public sealed record Equal(Expression Left, Expression Right) : Expression
 
 public sealed record NotEqual(Expression Left, Expression Right) : Expression
 {
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        new Not(new Equal(Left, Right)).Evaluate(values);
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        new Not(new Equal(Left, Right)).Evaluate(values, context);
 }
 
 public abstract record BinaryComparison(Expression Left, Expression Right) : Expression
 {
-    public sealed override Value Evaluate(IReadOnlyDictionary<string, Value> values)
-    {
-        return (Left.Evaluate(values), Right.Evaluate(values)) switch
+    public sealed override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        (Left.Evaluate(values, context), Right.Evaluate(values, context)) switch
         {
             (NumberValue left, NumberValue right) => Compare(left.Amount, right.Amount),
             _ => BooleanValue.False,
         };
-    }
 
     protected abstract Value Compare(decimal left, decimal right);
 }
@@ -52,8 +56,10 @@ public sealed record GreaterThanOrEqual(Expression Left, Expression Right) : Bin
 
 public sealed record In(Expression Left, Expression Right) : Expression
 {
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        (Left.Evaluate(values), Right.Evaluate(values)) switch
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        (Left.Evaluate(values, context), Right.Evaluate(values, context)) switch
         {
             (MissingValue, _) => BooleanValue.False,
             (NumberValue n, RangeValue r) => Value.Boolean(n.Amount >= r.Min && n.Amount <= r.Max),
@@ -64,6 +70,8 @@ public sealed record In(Expression Left, Expression Right) : Expression
 
 public sealed record NotIn(Expression Left, Expression Right) : Expression
 {
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        new Not(new In(Left, Right)).Evaluate(values);
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        new Not(new In(Left, Right)).Evaluate(values, context);
 }

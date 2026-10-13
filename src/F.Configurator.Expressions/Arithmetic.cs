@@ -2,8 +2,10 @@ namespace F.Configurator.Expressions;
 
 public abstract record BinaryArithmetic(Expression Left, Expression Right) : Expression
 {
-    public sealed override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        Combine(Left.Evaluate(values), Right.Evaluate(values));
+    public sealed override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        Combine(Left.Evaluate(values, context), Right.Evaluate(values, context));
 
     protected virtual Value Combine(Value left, Value right) =>
         (left, right) switch
@@ -59,8 +61,10 @@ public sealed record Divide(Expression Left, Expression Right) : BinaryArithmeti
 
 public sealed record Negate(Expression Operand) : Expression
 {
-    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
-        Operand.Evaluate(values) switch
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        Operand.Evaluate(values, context) switch
         {
             NumberValue { Amount: var amount } => Value.Number(-amount),
             _ => Value.Missing,
