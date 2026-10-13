@@ -21,7 +21,10 @@ public static class IndexDecoder
             .. Readings(catalog, pattern, index, [])
                 .Where(reading => reading.Unread == "")
                 .Select(reading => reading.Values.Aggregate(
-                    start, (configuration, value) => configuration.Set(value.Feature, value.Value)))
+                    start,
+                    (configuration, value) => configuration.ValueOf(value.Feature) == value.Value
+                        ? configuration
+                        : configuration.Set(value.Feature, value.Value)))
                 .Where(configuration => configuration.Index == index)
         ];
     }
@@ -41,16 +44,24 @@ public static class IndexDecoder
                 .Select(option => (Option: option.Id, Symbol: SymbolOf(symbol, option.Id)))
                 .Where(x => text.StartsWith(x.Symbol))
                 .Select(x => (values.Add((feature.Name, Value.Option(x.Option))), text[x.Symbol.Length..])),
-            Reference feature => Enumerable.Range(1, text.TakeWhile(char.IsDigit).Count())
+            Reference feature => NumberLengths(text)
                 .Select(length => (
                     values.Add(
                         (feature.Name, Value.Number(decimal.Parse(text[..length], CultureInfo.InvariantCulture)))),
                     text[length..])),
             Pad pad => Readings(catalog, pad.Operand, text, values),
-            If conditional => Readings(catalog, conditional.Then, text, values),
+            If conditional => Readings(catalog, conditional.Then, text, values)
+                .Concat(Readings(catalog, conditional.Otherwise, text, values)),
             Text literal => text.StartsWith(literal.Content) ? [(values, text[literal.Content.Length..])] : [],
             _ => [],
         };
+
+    // Lengths of the numbers the text starts with: digits after an optional minus.
+    private static IEnumerable<int> NumberLengths(string text)
+    {
+        var sign = text.StartsWith('-') ? 1 : 0;
+        return Enumerable.Range(sign + 1, text[sign..].TakeWhile(char.IsDigit).Count());
+    }
 
     private static string SymbolOf(OptionAttribute symbol, string option) =>
         ((TextValue)symbol.ValuesByOption[option]).Content;
