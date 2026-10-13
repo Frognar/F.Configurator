@@ -70,4 +70,13 @@ public sealed record Negate(Expression Operand) : Expression
             NumberValue { Amount: var amount } => Value.Number(-amount),
             _ => Value.Missing,
         };
+
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        Operand.Evaluate(values, context) switch
+        {
+            NumberValue { Amount: var amount } => Value.Number(-amount),
+            _ => Value.Missing,
+        };
 }
