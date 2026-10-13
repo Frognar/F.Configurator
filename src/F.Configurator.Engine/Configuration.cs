@@ -12,6 +12,7 @@ public sealed class Configuration
     private readonly EquatableDictionary<string, Value> _userValues;
     private readonly EquatableDictionary<string, Value> _forcedValues;
     private readonly EquatableDictionary<string, Value> _defaultValues;
+    private readonly EquatableDictionary<string, Value> _defaultsOf;
     private readonly EquatableList<RuleViolation> _corrections;
     private readonly EquatableDictionary<string, Value> _values;
     private readonly EquatableList<Rule> _activeRules;
@@ -23,6 +24,7 @@ public sealed class Configuration
         EquatableDictionary<string, Value> userValues,
         EquatableDictionary<string, Value> forcedValues,
         EquatableDictionary<string, Value> defaultValues,
+        EquatableDictionary<string, Value> defaultsOf,
         EquatableList<RuleViolation>? corrections = null)
     {
         _catalog = catalog;
@@ -30,10 +32,18 @@ public sealed class Configuration
         _userValues = userValues;
         _forcedValues = forcedValues;
         _defaultValues = defaultValues;
+        _defaultsOf = defaultsOf;
         _corrections = corrections ?? [];
 
-        _values = userValues.Concat(forcedValues)
-            .Aggregate(defaultValues, (values, kvp) => values.SetItem(kvp.Key, kvp.Value));
+        var values = userValues.Concat(forcedValues)
+            .Concat(defaultsOf.Select(kvp => KeyValuePair.Create(DefaultOf.KeyOf(kvp.Key), kvp.Value)))
+            .Aggregate(defaultValues, (all, kvp) => all.SetItem(kvp.Key, kvp.Value));
+
+        // Each computed feature sees the ones declared before it.
+        _values = _catalog.Features.OfType<ComputedFeature>()
+            .Aggregate(values, (all, feature) => feature.Expression.Evaluate(all) is var value and not MissingValue
+                ? all.SetItem(feature.Name, value)
+                : all);
 
         _activeRules =
         [
@@ -61,6 +71,7 @@ public sealed class Configuration
                 collection,
                 EquatableDictionary<string, Value>.Empty,
                 EquatableDictionary<string, Value>.Empty,
+                EquatableDictionary<string, Value>.Empty,
                 EquatableDictionary<string, Value>.Empty)
             .Settled();
     }
@@ -74,7 +85,8 @@ public sealed class Configuration
                 _collection,
                 _userValues.SetItem(featureName, value),
                 _forcedValues,
-                _defaultValues)
+                _defaultValues,
+                _defaultsOf)
             .Settled();
     }
 
@@ -87,6 +99,7 @@ public sealed class Configuration
     [
         .. Effects<LockEffect>().SelectMany(x => x.Effect.Features)
             .Concat(Effects<SetEffect>().Select(x => x.Effect.Feature))
+            .Concat(_collection.Features.Where(IsComputed))
             .Distinct()
     ];
 
@@ -97,6 +110,7 @@ public sealed class Configuration
         _ when _forcedValues.ContainsKey(featureName) => ValueSource.Forced,
         _ when _userValues.ContainsKey(featureName) => ValueSource.User,
         _ when _defaultValues.ContainsKey(featureName) => ValueSource.Default,
+        _ when _values.ContainsKey(featureName) && IsComputed(featureName) => ValueSource.Computed,
         _ => null,
     };
 
@@ -183,6 +197,9 @@ public sealed class Configuration
             _ => false,
         };
 
+    private bool IsComputed(string featureName) =>
+        _catalog.Features.OfType<ComputedFeature>().Any(f => f.Name == featureName);
+
     private ChoiceFeature ChoiceFeatureOf(string featureName) =>
         _catalog.Features.OfType<ChoiceFeature>().FirstOrDefault(f => f.Name == featureName)
         ?? throw new ArgumentException($"Feature '{featureName}' is not a choice feature in catalog.");
@@ -258,12 +275,11 @@ public sealed class Configuration
                           !forcedValues.ContainsKey(kvp.Key))
             .ToEquatableDictionary();
 
-        var defaultValues = Winners(DefaultValues()
-            .Where(x => !_hiddenFeatures.Contains(x.Feature) &&
-                        !userValues.ContainsKey(x.Feature) &&
-                        !forcedValues.ContainsKey(x.Feature)));
+        var defaults = DefaultValues().Where(x => !_hiddenFeatures.Contains(x.Feature)).ToList();
+        var defaultValues = Winners(defaults
+            .Where(x => !userValues.ContainsKey(x.Feature) && !forcedValues.ContainsKey(x.Feature)));
 
-        return new Configuration(_catalog, _collection, userValues, forcedValues, defaultValues,
+        return new Configuration(_catalog, _collection, userValues, forcedValues, defaultValues, Unanimous(defaults),
             [.. _corrections, .. corrections.Select(c => c.Violation)]);
     }
 
@@ -281,6 +297,15 @@ public sealed class Configuration
                         $"Feature '{feature.Key}' gets different values from rules " +
                         $"{string.Join(", ", top.Select(c => $"'{c.RuleName}'"))} with the same priority.");
             })
+            .ToEquatableDictionary();
+
+    private static EquatableDictionary<string, Value> Unanimous(IEnumerable<Candidate> candidates) =>
+        candidates
+            .GroupBy(c => c.Feature)
+            .Select(feature => (feature.Key,
+                Values: feature.GroupBy(c => c.Priority).MaxBy(p => p.Key)!.Select(c => c.Value).Distinct().ToList()))
+            .Where(x => x.Values is [_])
+            .Select(x => (x.Key, x.Values[0]))
             .ToEquatableDictionary();
 
     private IEnumerable<Candidate> ForcedValues() =>

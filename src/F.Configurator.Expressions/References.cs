@@ -6,6 +6,14 @@ public sealed record Reference(string Name) : Expression
         values.TryGetValue(Name, out var value) ? value : Value.Missing;
 }
 
+public sealed record DefaultOf(string Feature) : Expression
+{
+    public static string KeyOf(string feature) => $"default({feature})";
+
+    public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
+        values.GetValueOrDefault(KeyOf(Feature), Value.Missing);
+}
+
 public sealed record OptionAttribute(
     Expression Selected,
     EquatableDictionary<string, Value> ValuesByOption) : Expression
