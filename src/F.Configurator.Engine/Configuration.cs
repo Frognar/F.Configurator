@@ -183,6 +183,7 @@ public sealed class Configuration
                 .. Violations.Select(v => new StepMessage(KindOf(v.Reaction), v.Message, v.RuleName, v.Feature))
                     .Concat(Messages.Select(m => new StepMessage(KindOf(m.Severity), m.Text, m.RuleName, null)))
                     .OrderByDescending(m => m.Kind)
+                    .ThenBy(m => m.RuleName, StringComparer.Ordinal)
             ],
             Changes,
             Index,
