@@ -98,9 +98,8 @@ public sealed class Configuration
             .. _collection.Features
                 .Select(f => (Feature: f, Before: f == featureName ? value : ValueOf(f), After: next.ValueOf(f)))
                 .Where(x => !Equals(x.Before, x.After))
-                .Select(x => x.Feature == featureName
-                    ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Corrected,
-                        next._corrections.First(c => c.Feature == featureName).RuleName)
+                .Select(x => next._corrections.FirstOrDefault(c => c.Feature == x.Feature) is { } correction
+                    ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Corrected, correction.RuleName)
                     : new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Default,
                         WinningRule(next.DefaultValues(), x.Feature)))
         ]);
