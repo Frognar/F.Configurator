@@ -181,7 +181,16 @@ public sealed class Configuration
                     v.Message,
                     v.RuleName,
                     v.Feature)),
-                .. Messages.Select(m => new StepMessage(MessageKind.Information, m.Text, m.RuleName, null))
+                .. Messages.Select(m => new StepMessage(
+                    m.Severity switch
+                    {
+                        Severity.Information => MessageKind.Information,
+                        Severity.Warning => MessageKind.Warning,
+                        _ => MessageKind.Error,
+                    },
+                    m.Text,
+                    m.RuleName,
+                    null))
             ],
             false);
 
