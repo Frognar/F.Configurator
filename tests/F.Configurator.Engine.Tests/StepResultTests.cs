@@ -8,7 +8,9 @@ public class StepResultTests
 {
     private static readonly Expression ModelVerte = Equal(Reference("Model"), Option("VERTE"));
 
-    private static Configuration Start(Func<CatalogBuilder, CatalogBuilder>? addRules = null)
+    private static Configuration Start(
+        Func<CatalogBuilder, CatalogBuilder>? addRules = null,
+        params IEnumerable<string> alsoInSizes)
     {
         var catalog = CatalogBuilder.Create("Drzwi")
             .Version("2026.10")
@@ -22,7 +24,7 @@ public class StepResultTests
             .Rule("VerteBezProgu", rule => rule.When(ModelVerte).Hide("Prog"))
             .Collection("Basic", collection => collection
                 .Stage("Model", "Model")
-                .Stage("Wymiary", "SzerokoscMM", "Prog"));
+                .Stage("Wymiary", "SzerokoscMM", ["Prog", .. alsoInSizes]));
 
         return Configuration.Start((addRules?.Invoke(catalog) ?? catalog).Build(), "Basic");
     }
@@ -104,6 +106,18 @@ public class StepResultTests
             (FeatureOf(result, "SzerokoscOscieznicyMM").Value, FeatureOf(result, "SzerokoscOscieznicyMM").Source));
     }
 
+    // Grammar 4.3: a computed feature may also be shown in a stage; the result still lists it once.
+    [Fact]
+    public void Result_lists_a_computed_feature_of_a_stage_once()
+    {
+        var result = Start(
+                catalog => catalog.Computed("SzerokoscOscieznicyMM", Add(Reference("SzerokoscMM"), Number(60m))),
+                alsoInSizes: "SzerokoscOscieznicyMM")
+            .Result;
+
+        Assert.Equal(["Model", "SzerokoscMM", "Prog", "SzerokoscOscieznicyMM"], result.Features.Select(feature => feature.Name));
+    }
+
     [Fact]
     public void Result_has_the_violations_of_the_step()
     {
@@ -166,6 +180,23 @@ public class StepResultTests
             .Result;
 
         Assert.Equal([kind], result.Messages.Select(message => message.Kind));
+    }
+
+    [Fact]
+    public void Result_has_the_changes_of_the_step()
+    {
+        var result = Start(catalog => catalog
+                .Computed("SzerokoscOscieznicyMM", Add(Reference("SzerokoscMM"), Number(60m)))
+                .Rule("VerteWaska", rule => rule.When(ModelVerte).Set("SzerokoscMM", Number(900m))))
+            .Set("Model", Value.Option("VERTE"))
+            .Result;
+
+        Assert.Equal(
+            [
+                new ValueChange("SzerokoscMM", Value.Number(944m), Value.Number(900m), ChangeCause.Forced, "VerteWaska"),
+                new ValueChange("SzerokoscOscieznicyMM", Value.Number(1004m), Value.Number(960m), ChangeCause.Computed, null),
+            ],
+            result.Changes);
     }
 
     // Complete means every visible feature has a value; errors are in the messages.
