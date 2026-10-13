@@ -159,7 +159,9 @@ public sealed class Configuration
                     new FeatureOutcome(
                         f,
                         ValueOf(f),
-                        null,
+                        ValueOf(f) is OptionValue option
+                            ? ChoiceFeatureOf(f).Options.First(o => o.Id == option.Id).Symbol
+                            : null,
                         SourceOf(f),
                         VisibleFeatures.Contains(f),
                         EquatableDictionary<string, Value>.Empty))
