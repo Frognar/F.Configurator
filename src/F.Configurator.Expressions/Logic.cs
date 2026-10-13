@@ -28,6 +28,15 @@ public sealed record Not(Expression Operand) : Expression
             BooleanValue { IsTrue: true } => BooleanValue.False,
             _ => BooleanValue.True,
         };
+
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        Operand.Evaluate(values, context) switch
+        {
+            BooleanValue { IsTrue: true } => BooleanValue.False,
+            _ => BooleanValue.True,
+        };
 }
 
 public sealed record If(Expression Condition, Expression Then, Expression Otherwise) : Expression
