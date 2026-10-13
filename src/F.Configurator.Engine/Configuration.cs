@@ -582,6 +582,9 @@ public sealed class Configuration
                               !(number.Amount < MinOf(feature).Amount) &&
                               !(number.Amount > MaxOf(feature).Amount) &&
                               (StepOf(feature).Amount is not { } step || number.Amount % step == 0),
+        TextValue text => TextFeatureOf(featureName) is var feature &&
+                          !(text.Content.Length < MinLengthOf(feature).Amount) &&
+                          !(text.Content.Length > MaxLengthOf(feature).Amount),
         _ => true,
     };
 
