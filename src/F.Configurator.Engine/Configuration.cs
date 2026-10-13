@@ -150,7 +150,16 @@ public sealed class Configuration
     public EquatableList<RuleMessage> Messages =>
         [.. Effects<MessageEffect>().Select(x => new RuleMessage(x.Rule.Name, x.Effect.Severity, x.Effect.Text))];
 
-    public StepOutcome Outcome => new(_catalog.Name, _catalog.Version, _collection.Name, [], [], false);
+    public StepOutcome Outcome =>
+        new(_catalog.Name,
+            _catalog.Version,
+            _collection.Name,
+            [
+                .. _collection.Features.Select(f =>
+                    new FeatureOutcome(f, ValueOf(f), null, null, false, EquatableDictionary<string, Value>.Empty))
+            ],
+            [],
+            false);
 
     public bool CanFinish =>
         AllSet(_collection.Features) && Violations.All(v => v.Reaction != Reaction.Error) &&
