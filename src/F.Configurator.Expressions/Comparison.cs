@@ -41,6 +41,15 @@ public abstract record BinaryComparison(Expression Left, Expression Right) : Exp
         };
     }
 
+    public sealed override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        (Left.Evaluate(values, context), Right.Evaluate(values, context)) switch
+        {
+            (NumberValue left, NumberValue right) => Compare(left.Amount, right.Amount),
+            _ => BooleanValue.False,
+        };
+
     protected abstract Value Compare(decimal left, decimal right);
 }
 
