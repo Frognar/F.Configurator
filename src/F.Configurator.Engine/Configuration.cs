@@ -170,7 +170,7 @@ public sealed class Configuration
                                 ? ChoiceFeatureOf(f).Options.First(o => o.Id == chosen.Id).Attributes
                                 : EquatableDictionary<string, Value>.Empty))
             ],
-            [],
+            [.. Violations.Select(v => new StepMessage(MessageKind.Error, v.Message, v.RuleName, v.Feature))],
             false);
 
     public bool CanFinish =>
