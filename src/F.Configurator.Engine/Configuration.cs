@@ -191,7 +191,7 @@ public sealed class Configuration
         new(_catalog.Name,
             _catalog.Version,
             _collection.Name,
-            EquatableDictionary<string, Value>.Empty,
+            _context,
             [.. ResultFeatures.Select(FeatureResultOf)],
             [
                 .. Violations.Select(v => new StepMessage(KindOf(v.Reaction), v.Message, v.RuleName, v.Feature)),
