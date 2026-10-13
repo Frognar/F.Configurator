@@ -34,6 +34,7 @@ public sealed record Add(Expression Left, Expression Right) : BinaryArithmetic(L
         {
             (TextValue l, TextValue r) => Value.Text(l.Content + r.Content),
             (TextValue l, NumberValue r) => Value.Text(l.Content + r.Amount),
+            (NumberValue l, TextValue r) => Value.Text(l.Amount + r.Content),
             _ => base.Combine(left, right),
         };
 
