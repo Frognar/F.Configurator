@@ -170,7 +170,7 @@ public sealed class Configuration
                 .. Messages.Select(m => new StepMessage(KindOf(m.Severity), m.Text, m.RuleName, null))
             ],
             Changes,
-            null,
+            Index,
             AllSet(_collection.Features));
 
     public bool CanFinish =>
