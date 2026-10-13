@@ -329,6 +329,7 @@ public sealed class Configuration
         _activeRules
             .OrderByDescending(r => r.Priority)
             .ThenByDescending(ReactionOf)
+            .ThenBy(r => r.Name, StringComparer.Ordinal)
             .FirstOrDefault(r => r.Effects.Any(e => e switch
             {
                 OnlyEffect only => only.Feature == featureName && !only.Options.Contains(option),
