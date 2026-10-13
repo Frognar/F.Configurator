@@ -7,10 +7,15 @@ public static class IndexDecoder
 {
     public static IReadOnlyList<Configuration> Decode(ProductCatalog catalog, string collectionName, string index)
     {
+        var pattern = catalog.Collections.First(c => c.Name == collectionName).Index;
+        if (pattern is null)
+        {
+            return [];
+        }
+
         var configuration = Configuration.Start(catalog, collectionName);
         var rest = index;
-        foreach (var symbol in Segments(catalog.Collections.First(c => c.Name == collectionName).Index!)
-                     .Cast<OptionAttribute>())
+        foreach (var symbol in Segments(pattern).Cast<OptionAttribute>())
         {
             var feature = ((Reference)symbol.Selected).Name;
             var option = catalog.Features.OfType<ChoiceFeature>().First(f => f.Name == feature).Options
