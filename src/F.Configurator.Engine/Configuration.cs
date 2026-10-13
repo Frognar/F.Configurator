@@ -15,6 +15,7 @@ public sealed class Configuration
     private readonly EquatableDictionary<string, Value> _defaultValues;
     private readonly EquatableDictionary<string, Value> _defaultsOf;
     private readonly EquatableList<RuleViolation> _corrections;
+    private readonly EquatableList<ValueChange> _changes;
     private readonly EquatableDictionary<string, Value> _values;
     private readonly EquatableList<Rule> _activeRules;
     private readonly HashSet<string> _hiddenFeatures;
@@ -26,7 +27,8 @@ public sealed class Configuration
         EquatableDictionary<string, Value> forcedValues,
         EquatableDictionary<string, Value> defaultValues,
         EquatableDictionary<string, Value> defaultsOf,
-        EquatableList<RuleViolation>? corrections = null)
+        EquatableList<RuleViolation>? corrections = null,
+        EquatableList<ValueChange>? changes = null)
     {
         _catalog = catalog;
         _collection = collection;
@@ -35,6 +37,7 @@ public sealed class Configuration
         _defaultValues = defaultValues;
         _defaultsOf = defaultsOf;
         _corrections = corrections ?? [];
+        _changes = changes ?? [];
 
         var values = userValues.Concat(forcedValues)
             .Concat(defaultsOf.Select(kvp => KeyValuePair.Create(DefaultOf.KeyOf(kvp.Key), kvp.Value)))
@@ -81,7 +84,7 @@ public sealed class Configuration
     {
         EnsureCanSet(featureName, value);
 
-        return new Configuration(
+        var next = new Configuration(
                 _catalog,
                 _collection,
                 _userValues.SetItem(featureName, value),
@@ -89,6 +92,14 @@ public sealed class Configuration
                 _defaultValues,
                 _defaultsOf)
             .Settled();
+
+        return next.WithChanges(
+        [
+            .. _collection.Features
+                .Where(f => f != featureName && !Equals(ValueOf(f), next.ValueOf(f)))
+                .Select(f => new ValueChange(
+                    f, ValueOf(f), next.ValueOf(f), ChangeCause.Default, WinningRule(next.DefaultValues(), f)))
+        ]);
     }
 
     public string CurrentStage => _collection.Stages[CurrentStageIndex].Name;
@@ -150,7 +161,7 @@ public sealed class Configuration
     public EquatableList<RuleMessage> Messages =>
         [.. Effects<MessageEffect>().Select(x => new RuleMessage(x.Rule.Name, x.Effect.Severity, x.Effect.Text))];
 
-    public EquatableList<ValueChange> Changes => [];
+    public EquatableList<ValueChange> Changes => _changes;
 
     public StepResult Result =>
         new(_catalog.Name,
@@ -288,6 +299,9 @@ public sealed class Configuration
 
     private EquatableList<Value> KeyOf(IEnumerable<string> keyColumns) => [.. keyColumns.Select(ValueOf)];
 
+    private Configuration WithChanges(EquatableList<ValueChange> changes) =>
+        new(_catalog, _collection, _userValues, _forcedValues, _defaultValues, _defaultsOf, _corrections, changes);
+
     private Configuration Settled()
     {
         var limit = _collection.Features.Count * 2 + 2;
@@ -361,6 +375,9 @@ public sealed class Configuration
             .Where(x => x.Values is [_])
             .Select(x => (x.Key, x.Values[0]))
             .ToEquatableDictionary();
+
+    private static string? WinningRule(IEnumerable<Candidate> candidates, string featureName) =>
+        candidates.Where(c => c.Feature == featureName).GroupBy(c => c.Priority).MaxBy(p => p.Key)?.First().RuleName;
 
     private IEnumerable<Candidate> ForcedValues() =>
         Effects<SetEffect>()
