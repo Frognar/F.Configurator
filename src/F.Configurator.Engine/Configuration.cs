@@ -430,7 +430,10 @@ public sealed class Configuration
                           !forcedValues.ContainsKey(kvp.Key))
             .ToEquatableDictionary();
 
-        var defaults = DefaultValues().Where(x => !_hiddenFeatures.Contains(x.Feature)).ToList();
+        var defaults = DefaultValues()
+            .Where(x => !_hiddenFeatures.Contains(x.Feature))
+            .Where(x => !(x.Value is OptionValue && ExcludingRule(x.Feature, x.Value) is not null))
+            .ToList();
         var defaultValues = Winners(defaults
             .Where(x => !userValues.ContainsKey(x.Feature) && !forcedValues.ContainsKey(x.Feature)));
 
