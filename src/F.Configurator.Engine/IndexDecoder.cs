@@ -20,11 +20,13 @@ public static class IndexDecoder
         [
             .. Readings(catalog, collection.Index, index, [])
                 .Where(reading => reading.Unread == "")
-                .Select(reading => reading.Values.Where(value => collection.Features.Contains(value.Feature)).Aggregate(
-                    start,
-                    (configuration, value) => configuration.ValueOf(value.Feature) == value.Value
-                        ? configuration
-                        : configuration.Set(value.Feature, value.Value)))
+                .Select(reading => collection.Features
+                    .SelectMany(feature => reading.Values.Where(value => value.Feature == feature))
+                    .Aggregate(
+                        start,
+                        (configuration, value) => configuration.ValueOf(value.Feature) == value.Value
+                            ? configuration
+                            : configuration.Set(value.Feature, value.Value)))
                 .Where(configuration => configuration.Index == index)
         ];
     }
