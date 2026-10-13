@@ -150,7 +150,7 @@ public sealed class Configuration
     public EquatableList<RuleMessage> Messages =>
         [.. Effects<MessageEffect>().Select(x => new RuleMessage(x.Rule.Name, x.Effect.Severity, x.Effect.Text))];
 
-    public StepOutcome Outcome => throw new NotImplementedException();
+    public StepOutcome Outcome => new(_catalog.Name, _catalog.Version, _collection.Name, [], [], false);
 
     public bool CanFinish =>
         AllSet(_collection.Features) && Violations.All(v => v.Reaction != Reaction.Error) &&
