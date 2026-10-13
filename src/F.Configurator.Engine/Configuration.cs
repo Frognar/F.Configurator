@@ -326,15 +326,17 @@ public sealed class Configuration
         _activeRules.SelectMany(r => r.Effects.OfType<T>().Select(e => (r, e)));
 
     private Rule? ExcludingRule(string featureName, Value option) =>
-        _activeRules.FirstOrDefault(r => r.Effects.Any(e => e switch
-        {
-            OnlyEffect only => only.Feature == featureName && !only.Options.Contains(option),
-            ForbidEffect forbid => forbid.Feature == featureName && forbid.Options.Contains(option),
-            OnlyFromTableEffect onlyFromTable => onlyFromTable.Feature == featureName &&
-                                                 OptionsFromTable(onlyFromTable) is { } allowed &&
-                                                 !allowed.Contains(option),
-            _ => false,
-        }));
+        _activeRules
+            .OrderByDescending(r => r.Priority)
+            .FirstOrDefault(r => r.Effects.Any(e => e switch
+            {
+                OnlyEffect only => only.Feature == featureName && !only.Options.Contains(option),
+                ForbidEffect forbid => forbid.Feature == featureName && forbid.Options.Contains(option),
+                OnlyFromTableEffect onlyFromTable => onlyFromTable.Feature == featureName &&
+                                                     OptionsFromTable(onlyFromTable) is { } allowed &&
+                                                     !allowed.Contains(option),
+                _ => false,
+            }));
 
     private Rule? HidingRule(string featureName) =>
         Effects<HideEffect>().Where(x => x.Effect.Features.Contains(featureName)).Select(x => x.Rule)
