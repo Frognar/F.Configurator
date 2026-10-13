@@ -473,7 +473,7 @@ public sealed class Configuration
         accepts ??= _ => true;
         var top = Effects<T>()
             .Where(x => x.Effect.Feature == featureName)
-            .Select(x => (x.Rule, Value: x.Effect.Value.Evaluate(_values)))
+            .Select(x => (x.Rule, Value: x.Effect.Value.Evaluate(_values, _context)))
             .Where(x => x.Value is NumberValue number && accepts(number.Amount))
             .Select(x => (x.Rule, ((NumberValue)x.Value).Amount))
             .GroupBy(x => x.Rule.Priority)
