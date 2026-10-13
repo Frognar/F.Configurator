@@ -24,4 +24,9 @@ public sealed record ListExpression(EquatableList<Expression> Expressions) : Exp
 {
     public override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         Value.List(Expressions.Select(e => e.Evaluate(values)));
+
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        Value.List(Expressions.Select(e => e.Evaluate(values, context)));
 }
