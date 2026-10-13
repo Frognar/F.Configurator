@@ -156,7 +156,8 @@ public sealed class Configuration
             _collection.Name,
             [
                 .. _collection.Features.Select(f =>
-                    new FeatureOutcome(f, ValueOf(f), null, null, false, EquatableDictionary<string, Value>.Empty))
+                    new FeatureOutcome(f, ValueOf(f), null, SourceOf(f), false,
+                        EquatableDictionary<string, Value>.Empty))
             ],
             [],
             false);
