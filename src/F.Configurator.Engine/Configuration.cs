@@ -528,7 +528,11 @@ public sealed class Configuration
             .ThenBy(x => x.Rule.Name, StringComparer.Ordinal)
             .Select(x => x.Rule)
             .FirstOrDefault();
-        return (amount, rule ?? top.OrderByDescending(x => ReactionOf(x.Rule)).First().Rule);
+        var combined = top
+            .OrderByDescending(x => ReactionOf(x.Rule))
+            .ThenBy(x => x.Rule.Name, StringComparer.Ordinal)
+            .First().Rule;
+        return (amount, rule ?? combined);
     }
 
     private (int? Amount, Rule? Rule) MinLengthOf(TextFeature text) =>
