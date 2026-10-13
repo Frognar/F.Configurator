@@ -8,10 +8,13 @@ public abstract record Expression
     public static Expression Text(string text) => new Text(text);
     public static Expression Option(string id) => new Option(id);
     public static Expression Range(decimal lower, decimal upper) => new Range(lower, upper);
+
     public static Expression List(Expression expression, params IEnumerable<Expression> expressions) =>
         new ListExpression([expression, .. expressions]);
 
     public static Expression Reference(string name) => new Reference(name);
+    public static Expression DefaultOf(string feature) => new DefaultOf(feature);
+
     public static Expression OptionAttribute(Expression selected, EquatableDictionary<string, Value> valuesByOption) =>
         new OptionAttribute(selected, valuesByOption);
 
@@ -29,6 +32,7 @@ public abstract record Expression
     public static Expression LessThan(Expression left, Expression right) => new LessThan(left, right);
     public static Expression LessThanOrEqual(Expression left, Expression right) => new LessThanOrEqual(left, right);
     public static Expression GreaterThan(Expression left, Expression right) => new GreaterThan(left, right);
+
     public static Expression GreaterThanOrEqual(Expression left, Expression right) =>
         new GreaterThanOrEqual(left, right);
 
@@ -38,6 +42,7 @@ public abstract record Expression
     public static Expression And(Expression left, Expression right) => new And(left, right);
     public static Expression Or(Expression left, Expression right) => new Or(left, right);
     public static Expression Not(Expression operand) => new Not(operand);
+
     public static Expression If(Expression condition, Expression then, Expression otherwise)
         => new If(condition, then, otherwise);
 
@@ -47,6 +52,7 @@ public abstract record Expression
     public static Expression Round(Expression operand) => new Round(operand, Number(1));
     public static Expression Round(Expression operand, Expression step) => new Round(operand, step);
     public static Expression Length(Expression operand) => new Length(operand);
+
     public static Expression Pad(Expression operand, Expression totalWidth) =>
         new Pad(operand, totalWidth, Text("0"));
 
