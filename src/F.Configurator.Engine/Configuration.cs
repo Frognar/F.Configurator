@@ -100,8 +100,11 @@ public sealed class Configuration
                 .Where(x => !Equals(x.Before, x.After))
                 .Select(x => next._corrections.FirstOrDefault(c => c.Feature == x.Feature) is { } correction
                     ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Corrected, correction.RuleName)
-                    : new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Default,
-                        WinningRule(next.DefaultValues(), x.Feature)))
+                    : next._forcedValues.ContainsKey(x.Feature)
+                        ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Forced,
+                            WinningRule(next.ForcedValues(), x.Feature))
+                        : new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Default,
+                            WinningRule(next.DefaultValues(), x.Feature)))
         ]);
     }
 
