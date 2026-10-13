@@ -557,7 +557,8 @@ public sealed class Configuration
         }
 
         var amount = mostRestrictive(top.Select(x => x.Amount));
-        return (decimal.ToInt32(amount), top.First(x => x.Amount == amount).Rule);
+        var rule = top.Where(x => x.Amount == amount).OrderByDescending(x => ReactionOf(x.Rule)).First().Rule;
+        return (decimal.ToInt32(amount), rule);
     }
 
     private IEnumerable<(RuleViolation Violation, Value Corrected)> ValueViolations() =>
