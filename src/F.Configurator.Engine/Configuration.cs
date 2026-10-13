@@ -95,9 +95,7 @@ public sealed class Configuration
 
         return next.WithChanges(
         [
-            .. _collection.Features
-                .Concat(_catalog.Features.OfType<ComputedFeature>().Select(computed => computed.Name))
-                .Distinct()
+            .. ResultFeatures
                 .Select(f => (Feature: f, Before: f == featureName ? value : ValueOf(f), After: next.ValueOf(f)))
                 .Where(x => !Equals(x.Before, x.After))
                 .Select(x => next._corrections.FirstOrDefault(c => c.Feature == x.Feature) is { } correction
@@ -182,12 +180,7 @@ public sealed class Configuration
         new(_catalog.Name,
             _catalog.Version,
             _collection.Name,
-            [
-                .. _collection.Features
-                    .Concat(_catalog.Features.OfType<ComputedFeature>().Select(computed => computed.Name))
-                    .Distinct()
-                    .Select(FeatureResultOf)
-            ],
+            [.. ResultFeatures.Select(FeatureResultOf)],
             [
                 .. Violations.Select(v => new StepMessage(KindOf(v.Reaction), v.Message, v.RuleName, v.Feature)),
                 .. Messages.Select(m => new StepMessage(KindOf(m.Severity), m.Text, m.RuleName, null))
@@ -250,6 +243,12 @@ public sealed class Configuration
 
     private bool IsComputed(string featureName) =>
         _catalog.Features.OfType<ComputedFeature>().Any(f => f.Name == featureName);
+
+    // Computed features are not always in the stages, so they come after the features of the collection.
+    private IEnumerable<string> ResultFeatures =>
+        _collection.Features
+            .Concat(_catalog.Features.OfType<ComputedFeature>().Select(computed => computed.Name))
+            .Distinct();
 
     private FeatureResult FeatureResultOf(string featureName)
     {
