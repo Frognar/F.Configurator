@@ -14,6 +14,20 @@ public abstract record Extremum(EquatableList<Expression> Expressions) : Express
             : Value.Missing;
     }
 
+    public sealed override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context)
+    {
+        var evaluated = Expressions
+            .Select(expr => expr.Evaluate(values, context))
+            .OfType<NumberValue>()
+            .ToList();
+
+        return evaluated.Count == Expressions.Count
+            ? Value.Number(Pick(evaluated.Select(v => v.Amount)))
+            : Value.Missing;
+    }
+
     protected abstract decimal Pick(IEnumerable<decimal> amounts);
 }
 
