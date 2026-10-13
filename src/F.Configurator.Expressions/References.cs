@@ -21,7 +21,9 @@ public sealed record ContextValue(string Context, string? Attribute) : Expressio
     public override Value Evaluate(
         IReadOnlyDictionary<string, Value> values,
         IReadOnlyDictionary<string, Value> context) =>
-        context.TryGetValue($"{Context}.{Attribute}", out var value) ? value : Value.Missing;
+        context.TryGetValue(Attribute is null ? Context : $"{Context}.{Attribute}", out var value)
+            ? value
+            : Value.Missing;
 }
 
 public sealed record OptionAttribute(
