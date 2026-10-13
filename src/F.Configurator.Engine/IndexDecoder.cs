@@ -24,7 +24,7 @@ public static class IndexDecoder
                     start,
                     collection.Features.SelectMany(feature => reading.Values.Where(value => value.Feature == feature))))
                 .OfType<Configuration>()
-                .Where(configuration => configuration.Index == index)
+                .Where(configuration => configuration.Index == index && configuration.CanFinish)
         ];
     }
 
