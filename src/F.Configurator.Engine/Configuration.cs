@@ -100,6 +100,7 @@ public sealed class Configuration
         _ when _forcedValues.ContainsKey(featureName) => ValueSource.Forced,
         _ when _userValues.ContainsKey(featureName) => ValueSource.User,
         _ when _defaultValues.ContainsKey(featureName) => ValueSource.Default,
+        _ when _catalog.Features.OfType<ComputedFeature>().Any(f => f.Name == featureName) => ValueSource.Computed,
         _ => null,
     };
 

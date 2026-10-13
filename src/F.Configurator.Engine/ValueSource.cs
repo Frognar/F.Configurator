@@ -5,4 +5,5 @@ public enum ValueSource
     Default,
     User,
     Forced,
+    Computed,
 }
