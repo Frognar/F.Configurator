@@ -50,6 +50,15 @@ public sealed record Round(Expression Operand, Expression Step) : Expression
             _ => Value.Missing,
         };
 
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        (Operand.Evaluate(values, context), Step.Evaluate(values, context)) switch
+        {
+            (NumberValue number, NumberValue { Amount: > 0 } step) => SafeRound(number, step),
+            _ => Value.Missing,
+        };
+
     private Value SafeRound(NumberValue number, NumberValue step)
     {
         try
