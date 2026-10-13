@@ -106,6 +106,24 @@ public sealed record Pad(Expression Operand, Expression TotalWidth, Expression P
                 Value.Text(text.PadLeft(decimal.ToInt32(width), c)),
             _ => Value.Missing,
         };
+
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        (
+                Operand.Evaluate(values, context).AsText(),
+                TotalWidth.Evaluate(values, context),
+                PaddingChar.Evaluate(values, context)
+            ) switch
+        {
+            (
+                TextValue { Content: var text },
+                NumberValue { Amount: var width and >= 0 and <= MaxWidth },
+                TextValue { Content: [var c] }
+                ) =>
+                Value.Text(text.PadLeft(decimal.ToInt32(width), c)),
+            _ => Value.Missing,
+        };
 }
 
 file static class ValueExtensions
