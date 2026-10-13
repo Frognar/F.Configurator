@@ -157,6 +157,9 @@ public sealed class Configuration
 
     public EquatableList<ValueChange> Changes => _changes;
 
+    public string? Index =>
+        AllSet(_collection.Features) && _collection.Index?.Evaluate(_values) is TextValue index ? index.Content : null;
+
     public StepResult Result =>
         new(_catalog.Name,
             _catalog.Version,
@@ -167,6 +170,7 @@ public sealed class Configuration
                 .. Messages.Select(m => new StepMessage(KindOf(m.Severity), m.Text, m.RuleName, null))
             ],
             Changes,
+            Index,
             AllSet(_collection.Features));
 
     public bool CanFinish =>
