@@ -345,6 +345,7 @@ public sealed class Configuration
             .Concat(Effects<OnlyFromTableEffect>()
                 .Where(x => x.Effect.Feature == featureName && OptionsFromTable(x.Effect) is { Count: 0 })
                 .Select(x => x.Rule))
+            .OrderBy(r => r.Name, StringComparer.Ordinal)
             .FirstOrDefault();
 
     private EquatableList<Value>? OptionsFromTable(OnlyFromTableEffect onlyFromTable)
