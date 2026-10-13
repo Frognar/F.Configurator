@@ -110,8 +110,10 @@ public sealed class Configuration
                             : next._forcedValues.ContainsKey(x.Feature)
                                 ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Forced,
                                     WinningRule(next.ForcedValues(), x.Feature))
-                                : new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Default,
-                                    WinningRule(next.DefaultValues(), x.Feature)))
+                                : next._defaultValues.ContainsKey(x.Feature)
+                                    ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Default,
+                                        WinningRule(next.DefaultValues(), x.Feature))
+                                    : new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Removed, null))
         ]);
     }
 
