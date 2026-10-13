@@ -162,7 +162,8 @@ public sealed class Configuration
     public EquatableList<RuleViolation> Violations =>
     [
         .. _corrections,
-        .. ValueViolations().Where(v => v.Violation.Reaction != Reaction.Correct).Select(v => v.Violation)
+        .. ValueViolations().Where(v => v.Violation.Reaction != Reaction.Correct).Select(v => v.Violation),
+        .. ForcedViolations()
     ];
 
     public EquatableList<RuleMessage> Messages =>
@@ -651,6 +652,14 @@ public sealed class Configuration
             .Select(kvp => (Feature: kvp.Key, Rule: ExcludingRule(kvp.Key, kvp.Value)))
             .Where(x => x.Rule is not null)
             .Select(x => (ViolationOf(x.Feature, x.Rule), (Value)Value.Missing));
+
+    // A forced value cannot be skipped like a default, so outside its domain the catalog contradicts itself.
+    private IEnumerable<RuleViolation> ForcedViolations() =>
+        _forcedValues
+            .Where(kvp => kvp.Value is OptionValue)
+            .Select(kvp => (Feature: kvp.Key, Rule: ExcludingRule(kvp.Key, kvp.Value)))
+            .Where(x => x.Rule is not null)
+            .Select(x => ViolationOf(x.Feature, x.Rule) with { Reaction = Reaction.Error });
 
     private static decimal RoundToStep(decimal amount, decimal? step) =>
         step is { } s ? Math.Round(amount / s, MidpointRounding.AwayFromZero) * s : amount;
