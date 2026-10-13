@@ -660,6 +660,7 @@ public sealed class Configuration
             {
                 OptionValue => ExcludingRule(kvp.Key, kvp.Value) is { } rule ? [ViolationOf(kvp.Key, rule)] : [],
                 NumberValue number => LimitViolations(NumberFeatureOf(kvp.Key), number.Amount).Select(v => v.Violation),
+                TextValue text => LengthViolations(TextFeatureOf(kvp.Key), text.Content).Select(v => v.Violation),
                 _ => [],
             })
             .Select(violation => violation with { Reaction = Reaction.Error });
