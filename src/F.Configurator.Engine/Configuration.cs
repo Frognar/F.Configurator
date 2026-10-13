@@ -159,6 +159,7 @@ public sealed class Configuration
             [
                 .. _collection.Features
                     .Concat(_catalog.Features.OfType<ComputedFeature>().Select(computed => computed.Name))
+                    .Distinct()
                     .Select(FeatureResultOf)
             ],
             [
