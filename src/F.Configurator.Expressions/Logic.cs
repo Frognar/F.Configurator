@@ -8,6 +8,15 @@ public sealed record And(Expression Left, Expression Right) : Expression
             (BooleanValue { IsTrue: true }, BooleanValue { IsTrue: true }) => BooleanValue.True,
             _ => BooleanValue.False,
         };
+
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        (Left.Evaluate(values, context), Right.Evaluate(values, context)) switch
+        {
+            (BooleanValue { IsTrue: true }, BooleanValue { IsTrue: true }) => BooleanValue.True,
+            _ => BooleanValue.False,
+        };
 }
 
 public sealed record Or(Expression Left, Expression Right) : Expression
