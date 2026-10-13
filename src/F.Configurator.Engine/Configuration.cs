@@ -152,7 +152,9 @@ public sealed class Configuration
 
     public StepOutcome Outcome => throw new NotImplementedException();
 
-    public bool CanFinish => AllSet(_collection.Features) && Violations.All(v => v.Reaction != Reaction.Error);
+    public bool CanFinish =>
+        AllSet(_collection.Features) && Violations.All(v => v.Reaction != Reaction.Error) &&
+        Messages.All(m => m.Severity != Severity.Error);
 
     private int CurrentStageIndex
     {
