@@ -102,13 +102,17 @@ public sealed class Configuration
                 .Where(x => !Equals(x.Before, x.After))
                 .Select(x => next._corrections.FirstOrDefault(c => c.Feature == x.Feature) is { } correction
                     ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Corrected, correction.RuleName)
-                    : IsComputed(x.Feature)
-                        ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Computed, null)
-                        : next._forcedValues.ContainsKey(x.Feature)
-                            ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Forced,
-                                WinningRule(next.ForcedValues(), x.Feature))
-                            : new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Default,
-                                WinningRule(next.DefaultValues(), x.Feature)))
+                    : next._hiddenFeatures.Contains(x.Feature)
+                        ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Hidden,
+                            next.Effects<HideEffect>()
+                                .FirstOrDefault(h => h.Effect.Features.Contains(x.Feature)).Rule?.Name)
+                        : IsComputed(x.Feature)
+                            ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Computed, null)
+                            : next._forcedValues.ContainsKey(x.Feature)
+                                ? new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Forced,
+                                    WinningRule(next.ForcedValues(), x.Feature))
+                                : new ValueChange(x.Feature, x.Before, x.After, ChangeCause.Default,
+                                    WinningRule(next.DefaultValues(), x.Feature)))
         ]);
     }
 
