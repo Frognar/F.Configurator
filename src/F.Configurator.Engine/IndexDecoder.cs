@@ -20,15 +20,29 @@ public static class IndexDecoder
         [
             .. Readings(catalog, collection.Index, index, [])
                 .Where(reading => reading.Unread == "")
-                .Select(reading => collection.Features
-                    .SelectMany(feature => reading.Values.Where(value => value.Feature == feature))
-                    .Aggregate(
-                        start,
-                        (configuration, value) => configuration.ValueOf(value.Feature) == value.Value
-                            ? configuration
-                            : configuration.Set(value.Feature, value.Value)))
+                .Select(reading => SetAll(
+                    start,
+                    collection.Features.SelectMany(feature => reading.Values.Where(value => value.Feature == feature))))
+                .OfType<Configuration>()
                 .Where(configuration => configuration.Index == index)
         ];
+    }
+
+    // The engine refuses a value the rules do not allow, so such a reading has no configuration.
+    private static Configuration? SetAll(Configuration start, IEnumerable<(string Feature, Value Value)> values)
+    {
+        try
+        {
+            return values.Aggregate(
+                start,
+                (configuration, value) => configuration.ValueOf(value.Feature) == value.Value
+                    ? configuration
+                    : configuration.Set(value.Feature, value.Value));
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     // Each way the pattern can read the start of the text: the values it read and the text it left.
