@@ -13,7 +13,6 @@ public sealed class Configuration
     private readonly EquatableDictionary<string, Value> _forcedValues;
     private readonly EquatableDictionary<string, Value> _defaultValues;
     private readonly EquatableList<RuleViolation> _corrections;
-    private readonly EquatableDictionary<string, Value> _computedValues;
     private readonly EquatableDictionary<string, Value> _values;
     private readonly EquatableList<Rule> _activeRules;
     private readonly HashSet<string> _hiddenFeatures;
@@ -36,12 +35,11 @@ public sealed class Configuration
         var values = userValues.Concat(forcedValues)
             .Aggregate(defaultValues, (all, kvp) => all.SetItem(kvp.Key, kvp.Value));
 
-        _computedValues = _catalog.Features.OfType<ComputedFeature>()
-            .Select(f => (f.Name, Value: f.Expression.Evaluate(values)))
-            .Where(x => x.Value is not MissingValue)
-            .ToEquatableDictionary();
-
-        _values = _computedValues.Aggregate(values, (all, kvp) => all.SetItem(kvp.Key, kvp.Value));
+        // Each computed feature sees the ones declared before it.
+        _values = _catalog.Features.OfType<ComputedFeature>()
+            .Aggregate(values, (all, feature) => feature.Expression.Evaluate(all) is var value and not MissingValue
+                ? all.SetItem(feature.Name, value)
+                : all);
 
         var computedValues = _catalog.Features.OfType<ComputedFeature>()
             .Select(f => (f.Name, Value: f.Expression.Evaluate(_values)))
@@ -111,7 +109,7 @@ public sealed class Configuration
         _ when _forcedValues.ContainsKey(featureName) => ValueSource.Forced,
         _ when _userValues.ContainsKey(featureName) => ValueSource.User,
         _ when _defaultValues.ContainsKey(featureName) => ValueSource.Default,
-        _ when _computedValues.ContainsKey(featureName) => ValueSource.Computed,
+        _ when _values.ContainsKey(featureName) && IsComputed(featureName) => ValueSource.Computed,
         _ => null,
     };
 
@@ -197,6 +195,9 @@ public sealed class Configuration
             (ChoiceFeature choice, OptionValue selected) => choice.Options.Any(o => o.Id == selected.Id),
             _ => false,
         };
+
+    private bool IsComputed(string featureName) =>
+        _catalog.Features.OfType<ComputedFeature>().Any(f => f.Name == featureName);
 
     private ChoiceFeature ChoiceFeatureOf(string featureName) =>
         _catalog.Features.OfType<ChoiceFeature>().FirstOrDefault(f => f.Name == featureName)
