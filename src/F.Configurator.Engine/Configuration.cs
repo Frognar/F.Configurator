@@ -79,6 +79,13 @@ public sealed class Configuration
     {
         var collection = catalog.Collections.FirstOrDefault(c => c.Name == collectionName)
                          ?? throw new ArgumentException($"Collection '{collectionName}' not found in catalog.");
+        var declared = catalog.Contexts.Values.SelectMany(c => c.Attributes.Select(a => $"{c.Name}.{a.Name}"))
+            .Concat(["Kontrahent", "Język"]);
+        var undeclared = context.Keys.FirstOrDefault(name => !declared.Contains(name));
+        if (undeclared is not null)
+        {
+            throw new ArgumentException($"Context value '{undeclared}' is not declared in catalog.");
+        }
 
         return new Configuration(
                 catalog,
