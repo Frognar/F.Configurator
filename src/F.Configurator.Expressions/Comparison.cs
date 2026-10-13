@@ -83,6 +83,17 @@ public sealed record In(Expression Left, Expression Right) : Expression
             ({ } item, ListValue list) => Value.Boolean(list.Values.Contains(item)),
             _ => BooleanValue.False,
         };
+
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        (Left.Evaluate(values, context), Right.Evaluate(values, context)) switch
+        {
+            (MissingValue, _) => BooleanValue.False,
+            (NumberValue n, RangeValue r) => Value.Boolean(n.Amount >= r.Min && n.Amount <= r.Max),
+            ({ } item, ListValue list) => Value.Boolean(list.Values.Contains(item)),
+            _ => BooleanValue.False,
+        };
 }
 
 public sealed record NotIn(Expression Left, Expression Right) : Expression
