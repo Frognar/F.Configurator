@@ -580,7 +580,8 @@ public sealed class Configuration
         OptionValue => ExcludingRule(featureName, value) is null,
         NumberValue number => NumberFeatureOf(featureName) is var feature &&
                               !(number.Amount < MinOf(feature).Amount) &&
-                              !(number.Amount > MaxOf(feature).Amount),
+                              !(number.Amount > MaxOf(feature).Amount) &&
+                              (StepOf(feature).Amount is not { } step || number.Amount % step == 0),
         _ => true,
     };
 
