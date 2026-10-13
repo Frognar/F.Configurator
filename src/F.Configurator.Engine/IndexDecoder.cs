@@ -6,7 +6,14 @@ namespace F.Configurator.Engine;
 
 public static class IndexDecoder
 {
-    public static IReadOnlyList<Configuration> Decode(ProductCatalog catalog, string collectionName, string index)
+    public static IReadOnlyList<Configuration> Decode(ProductCatalog catalog, string collectionName, string index) =>
+        Decode(catalog, collectionName, index, EquatableDictionary<string, Value>.Empty);
+
+    public static IReadOnlyList<Configuration> Decode(
+        ProductCatalog catalog,
+        string collectionName,
+        string index,
+        IReadOnlyDictionary<string, Value> context)
     {
         var collection = catalog.Collections.First(c => c.Name == collectionName);
         if (collection.Index is null)
@@ -14,7 +21,7 @@ public static class IndexDecoder
             return [];
         }
 
-        var start = Configuration.Start(catalog, collectionName);
+        var start = Configuration.Start(catalog, collectionName, context);
         return
         [
             .. Readings(catalog, collection.Index, new IndexReading([], index))
@@ -24,13 +31,6 @@ public static class IndexDecoder
                 .Where(configuration => configuration.Index == index && configuration.CanFinish)
         ];
     }
-
-    public static IReadOnlyList<Configuration> Decode(
-        ProductCatalog catalog,
-        string collectionName,
-        string index,
-        IReadOnlyDictionary<string, Value> context) =>
-        Decode(catalog, collectionName, index);
 
     // Each way the pattern can read the start of the unread text.
     private static IEnumerable<IndexReading> Readings(
