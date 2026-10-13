@@ -5,6 +5,11 @@ public abstract record BinaryArithmetic(Expression Left, Expression Right) : Exp
     public sealed override Value Evaluate(IReadOnlyDictionary<string, Value> values) =>
         Combine(Left.Evaluate(values), Right.Evaluate(values));
 
+    public sealed override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        Combine(Left.Evaluate(values, context), Right.Evaluate(values, context));
+
     protected virtual Value Combine(Value left, Value right) =>
         (left, right) switch
         {
