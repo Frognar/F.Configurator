@@ -70,7 +70,7 @@ public sealed record HasValue(Expression Operand) : Expression
     public override Value Evaluate(
         IReadOnlyDictionary<string, Value> values,
         IReadOnlyDictionary<string, Value> context) =>
-        throw new NotImplementedException();
+        BooleanValue.True;
 }
 
 public sealed record Pad(Expression Operand, Expression TotalWidth, Expression PaddingChar) : Expression
