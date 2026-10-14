@@ -172,7 +172,7 @@ public sealed class Configuration
     public EquatableList<ValueChange> Changes => _changes;
 
     public string? Index =>
-        AllSet(_collection.Features) && _collection.Index?.Evaluate(_values) is TextValue index ? index.Content : null;
+        AllRequiredSet(_collection.Features) && _collection.Index?.Evaluate(_values) is TextValue index ? index.Content : null;
 
     public StepResult Result =>
         new(_catalog.Name,
