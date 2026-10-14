@@ -34,7 +34,7 @@ public sealed class ChoiceFeatureBuilder
     public ChoiceFeatureBuilder Attribute(string name, AttributeType type, Value? value = null) =>
         new(_feature with { Attributes = _feature.Attributes.Add(new AttributeDeclaration(name, type, value)) });
 
-    public ChoiceFeatureBuilder Optional() => this;
+    public ChoiceFeatureBuilder Optional() => new(_feature with { IsRequired = false });
 
     public ChoiceFeature Build() => _feature;
 }
