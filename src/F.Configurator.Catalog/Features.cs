@@ -2,7 +2,10 @@ using F.Configurator.Expressions;
 
 namespace F.Configurator.Catalog;
 
-public abstract record Feature(string Name);
+public abstract record Feature(string Name)
+{
+    public bool IsRequired { get; init; } = true;
+}
 
 public sealed record ChoiceFeature(
     string Name,
@@ -30,6 +33,8 @@ public sealed class ChoiceFeatureBuilder
 
     public ChoiceFeatureBuilder Attribute(string name, AttributeType type, Value? value = null) =>
         new(_feature with { Attributes = _feature.Attributes.Add(new AttributeDeclaration(name, type, value)) });
+
+    public ChoiceFeatureBuilder Optional() => new(_feature with { IsRequired = false });
 
     public ChoiceFeature Build() => _feature;
 }
@@ -77,6 +82,7 @@ public sealed class NumberFeatureBuilder
     public NumberFeatureBuilder Min(decimal min) => new(_feature with { Min = min });
     public NumberFeatureBuilder Max(decimal max) => new(_feature with { Max = max });
     public NumberFeatureBuilder Unit(string unit) => new(_feature with { Unit = unit });
+    public NumberFeatureBuilder Optional() => new(_feature with { IsRequired = false });
     public NumberFeature Build() => _feature;
 }
 
@@ -94,6 +100,7 @@ public sealed class TextFeatureBuilder
         new(new TextFeature(name, null, null));
 
     public TextFeatureBuilder Length(int min, int max) => new(_feature with { MinLength = min, MaxLength = max });
+    public TextFeatureBuilder Optional() => new(_feature with { IsRequired = false });
     public TextFeature Build() => _feature;
 }
 

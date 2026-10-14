@@ -172,7 +172,7 @@ public sealed class Configuration
     public EquatableList<ValueChange> Changes => _changes;
 
     public string? Index =>
-        AllSet(_collection.Features) && _collection.Index?.Evaluate(_values) is TextValue index ? index.Content : null;
+        IsComplete && _collection.Index?.Evaluate(_values) is TextValue index ? index.Content : null;
 
     public StepResult Result =>
         new(_catalog.Name,
@@ -188,22 +188,28 @@ public sealed class Configuration
             ],
             Changes,
             Index,
-            AllSet(_collection.Features));
+            IsComplete);
 
     public bool CanFinish =>
-        AllSet(_collection.Features) && Violations.All(v => v.Reaction != Reaction.Error) &&
+        IsComplete && Violations.All(v => v.Reaction != Reaction.Error) &&
         Messages.All(m => m.Severity != Severity.Error);
 
     private int CurrentStageIndex
     {
         get
         {
-            var i = _collection.Stages.ToList().FindIndex(s => !AllSet(s.Features));
+            var i = _collection.Stages.ToList().FindIndex(s => !AllRequiredSet(s.Features));
             return i < 0 ? _collection.Stages.Count - 1 : i;
         }
     }
 
-    private bool AllSet(IEnumerable<string> features) => features.Except(_hiddenFeatures).All(_values.ContainsKey);
+    private bool IsComplete => AllRequiredSet(_collection.Features);
+
+    // Hidden and optional features may stay without a value.
+    private bool AllRequiredSet(IEnumerable<string> features) =>
+        features.Except(_hiddenFeatures).Where(IsRequired).All(_values.ContainsKey);
+
+    private bool IsRequired(string featureName) => _catalog.Features.First(f => f.Name == featureName).IsRequired;
 
     private void EnsureCanSet(string featureName, Value value)
     {

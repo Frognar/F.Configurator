@@ -61,6 +61,7 @@ public abstract record Expression
     public static Expression Round(Expression operand) => new Round(operand, Number(1));
     public static Expression Round(Expression operand, Expression step) => new Round(operand, step);
     public static Expression Length(Expression operand) => new Length(operand);
+    public static Expression HasValue(Expression operand) => new HasValue(operand);
 
     public static Expression Pad(Expression operand, Expression totalWidth) =>
         new Pad(operand, totalWidth, Text("0"));

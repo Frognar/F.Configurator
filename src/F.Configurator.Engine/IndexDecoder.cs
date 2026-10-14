@@ -42,12 +42,30 @@ public static class IndexDecoder
             Add add => Readings(catalog, add.Left, reading).SelectMany(left => Readings(catalog, add.Right, left)),
             OptionAttribute { Selected: Reference feature } symbols =>
                 SymbolReadings(catalog, feature.Name, symbols, reading),
+            Reference feature when TextsOf(catalog, feature.Name) is { } texts => texts
+                .Where(text => reading.Unread.StartsWith(text, StringComparison.Ordinal))
+                .Select(text => reading.Skip(text.Length)),
             Reference feature => NumberReadings(feature.Name, reading),
             Pad pad => Readings(catalog, pad.Operand, reading),
             If conditional => Readings(catalog, conditional.Then, reading)
                 .Concat(Readings(catalog, conditional.Otherwise, reading)),
             Text literal => reading.Unread.StartsWith(literal.Content) ? [reading.Skip(literal.Content.Length)] : [],
             _ => [],
+        };
+
+    // Texts a computed feature can have, like "T" and "N" of `Nietyp`; null when its expression is not made of texts.
+    private static IEnumerable<string>? TextsOf(ProductCatalog catalog, string feature) =>
+        catalog.Features.OfType<ComputedFeature>().FirstOrDefault(f => f.Name == feature) is { } computed
+            ? TextsOf(computed.Expression)
+            : null;
+
+    private static IEnumerable<string>? TextsOf(Expression expression) =>
+        expression switch
+        {
+            Text text => [text.Content],
+            If conditional when (TextsOf(conditional.Then), TextsOf(conditional.Otherwise)) is ({ } then, { } otherwise) =>
+                then.Concat(otherwise),
+            _ => null,
         };
 
     private static IEnumerable<IndexReading> SymbolReadings(
