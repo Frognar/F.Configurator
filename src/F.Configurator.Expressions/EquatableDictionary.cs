@@ -61,6 +61,7 @@ public sealed class EquatableDictionary<TKey, TValue> : IReadOnlyDictionary<TKey
 
     public EquatableDictionary<TKey, TValue> Add(TKey key, TValue value) => new(_keyValuePairs.Add(key, value));
     public EquatableDictionary<TKey, TValue> SetItem(TKey key, TValue value) => new(_keyValuePairs.SetItem(key, value));
+    public EquatableDictionary<TKey, TValue> Remove(TKey key) => new(_keyValuePairs.Remove(key));
 }
 
 public static class EquatableDictionary

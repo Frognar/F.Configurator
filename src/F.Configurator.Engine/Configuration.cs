@@ -95,18 +95,18 @@ public sealed class Configuration
     public Configuration Set(string featureName, Value value)
     {
         EnsureCanSet(featureName, value);
-
+        var entered = value is TextValue { Content: "" } ? Value.Missing : value;
         var next = new Configuration(
                 _catalog,
                 _collection,
-                _userValues.SetItem(featureName, value),
+                entered is MissingValue ? _userValues.Remove(featureName) : _userValues.SetItem(featureName, value),
                 _forcedValues,
                 _defaultValues,
                 _defaultsOf,
                 context: _context)
             .Settled();
 
-        return next.WithChanges(ChangesTo(next, featureName, value));
+        return next.WithChanges(ChangesTo(next, featureName, entered));
     }
 
     public string CurrentStage => _collection.Stages[CurrentStageIndex].Name;
