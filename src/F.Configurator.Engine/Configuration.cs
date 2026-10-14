@@ -188,10 +188,10 @@ public sealed class Configuration
             ],
             Changes,
             Index,
-            AllSet(_collection.Features));
+            AllRequiredSet(_collection.Features));
 
     public bool CanFinish =>
-        AllSet(_collection.Features) && Violations.All(v => v.Reaction != Reaction.Error) &&
+        AllRequiredSet(_collection.Features) && Violations.All(v => v.Reaction != Reaction.Error) &&
         Messages.All(m => m.Severity != Severity.Error);
 
     private int CurrentStageIndex
