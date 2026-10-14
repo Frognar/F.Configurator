@@ -99,7 +99,9 @@ public sealed class Configuration
         var next = new Configuration(
                 _catalog,
                 _collection,
-                _userValues.SetItem(featureName, value),
+                value is TextValue { Content: "" }
+                    ? _userValues.Remove(featureName)
+                    : _userValues.SetItem(featureName, value),
                 _forcedValues,
                 _defaultValues,
                 _defaultsOf,
