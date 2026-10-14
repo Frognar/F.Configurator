@@ -70,7 +70,7 @@ public sealed record HasValue(Expression Operand) : Expression
     public override Value Evaluate(
         IReadOnlyDictionary<string, Value> values,
         IReadOnlyDictionary<string, Value> context) =>
-        BooleanValue.True;
+        Value.Boolean(Operand.Evaluate(values, context) is not MissingValue);
 }
 
 public sealed record Pad(Expression Operand, Expression TotalWidth, Expression PaddingChar) : Expression
