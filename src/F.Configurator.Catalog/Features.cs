@@ -100,7 +100,7 @@ public sealed class TextFeatureBuilder
         new(new TextFeature(name, null, null));
 
     public TextFeatureBuilder Length(int min, int max) => new(_feature with { MinLength = min, MaxLength = max });
-    public TextFeatureBuilder Optional() => this;
+    public TextFeatureBuilder Optional() => new(_feature with { IsRequired = false });
     public TextFeature Build() => _feature;
 }
 
