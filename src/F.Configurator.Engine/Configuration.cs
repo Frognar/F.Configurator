@@ -108,7 +108,7 @@ public sealed class Configuration
                 context: _context)
             .Settled();
 
-        return next.WithChanges(ChangesTo(next, featureName, value));
+        return next.WithChanges(ChangesTo(next, featureName, value is TextValue { Content: "" } ? Value.Missing : value));
     }
 
     public string CurrentStage => _collection.Stages[CurrentStageIndex].Name;
