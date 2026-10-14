@@ -82,7 +82,7 @@ public sealed class NumberFeatureBuilder
     public NumberFeatureBuilder Min(decimal min) => new(_feature with { Min = min });
     public NumberFeatureBuilder Max(decimal max) => new(_feature with { Max = max });
     public NumberFeatureBuilder Unit(string unit) => new(_feature with { Unit = unit });
-    public NumberFeatureBuilder Optional() => this;
+    public NumberFeatureBuilder Optional() => new(_feature with { IsRequired = false });
     public NumberFeature Build() => _feature;
 }
 
