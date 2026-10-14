@@ -198,12 +198,16 @@ public sealed class Configuration
     {
         get
         {
-            var i = _collection.Stages.ToList().FindIndex(s => !AllSet(s.Features));
+            var i = _collection.Stages.ToList().FindIndex(s => !AllRequiredSet(s.Features));
             return i < 0 ? _collection.Stages.Count - 1 : i;
         }
     }
 
     private bool AllSet(IEnumerable<string> features) => features.Except(_hiddenFeatures).All(_values.ContainsKey);
+
+    private bool AllRequiredSet(IEnumerable<string> features) => AllSet(features.Where(IsRequired));
+
+    private bool IsRequired(string featureName) => _catalog.Features.First(f => f.Name == featureName).IsRequired;
 
     private void EnsureCanSet(string featureName, Value value)
     {
