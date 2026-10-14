@@ -4,6 +4,8 @@ namespace F.Configurator.Engine.Tests;
 
 // Decision 2026-10-14: an empty text is no value. A user who clears a text field leaves the feature empty, as if
 // it had never been filled in, so `wybrana(…)`, the stages, the index and the lengths see it as missing.
+// Frognar 2026-10-14: the same holds for every value a feature gets (default, forced, computed). Inside an expression
+// "" stays a text, so `jeśli wybrana(X) to … inaczej ""` in an index pattern still joins.
 public class EmptyTextTests
 {
     private static readonly Expression Pattern = Add(
@@ -99,5 +101,51 @@ public class EmptyTextTests
 
         Assert.Equal(Value.Text("KOWALSCY"), configuration.ValueOf("Grawer"));
         Assert.Equal(ValueSource.Default, configuration.SourceOf("Grawer"));
+    }
+
+    [Fact]
+    public void Empty_default_leaves_the_feature_without_a_value()
+    {
+        var configuration = Start(catalog => catalog.Rule("GrawerDomyslny", rule => rule
+            .Default("Grawer", Text(""))));
+
+        Assert.Equal(Value.Missing, configuration.ValueOf("Grawer"));
+        Assert.Null(configuration.SourceOf("Grawer"));
+    }
+
+    [Fact]
+    public void Empty_default_does_not_fill_in_a_required_feature()
+    {
+        var configuration = Start(
+            catalog => catalog.Rule("GrawerDomyslny", rule => rule.Default("Grawer", Text(""))),
+            engravingRequired: true);
+
+        Assert.False(configuration.CanFinish);
+    }
+
+    [Fact]
+    public void Empty_forced_text_leaves_the_feature_without_a_value()
+    {
+        var configuration = Start(catalog => catalog.Rule("BezGrawerowania", rule => rule
+                .When(Equal(Reference("Model"), Option("VERTE")))
+                .Set("Grawer", Text(""))))
+            .Set("Grawer", Value.Text("ABC"))
+            .Set("Model", Value.Option("VERTE"));
+
+        Assert.Equal(Value.Missing, configuration.ValueOf("Grawer"));
+    }
+
+    [Fact]
+    public void Computed_feature_that_gives_an_empty_text_has_no_value()
+    {
+        var catalog = CatalogBuilder.Create("Drzwi")
+            .Choice("Model", feature => feature.Option("PORTA", "Porta").Option("VERTE", "Verte"))
+            .Computed("Seria", If(Equal(Reference("Model"), Option("VERTE")), Text("V"), Text("")))
+            .Collection("Basic", collection => collection.Stage("Model", "Model"))
+            .Build();
+
+        var configuration = Configuration.Start(catalog, "Basic").Set("Model", Value.Option("PORTA"));
+
+        Assert.Equal(Value.Missing, configuration.ValueOf("Seria"));
     }
 }
