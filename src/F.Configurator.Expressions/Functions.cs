@@ -65,6 +65,14 @@ public sealed record Length(Expression Operand) : Expression
         };
 }
 
+public sealed record HasValue(Expression Operand) : Expression
+{
+    public override Value Evaluate(
+        IReadOnlyDictionary<string, Value> values,
+        IReadOnlyDictionary<string, Value> context) =>
+        throw new NotImplementedException();
+}
+
 public sealed record Pad(Expression Operand, Expression TotalWidth, Expression PaddingChar) : Expression
 {
     private const decimal MaxWidth = 1000;
