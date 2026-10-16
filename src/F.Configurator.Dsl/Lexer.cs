@@ -17,13 +17,21 @@ public static class Lexer
     public static LexResult Tokenize(string file, string source)
     {
         List<Token> tokens = [];
+        Stack<int> levels = new([0]);
         var lines = source.Split('\n').Select(line => line.TrimEnd('\r')).ToArray();
         for (var index = 0; index < lines.Length; index++)
         {
             var line = lines[index];
             var number = index + 1;
             var count = tokens.Count;
-            var column = 0;
+            var column = line.Length - line.TrimStart(' ').Length;
+            if (column < line.Length && line[column] != '#' && column > levels.Peek())
+            {
+                levels.Push(column);
+                tokens.Add(new Token(TokenKind.Indent, "", new SourceSpan(file, number, 1, column)));
+                count++;
+            }
+
             while (column < line.Length)
             {
                 var start = column;
@@ -88,6 +96,11 @@ public static class Lexer
             {
                 tokens.Add(new Token(TokenKind.NewLine, "", new SourceSpan(file, number, line.Length + 1, 0)));
             }
+        }
+
+        for (; levels.Peek() > 0; levels.Pop())
+        {
+            tokens.Add(new Token(TokenKind.Dedent, "", new SourceSpan(file, lines.Length, 1, 0)));
         }
 
         tokens.Add(new Token(TokenKind.End, "", new SourceSpan(file, lines.Length, 1, 0)));
