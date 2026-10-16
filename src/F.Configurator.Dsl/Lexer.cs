@@ -118,9 +118,10 @@ public static class Lexer
         return new LexResult(tokens, []);
     }
 
-    // Grammar 3.1: a long line goes on in the next, deeper line after a comma.
+    // Grammar 3.1: a long line goes on in the next, deeper line after a comma or an operator that needs a right side.
     private static bool GoesOn(List<Token> tokens) =>
-        tokens is [.., { Kind: TokenKind.Operator, Text: "," }, { Kind: TokenKind.NewLine }];
+        tokens is [.., { Kind: TokenKind.Operator, Text: "," or "=" or "+" or "-" or "*" or "/" }, { Kind: TokenKind.NewLine }]
+            or [.., { Kind: TokenKind.Keyword, Text: "i" or "lub" }, { Kind: TokenKind.NewLine }];
 
     // Digits, and a decimal part after a dot followed by a digit.
     private static int NumberEnd(string line, int column)
