@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace F.Configurator.Dsl;
 
 public static class Lexer
@@ -42,10 +44,23 @@ public static class Lexer
                 }
                 else if (current == '"')
                 {
-                    column = line.IndexOf('"', column + 1) + 1;
+                    var content = new StringBuilder();
+                    column++;
+                    while (line[column] != '"')
+                    {
+                        if (line[column] == '\\' && column + 1 < line.Length && line[column + 1] == '"')
+                        {
+                            column++;
+                        }
+
+                        content.Append(line[column]);
+                        column++;
+                    }
+
+                    column++;
                     tokens.Add(new Token(
                         TokenKind.Text,
-                        line[(start + 1)..(column - 1)],
+                        content.ToString(),
                         new SourceSpan(file, number, start + 1, column - start)));
                 }
                 else
