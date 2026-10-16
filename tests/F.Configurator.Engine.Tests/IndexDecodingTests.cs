@@ -110,6 +110,13 @@ public class IndexDecodingTests
         Assert.Equal([Value.Number(900m)], decoded.Select(c => c.ValueOf("SzerokoscMM")));
     }
 
+    // Audit 5.9: only ASCII digits make a number; Arabic-Indic "٩٠٠" is text no pattern reads.
+    [Fact]
+    public void Digits_other_than_ascii_are_not_a_number()
+    {
+        Assert.Empty(Decode(Join(ModelSymbol, NormaSymbol, Reference("SzerokoscMM")), "VCZ\u0669\u0660\u0660"));
+    }
+
     [Fact]
     public void Padded_number_is_read_without_its_padding()
     {

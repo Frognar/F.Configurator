@@ -49,7 +49,7 @@ public sealed class Configuration
         // Each computed feature sees the ones declared before it.
         _values = _catalog.Features.OfType<ComputedFeature>()
             .Aggregate(values, (all, feature) =>
-                feature.Expression.Evaluate(all, _context) is var value and not MissingValue
+                AsFeatureValue(feature.Expression.Evaluate(all, _context)) is var value and not MissingValue
                     ? all.SetItem(feature.Name, value)
                     : all);
 
@@ -95,7 +95,7 @@ public sealed class Configuration
     public Configuration Set(string featureName, Value value)
     {
         EnsureCanSet(featureName, value);
-        var entered = value is TextValue { Content: "" } ? Value.Missing : value;
+        var entered = AsFeatureValue(value);
         var next = new Configuration(
                 _catalog,
                 _collection,
@@ -438,6 +438,7 @@ public sealed class Configuration
             .ToEquatableDictionary();
 
         var defaults = DefaultValues()
+            .Where(x => x.Value is not TextValue { Content: "" })
             .Where(x => !_hiddenFeatures.Contains(x.Feature))
             .Where(x => WithinDomain(x.Feature, x.Value))
             .ToList();
@@ -447,6 +448,8 @@ public sealed class Configuration
         return new Configuration(_catalog, _collection, userValues, forcedValues, defaultValues, Unanimous(defaults),
             [.. _corrections, .. corrections.Select(c => c.Violation)], context: _context);
     }
+
+    private static Value AsFeatureValue(Value value) => value is TextValue { Content: "" } ? Value.Missing : value;
 
     private sealed record Candidate(string Feature, Value Value, int Priority, string RuleName);
 
@@ -477,10 +480,14 @@ public sealed class Configuration
         candidates.Where(c => c.Feature == featureName).GroupBy(c => c.Priority).MaxBy(p => p.Key)?
             .Select(c => c.RuleName).Order(StringComparer.Ordinal).First();
 
+    // A rule that sets an empty text leaves the feature without a value, but still decides it.
     private IEnumerable<Candidate> ForcedValues() =>
         Effects<SetEffect>()
             .Select(x => new Candidate(
-                x.Effect.Feature, x.Effect.Value.Evaluate(_values, _context), x.Rule.Priority, x.Rule.Name));
+                x.Effect.Feature,
+                AsFeatureValue(x.Effect.Value.Evaluate(_values, _context)),
+                x.Rule.Priority,
+                x.Rule.Name));
 
     private IEnumerable<Candidate> DefaultValues() =>
         DefaultsFromRules().Concat(DefaultsFromTables()).Concat(SingleOptionsFromTables());

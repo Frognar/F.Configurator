@@ -49,7 +49,7 @@ public static class IndexDecoder
             Pad pad => Readings(catalog, pad.Operand, reading),
             If conditional => Readings(catalog, conditional.Then, reading)
                 .Concat(Readings(catalog, conditional.Otherwise, reading)),
-            Text literal => reading.Unread.StartsWith(literal.Content) ? [reading.Skip(literal.Content.Length)] : [],
+            Text literal => reading.Unread.StartsWith(literal.Content, StringComparison.Ordinal) ? [reading.Skip(literal.Content.Length)] : [],
             _ => [],
         };
 
@@ -75,14 +75,14 @@ public static class IndexDecoder
         IndexReading reading) =>
         catalog.Features.OfType<ChoiceFeature>().First(f => f.Name == feature).Options
             .Select(option => (option.Id, Symbol: ((TextValue)symbols.ValuesByOption[option.Id]).Content))
-            .Where(x => reading.Unread.StartsWith(x.Symbol))
+            .Where(x => reading.Unread.StartsWith(x.Symbol, StringComparison.Ordinal))
             .Select(x => reading.Read(feature, Value.Option(x.Id), x.Symbol.Length));
 
     // Numbers the unread text starts with: digits after an optional minus.
     private static IEnumerable<IndexReading> NumberReadings(string feature, IndexReading reading)
     {
         var sign = reading.Unread.StartsWith('-') ? 1 : 0;
-        return Enumerable.Range(sign + 1, reading.Unread[sign..].TakeWhile(char.IsDigit).Count())
+        return Enumerable.Range(sign + 1, reading.Unread[sign..].TakeWhile(char.IsAsciiDigit).Count())
             .Select(length => reading.Read(
                 feature, Value.Number(decimal.Parse(reading.Unread[..length], CultureInfo.InvariantCulture)), length));
     }
