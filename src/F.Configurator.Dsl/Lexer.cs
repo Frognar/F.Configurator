@@ -14,29 +14,31 @@ public static class Lexer
             var column = 0;
             while (column < line.Length)
             {
-                if (line[column] == ' ')
+                var start = column;
+                var current = line[column];
+                if (current == ' ')
                 {
                     column++;
-                    continue;
                 }
-
-                if (line[column] == '#')
+                else if (current == '#')
                 {
                     break;
                 }
-
-                var start = column;
-                while (column < line.Length && line[column] != ' ')
+                else if (char.IsLetter(current))
+                {
+                    column = WordEnd(line, column);
+                    var word = line[start..column];
+                    var keyword = Keywords.KeywordOf(word);
+                    tokens.Add(new Token(
+                        keyword is null ? TokenKind.Name : TokenKind.Keyword,
+                        keyword ?? word,
+                        new SourceSpan(file, number, start + 1, column - start)));
+                }
+                else
                 {
                     column++;
+                    tokens.Add(new Token(TokenKind.Operator, line[start..column], new SourceSpan(file, number, start + 1, 1)));
                 }
-
-                var word = line[start..column];
-                var keyword = Keywords.KeywordOf(word);
-                tokens.Add(new Token(
-                    keyword is null ? TokenKind.Name : TokenKind.Keyword,
-                    keyword ?? word,
-                    new SourceSpan(file, number, start + 1, column - start)));
             }
 
             if (tokens.Count > count)
@@ -47,5 +49,19 @@ public static class Lexer
 
         tokens.Add(new Token(TokenKind.End, "", new SourceSpan(file, lines.Length, 1, 0)));
         return new LexResult(tokens, []);
+    }
+
+    // A word is letters, digits and underscores; `tak/nie` is one word, the name of the yes/no type.
+    private static int WordEnd(string line, int column)
+    {
+        var start = column;
+        while (column < line.Length && (char.IsLetterOrDigit(line[column]) || line[column] == '_'))
+        {
+            column++;
+        }
+
+        return line[start..column] == "tak" && line[column..].StartsWith("/nie", StringComparison.Ordinal)
+            ? column + "/nie".Length
+            : column;
     }
 }
