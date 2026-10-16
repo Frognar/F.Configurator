@@ -49,7 +49,7 @@ public sealed class Configuration
         // Each computed feature sees the ones declared before it.
         _values = _catalog.Features.OfType<ComputedFeature>()
             .Aggregate(values, (all, feature) =>
-                feature.Expression.Evaluate(all, _context) is var value and not (MissingValue or TextValue { Content: "" })
+                AsFeatureValue(feature.Expression.Evaluate(all, _context)) is var value and not MissingValue
                     ? all.SetItem(feature.Name, value)
                     : all);
 
@@ -95,7 +95,7 @@ public sealed class Configuration
     public Configuration Set(string featureName, Value value)
     {
         EnsureCanSet(featureName, value);
-        var entered = value is TextValue { Content: "" } ? Value.Missing : value;
+        var entered = AsFeatureValue(value);
         var next = new Configuration(
                 _catalog,
                 _collection,
@@ -449,6 +449,8 @@ public sealed class Configuration
             [.. _corrections, .. corrections.Select(c => c.Violation)], context: _context);
     }
 
+    private static Value AsFeatureValue(Value value) => value is TextValue { Content: "" } ? Value.Missing : value;
+
     private sealed record Candidate(string Feature, Value Value, int Priority, string RuleName);
 
     private static EquatableDictionary<string, Value> Winners(IEnumerable<Candidate> candidates) =>
@@ -483,8 +485,7 @@ public sealed class Configuration
         Effects<SetEffect>()
             .Select(x => new Candidate(
                 x.Effect.Feature,
-                x.Effect.Value.Evaluate(_values, _context) is TextValue { Content: "" } ? Value.Missing
-                    : x.Effect.Value.Evaluate(_values, _context),
+                AsFeatureValue(x.Effect.Value.Evaluate(_values, _context)),
                 x.Rule.Priority,
                 x.Rule.Name));
 
