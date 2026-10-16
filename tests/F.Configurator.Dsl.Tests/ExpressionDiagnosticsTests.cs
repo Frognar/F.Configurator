@@ -44,6 +44,12 @@ public class ExpressionDiagnosticsTests
     }
 
     [Fact]
+    public void Missing_closing_bracket_of_a_table_row_is_an_error()
+    {
+        Assert.Equal([Error(At(1, 10, 0), "brak „]”")], ParseExpression("Ceny[A, B").Diagnostics);
+    }
+
+    [Fact]
     public void Missing_closing_parenthesis_of_a_function_is_an_error()
     {
         Assert.Equal([Error(At(1, 10, 0), "brak „)”")], ParseExpression("wybrana(A").Diagnostics);

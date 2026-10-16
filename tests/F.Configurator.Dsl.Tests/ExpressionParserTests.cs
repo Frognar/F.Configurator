@@ -45,6 +45,12 @@ public class ExpressionParserTests
     }
 
     [Fact]
+    public void Table_key_may_be_any_expression()
+    {
+        Assert.Equal("(. ([] Ceny (+ Szerokosc 10) (. Model Seria)) Kwota)", Tree("Ceny[Szerokosc + 10, Model.Seria].Kwota"));
+    }
+
+    [Fact]
     public void Multiplication_binds_tighter_than_addition()
     {
         Assert.Equal("(+ A (* B 2))", Tree("A + B * 2"));
