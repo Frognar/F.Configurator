@@ -7,7 +7,8 @@ namespace F.Configurator.Dsl.Tests;
 //
 // A long line can go on in the next line with deeper indentation (Basic: `dane A = 1,` / `B = 2`, `gdy A` / `i B`).
 // The lexer joins such lines when the first one ends with a comma or an operator that needs a right side, or the next
-// one starts with `i`, `lub`, `to`, `inaczej` or an arithmetic operator. Any other deeper line opens a block.
+// one starts with `i`, `lub`, `to`, `inaczej` or an arithmetic operator; such a start goes on also at the same level.
+// Any other deeper line opens a block.
 public class IndentationTests
 {
     [Fact]
@@ -125,6 +126,22 @@ public class IndentationTests
         Assert.Equal(
             [Keyword("gdy"), Name("A"), Keyword("i"), Name("B"), NewLine, Indent, Name("C"), NewLine, Dedent, End],
             Tokens("gdy A\n    i B\n  C"));
+    }
+
+    // Basic: the index is one expression in the lines under `indeks`, each of the next ones starting with `+`.
+    [Fact]
+    public void Line_starting_with_an_operator_goes_on_also_at_the_same_level()
+    {
+        Assert.Equal(
+            [Keyword("indeks"), NewLine, Indent, Name("A"), Operator("+"), Name("B"), Operator("+"), Name("C"), NewLine,
+                Dedent, End],
+            Tokens("indeks\n  A\n  + B\n  + C"));
+    }
+
+    [Fact]
+    public void First_line_has_nothing_to_go_on_from()
+    {
+        Assert.Equal([Indent, Operator("+"), Name("A"), NewLine, Dedent, End], Tokens("  + A"));
     }
 
     [Fact]

@@ -44,8 +44,58 @@ internal static class Declarations
                 .. context.Attributes.Select(Print),
                 context.ValuesFile is null ? null : $"(wartości {Quote(context.ValuesFile)})",
             ]),
+            CollectionSyntax collection => Group(
+            [
+                "kolekcja", collection.Name,
+                .. collection.Properties.Select(Print),
+                .. collection.Stages.Select(stage => Group(["etap", Quote(stage.Title), .. stage.Features.Select(Print)])),
+                collection.Features.Count == 0 ? null : Group(["bez etapu", .. collection.Features.Select(Print)]),
+                .. collection.Components.Select(component => $"(komponent {component.Name} {component.Collection})"),
+                collection.Shared.Count == 0 ? null : Group(["cechy wspólne", .. collection.Shared]),
+                collection.Own.Count == 0 ? null : Group(["cechy własne", .. collection.Own]),
+                collection.Index is null ? null : $"(indeks {Parsing.Print(collection.Index)})",
+                .. collection.Declarations.Select(Print),
+            ]),
+            RuleSyntax rule => Group(
+            [
+                "reguła", rule.Name,
+                .. rule.Properties.Select(Print),
+                rule.Condition is null ? null : $"(warunek {Parsing.Print(rule.Condition)})",
+                .. rule.Effects.Select(Print),
+                rule.Reaction is null ? null : $"(przy naruszeniu {rule.Reaction.Kind} {Quote(rule.Reaction.Message)})",
+            ]),
+            TestSyntax test => Group(
+            [
+                "test", Quote(test.Name),
+                test.Collection is null ? null : $"(kolekcja {test.Collection})",
+                test.Data.Count == 0 ? null : Group(["dane", .. test.Data.Select(Print)]),
+                test.Expectations.Count == 0 ? null : Group(["oczekuj", .. test.Expectations.Select(Print)]),
+            ]),
             _ => throw new ArgumentOutOfRangeException(nameof(declaration), declaration, null),
         };
+
+    private static string Print(CollectionFeatureSyntax feature) =>
+        feature.VisibleWhen is null ? feature.Name : $"({feature.Name} widoczna {Parsing.Print(feature.VisibleWhen)})";
+
+    private static string Print(EffectSyntax effect) =>
+        Group(
+        [
+            effect.Kind,
+            .. effect.Targets.Select(Parsing.Print),
+            effect.Value is null ? null : Parsing.Print(effect.Value),
+            effect.Table is null ? null : $"z {effect.Table}",
+        ]);
+
+    private static string Print(AssignmentSyntax assignment) =>
+        $"(= {Parsing.Print(assignment.Target)} {Parsing.Print(assignment.Value)})";
+
+    private static string Print(ExpectationSyntax expectation) =>
+        Group(
+        [
+            expectation.Kind,
+            expectation.Target is null ? null : Parsing.Print(expectation.Target),
+            expectation.Value is null ? null : Parsing.Print(expectation.Value),
+        ]);
 
     private static string Print(PropertySyntax property) =>
         Group([property.Name, .. property.Values.Select(Parsing.Print)]);
