@@ -89,6 +89,16 @@ public static class Lexer
                 else if (char.IsAsciiDigit(current))
                 {
                     column = NumberEnd(line, column);
+                    if (column + 1 < line.Length && line[column] == ',' && char.IsAsciiDigit(line[column + 1]))
+                    {
+                        var fraction = DigitsEnd(line, column + 1);
+                        diagnostics.Add(new Diagnostic(
+                            Severity.Error,
+                            new SourceSpan(file, number, start + 1, fraction - start),
+                            $"liczba „{line[start..fraction]}” – użyj kropki",
+                            $"{line[start..column]}.{line[(column + 1)..fraction]}"));
+                    }
+
                     tokens.Add(new Token(
                         TokenKind.Number, line[start..column], new SourceSpan(file, number, start + 1, column - start)));
                 }
