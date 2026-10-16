@@ -32,9 +32,10 @@ public static class Lexer
                 }
 
                 var word = line[start..column];
+                var keyword = Keywords.KeywordOf(word);
                 tokens.Add(new Token(
-                    Keywords.IsKeyword(word) ? TokenKind.Keyword : TokenKind.Name,
-                    word,
+                    keyword is null ? TokenKind.Name : TokenKind.Keyword,
+                    keyword ?? word,
                     new SourceSpan(file, number, start + 1, column - start)));
             }
 
