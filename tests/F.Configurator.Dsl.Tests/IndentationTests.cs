@@ -7,7 +7,7 @@ namespace F.Configurator.Dsl.Tests;
 //
 // A long line can go on in the next line with deeper indentation (Basic: `dane A = 1,` / `B = 2`, `gdy A` / `i B`).
 // The lexer joins such lines when the first one ends with a comma or an operator that needs a right side, or the next
-// one starts with `i`, `lub` or an arithmetic operator. Any other deeper line opens a block.
+// one starts with `i`, `lub`, `to`, `inaczej` or an arithmetic operator. Any other deeper line opens a block.
 public class IndentationTests
 {
     [Fact]
@@ -88,6 +88,17 @@ public class IndentationTests
         Assert.Equal(
             [Keyword("gdy"), Name("A"), OperatorOrKeyword(@operator), Name("B"), NewLine, End],
             Tokens($"gdy A\n  {@operator} B"));
+    }
+
+    // Basic: `wyliczana Nietyp =` / `jeśli …` / `to "T" inaczej "N"`.
+    [Theory]
+    [InlineData("to")]
+    [InlineData("inaczej")]
+    public void Line_starting_with_the_rest_of_a_condition_goes_on_from_the_line_above(string word)
+    {
+        Assert.Equal(
+            [Keyword("jeśli"), Name("A"), Keyword(word), Name("B"), NewLine, End],
+            Tokens($"jeśli A\n  {word} B"));
     }
 
     [Fact]
