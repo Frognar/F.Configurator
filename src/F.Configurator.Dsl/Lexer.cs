@@ -4,7 +4,15 @@ namespace F.Configurator.Dsl;
 
 public static class Lexer
 {
-    private static readonly string[] TwoCharacterOperators = ["..", "<=", ">="];
+    private static readonly string[] TwoCharacterOperators = ["..", "<=", ">=", "!="];
+
+    // Grammar 6.1: other ways to write an operator.
+    private static readonly Dictionary<string, string> OtherSpellings = new()
+    {
+        ["!="] = "≠",
+        ["≤"] = "<=",
+        ["≥"] = ">=",
+    };
 
     public static LexResult Tokenize(string file, string source)
     {
@@ -68,8 +76,11 @@ public static class Lexer
                 else
                 {
                     column += TwoCharacterOperators.Any(o => line[column..].StartsWith(o, StringComparison.Ordinal)) ? 2 : 1;
+                    var written = line[start..column];
                     tokens.Add(new Token(
-                        TokenKind.Operator, line[start..column], new SourceSpan(file, number, start + 1, column - start)));
+                        TokenKind.Operator,
+                        OtherSpellings.GetValueOrDefault(written, written),
+                        new SourceSpan(file, number, start + 1, column - start)));
                 }
             }
 
