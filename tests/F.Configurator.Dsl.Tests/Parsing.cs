@@ -20,7 +20,7 @@ internal static class Parsing
 
     public static SourceSpan At(int line, int column, int length) => new(File, line, column, length);
 
-    private static string Print(ExpressionSyntax syntax) =>
+    public static string Print(ExpressionSyntax syntax) =>
         syntax switch
         {
             NumberSyntax number => number.Value.ToString(CultureInfo.InvariantCulture),
