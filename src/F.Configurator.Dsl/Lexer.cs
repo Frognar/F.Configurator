@@ -5,7 +5,7 @@ public static class Lexer
     public static LexResult Tokenize(string file, string source)
     {
         List<Token> tokens = [];
-        var lines = source.Split('\n');
+        var lines = source.Split('\n').Select(line => line.TrimEnd('\r')).ToArray();
         for (var index = 0; index < lines.Length; index++)
         {
             var line = lines[index];
