@@ -478,10 +478,15 @@ public sealed class Configuration
         candidates.Where(c => c.Feature == featureName).GroupBy(c => c.Priority).MaxBy(p => p.Key)?
             .Select(c => c.RuleName).Order(StringComparer.Ordinal).First();
 
+    // A rule that sets an empty text leaves the feature without a value, but still decides it.
     private IEnumerable<Candidate> ForcedValues() =>
         Effects<SetEffect>()
             .Select(x => new Candidate(
-                x.Effect.Feature, x.Effect.Value.Evaluate(_values, _context), x.Rule.Priority, x.Rule.Name));
+                x.Effect.Feature,
+                x.Effect.Value.Evaluate(_values, _context) is TextValue { Content: "" } ? Value.Missing
+                    : x.Effect.Value.Evaluate(_values, _context),
+                x.Rule.Priority,
+                x.Rule.Name));
 
     private IEnumerable<Candidate> DefaultValues() =>
         DefaultsFromRules().Concat(DefaultsFromTables()).Concat(SingleOptionsFromTables());
