@@ -18,152 +18,138 @@ public static class Lexer
 
     public static LexResult Tokenize(string file, string source)
     {
-        List<Token> tokens = [];
-        List<Diagnostic> diagnostics = [];
-        Stack<int> levels = new([0]);
         var lines = source.Split('\n').Select(line => line.TrimEnd('\r')).ToArray();
+        var output = new Output(file);
+        Stack<int> levels = new([0]);
         for (var index = 0; index < lines.Length; index++)
         {
-            var line = lines[index];
-            var number = index + 1;
-            var count = tokens.Count;
-            var column = line.Length - line.TrimStart(' ').Length;
-            var content = column < line.Length && line[column] != '#';
-            if (content && column > levels.Peek() && (GoesOn(tokens) || GoesOnFromAbove(line, column)))
+            var line = new Line(lines[index], index + 1);
+            var indentation = line.Text.Length - line.Text.TrimStart(' ').Length;
+            if (indentation < line.Text.Length && line.Text[indentation] != '#')
             {
-                tokens.RemoveAt(tokens.Count - 1);
-                count--;
-            }
-            else if (content && column > levels.Peek())
-            {
-                levels.Push(column);
-                tokens.Add(new Token(TokenKind.Indent, "", new SourceSpan(file, number, 1, column)));
-                count++;
-            }
-            else if (content)
-            {
-                for (; column < levels.Peek(); levels.Pop())
-                {
-                    tokens.Add(new Token(TokenKind.Dedent, "", new SourceSpan(file, number, column + 1, 0)));
-                    count++;
-                }
-
-                if (column != levels.Peek())
-                {
-                    diagnostics.Add(new Diagnostic(
-                        Severity.Error,
-                        new SourceSpan(file, number, 1, column),
-                        "wcięcie nie pasuje do żadnego z poprzednich poziomów",
-                        null));
-                }
-            }
-
-            while (column < line.Length)
-            {
-                var start = column;
-                var current = line[column];
-                if (current == ' ')
-                {
-                    column++;
-                }
-                else if (current == '\t')
-                {
-                    column++;
-                    diagnostics.Add(new Diagnostic(
-                        Severity.Error, new SourceSpan(file, number, start + 1, 1), "tabulator we wcięciu, użyj spacji", null));
-                }
-                else if (current == '#')
-                {
-                    break;
-                }
-                else if (char.IsLetter(current))
-                {
-                    column = WordEnd(line, column);
-                    var word = line[start..column];
-                    var keyword = Keywords.KeywordOf(word);
-                    tokens.Add(new Token(
-                        keyword is null ? TokenKind.Name : TokenKind.Keyword,
-                        keyword ?? word,
-                        new SourceSpan(file, number, start + 1, column - start)));
-                }
-                else if (char.IsAsciiDigit(current))
-                {
-                    column = NumberEnd(line, column);
-                    if (column + 1 < line.Length && line[column] == ',' && char.IsAsciiDigit(line[column + 1]))
-                    {
-                        var fraction = DigitsEnd(line, column + 1);
-                        diagnostics.Add(new Diagnostic(
-                            Severity.Error,
-                            new SourceSpan(file, number, start + 1, fraction - start),
-                            $"liczba „{line[start..fraction]}” – użyj kropki",
-                            $"{line[start..column]}.{line[(column + 1)..fraction]}"));
-                    }
-
-                    tokens.Add(new Token(
-                        TokenKind.Number, line[start..column], new SourceSpan(file, number, start + 1, column - start)));
-                }
-                else if (current == '"')
-                {
-                    var text = new StringBuilder();
-                    column++;
-                    while (column < line.Length && line[column] != '"')
-                    {
-                        if (line[column] == '\\' && column + 1 < line.Length && line[column + 1] == '"')
-                        {
-                            column++;
-                        }
-
-                        text.Append(line[column]);
-                        column++;
-                    }
-
-                    if (column == line.Length)
-                    {
-                        diagnostics.Add(new Diagnostic(
-                            Severity.Error,
-                            new SourceSpan(file, number, start + 1, column - start),
-                            "tekst bez cudzysłowu zamykającego",
-                            null));
-                    }
-
-                    column = Math.Min(column + 1, line.Length);
-                    tokens.Add(new Token(
-                        TokenKind.Text,
-                        text.ToString(),
-                        new SourceSpan(file, number, start + 1, column - start)));
-                }
-                else if (!TwoCharacterOperators.Any(o => line[column..].StartsWith(o, StringComparison.Ordinal))
-                    && !SingleCharacterOperators.Contains(current))
-                {
-                    column++;
-                    diagnostics.Add(new Diagnostic(
-                        Severity.Error, new SourceSpan(file, number, start + 1, 1), $"nieznany znak „{current}”", null));
-                }
-                else
-                {
-                    column += TwoCharacterOperators.Any(o => line[column..].StartsWith(o, StringComparison.Ordinal)) ? 2 : 1;
-                    var written = line[start..column];
-                    tokens.Add(new Token(
-                        TokenKind.Operator,
-                        OtherSpellings.GetValueOrDefault(written, written),
-                        new SourceSpan(file, number, start + 1, column - start)));
-                }
-            }
-
-            if (tokens.Count > count)
-            {
-                tokens.Add(new Token(TokenKind.NewLine, "", new SourceSpan(file, number, line.Length + 1, 0)));
+                Indentation(output, levels, line, indentation);
+                Scan(output, line, indentation);
+                output.Add(TokenKind.NewLine, "", line.Number, line.Text.Length, 0);
             }
         }
 
         for (; levels.Peek() > 0; levels.Pop())
         {
-            tokens.Add(new Token(TokenKind.Dedent, "", new SourceSpan(file, lines.Length, 1, 0)));
+            output.Add(TokenKind.Dedent, "", lines.Length, 0, 0);
         }
 
-        tokens.Add(new Token(TokenKind.End, "", new SourceSpan(file, lines.Length, 1, 0)));
-        return new LexResult(tokens, diagnostics);
+        output.Add(TokenKind.End, "", lines.Length, 0, 0);
+        return new LexResult(output.Tokens, output.Diagnostics);
     }
+
+    // Grammar 3.1: a deeper line either goes on from the line above or opens a block; a shallower one closes blocks.
+    private static void Indentation(Output output, Stack<int> levels, Line line, int indentation)
+    {
+        if (indentation > levels.Peek() && (GoesOn(output.Tokens) || GoesOnFromAbove(line.Text, indentation)))
+        {
+            output.Tokens.RemoveAt(output.Tokens.Count - 1);
+        }
+        else if (indentation > levels.Peek())
+        {
+            levels.Push(indentation);
+            output.Add(TokenKind.Indent, "", line.Number, 0, indentation);
+        }
+        else
+        {
+            for (; indentation < levels.Peek(); levels.Pop())
+            {
+                output.Add(TokenKind.Dedent, "", line.Number, indentation, 0);
+            }
+
+            if (indentation != levels.Peek())
+            {
+                output.Error(line.Number, 0, indentation, "wcięcie nie pasuje do żadnego z poprzednich poziomów");
+            }
+        }
+    }
+
+    private static void Scan(Output output, Line line, int column)
+    {
+        var text = line.Text;
+        while (column < text.Length && text[column] != '#')
+        {
+            var current = text[column];
+            column = current switch
+            {
+                ' ' => column + 1,
+                '\t' => output.Error(line.Number, column, 1, "tabulator we wcięciu, użyj spacji"),
+                '"' => ScanText(output, line, column),
+                _ when char.IsLetter(current) => ScanWord(output, line, column),
+                _ when char.IsAsciiDigit(current) => ScanNumber(output, line, column),
+                _ when OperatorLength(text, column) is var length and > 0 => ScanOperator(output, line, column, length),
+                _ => output.Error(line.Number, column, 1, $"nieznany znak „{current}”"),
+            };
+        }
+    }
+
+    private static int ScanWord(Output output, Line line, int start)
+    {
+        var end = WordEnd(line.Text, start);
+        var word = line.Text[start..end];
+        var keyword = Keywords.KeywordOf(word);
+        return output.Add(
+            keyword is null ? TokenKind.Name : TokenKind.Keyword, keyword ?? word, line.Number, start, end - start);
+    }
+
+    private static int ScanNumber(Output output, Line line, int start)
+    {
+        var text = line.Text;
+        var end = NumberEnd(text, start);
+        if (end + 1 < text.Length && text[end] == ',' && char.IsAsciiDigit(text[end + 1]))
+        {
+            var fraction = DigitsEnd(text, end + 1);
+            output.Error(
+                line.Number,
+                start,
+                fraction - start,
+                $"liczba „{text[start..fraction]}” – użyj kropki",
+                $"{text[start..end]}.{text[(end + 1)..fraction]}");
+        }
+
+        return output.Add(TokenKind.Number, text[start..end], line.Number, start, end - start);
+    }
+
+    // Grammar 3.3: a text ends at the next quote that is not escaped with `\`, or at the end of the line.
+    private static int ScanText(Output output, Line line, int start)
+    {
+        var text = line.Text;
+        var content = new StringBuilder();
+        var column = start + 1;
+        for (; column < text.Length && text[column] != '"'; column++)
+        {
+            if (text[column] == '\\' && column + 1 < text.Length && text[column + 1] == '"')
+            {
+                column++;
+            }
+
+            content.Append(text[column]);
+        }
+
+        if (column == text.Length)
+        {
+            output.Error(line.Number, start, column - start, "tekst bez cudzysłowu zamykającego");
+        }
+
+        var end = Math.Min(column + 1, text.Length);
+        return output.Add(TokenKind.Text, content.ToString(), line.Number, start, end - start);
+    }
+
+    private static int ScanOperator(Output output, Line line, int start, int length)
+    {
+        var written = line.Text.Substring(start, length);
+        return output.Add(
+            TokenKind.Operator, OtherSpellings.GetValueOrDefault(written, written), line.Number, start, length);
+    }
+
+    private static int OperatorLength(string text, int column) =>
+        TwoCharacterOperators.Any(o => text[column..].StartsWith(o, StringComparison.Ordinal)) ? 2
+        : SingleCharacterOperators.Contains(text[column]) ? 1
+        : 0;
 
     // Grammar 3.1: a long line goes on in the next, deeper line after a comma or an operator that needs a right side.
     private static bool GoesOn(List<Token> tokens) =>
@@ -171,21 +157,21 @@ public static class Lexer
             or [.., { Kind: TokenKind.Keyword, Text: "i" or "lub" }, { Kind: TokenKind.NewLine }];
 
     // A deeper line that starts with `i`, `lub` or an arithmetic operator goes on from the line above.
-    private static bool GoesOnFromAbove(string line, int column) =>
-        line[column] is '+' or '-' or '*' or '/' || line[column..WordEnd(line, column)] is "i" or "lub";
+    private static bool GoesOnFromAbove(string text, int column) =>
+        text[column] is '+' or '-' or '*' or '/' || text[column..WordEnd(text, column)] is "i" or "lub";
 
     // Digits, and a decimal part after a dot followed by a digit.
-    private static int NumberEnd(string line, int column)
+    private static int NumberEnd(string text, int column)
     {
-        column = DigitsEnd(line, column);
-        return column + 1 < line.Length && line[column] == '.' && char.IsAsciiDigit(line[column + 1])
-            ? DigitsEnd(line, column + 1)
+        column = DigitsEnd(text, column);
+        return column + 1 < text.Length && text[column] == '.' && char.IsAsciiDigit(text[column + 1])
+            ? DigitsEnd(text, column + 1)
             : column;
     }
 
-    private static int DigitsEnd(string line, int column)
+    private static int DigitsEnd(string text, int column)
     {
-        while (column < line.Length && char.IsAsciiDigit(line[column]))
+        while (column < text.Length && char.IsAsciiDigit(text[column]))
         {
             column++;
         }
@@ -194,16 +180,40 @@ public static class Lexer
     }
 
     // A word is letters, digits and underscores; `tak/nie` is one word, the name of the yes/no type.
-    private static int WordEnd(string line, int column)
+    private static int WordEnd(string text, int column)
     {
         var start = column;
-        while (column < line.Length && (char.IsLetterOrDigit(line[column]) || line[column] == '_'))
+        while (column < text.Length && (char.IsLetterOrDigit(text[column]) || text[column] == '_'))
         {
             column++;
         }
 
-        return line[start..column] == "tak" && line[column..].StartsWith("/nie", StringComparison.Ordinal)
+        return text[start..column] == "tak" && text[column..].StartsWith("/nie", StringComparison.Ordinal)
             ? column + "/nie".Length
             : column;
+    }
+
+    private sealed record Line(string Text, int Number);
+
+    // Collects tokens and diagnostics; columns are counted from 0 here and from 1 in spans.
+    private sealed class Output(string file)
+    {
+        public List<Token> Tokens { get; } = [];
+
+        public List<Diagnostic> Diagnostics { get; } = [];
+
+        // Returns the column after the token, so scanning goes on from there.
+        public int Add(TokenKind kind, string text, int line, int column, int length)
+        {
+            Tokens.Add(new Token(kind, text, new SourceSpan(file, line, column + 1, length)));
+            return column + length;
+        }
+
+        // Returns the column after the problem, so scanning skips it.
+        public int Error(int line, int column, int length, string message, string? hint = null)
+        {
+            Diagnostics.Add(new Diagnostic(Severity.Error, new SourceSpan(file, line, column + 1, length), message, hint));
+            return column + length;
+        }
     }
 }
