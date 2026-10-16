@@ -49,7 +49,7 @@ public sealed class Configuration
         // Each computed feature sees the ones declared before it.
         _values = _catalog.Features.OfType<ComputedFeature>()
             .Aggregate(values, (all, feature) =>
-                feature.Expression.Evaluate(all, _context) is var value and not MissingValue
+                feature.Expression.Evaluate(all, _context) is var value and not (MissingValue or TextValue { Content: "" })
                     ? all.SetItem(feature.Name, value)
                     : all);
 
