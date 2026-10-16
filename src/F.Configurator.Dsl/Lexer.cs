@@ -26,22 +26,34 @@ public static class Lexer
             var number = index + 1;
             var count = tokens.Count;
             var column = line.Length - line.TrimStart(' ').Length;
-            if (column < line.Length && line[column] != '#' && column > levels.Peek() && (GoesOn(tokens) || GoesOnFromAbove(line, column)))
+            var content = column < line.Length && line[column] != '#';
+            if (content && column > levels.Peek() && (GoesOn(tokens) || GoesOnFromAbove(line, column)))
             {
                 tokens.RemoveAt(tokens.Count - 1);
                 count--;
             }
-            else if (column < line.Length && line[column] != '#' && column > levels.Peek())
+            else if (content && column > levels.Peek())
             {
                 levels.Push(column);
                 tokens.Add(new Token(TokenKind.Indent, "", new SourceSpan(file, number, 1, column)));
                 count++;
             }
-
-            for (; column < line.Length && line[column] != '#' && column < levels.Peek(); levels.Pop())
+            else if (content)
             {
-                tokens.Add(new Token(TokenKind.Dedent, "", new SourceSpan(file, number, column + 1, 0)));
-                count++;
+                for (; column < levels.Peek(); levels.Pop())
+                {
+                    tokens.Add(new Token(TokenKind.Dedent, "", new SourceSpan(file, number, column + 1, 0)));
+                    count++;
+                }
+
+                if (column != levels.Peek())
+                {
+                    diagnostics.Add(new Diagnostic(
+                        Severity.Error,
+                        new SourceSpan(file, number, 1, column),
+                        "wcięcie nie pasuje do żadnego z poprzednich poziomów",
+                        null));
+                }
             }
 
             while (column < line.Length)
@@ -80,7 +92,7 @@ public static class Lexer
                 }
                 else if (current == '"')
                 {
-                    var content = new StringBuilder();
+                    var text = new StringBuilder();
                     column++;
                     while (line[column] != '"')
                     {
@@ -89,14 +101,14 @@ public static class Lexer
                             column++;
                         }
 
-                        content.Append(line[column]);
+                        text.Append(line[column]);
                         column++;
                     }
 
                     column++;
                     tokens.Add(new Token(
                         TokenKind.Text,
-                        content.ToString(),
+                        text.ToString(),
                         new SourceSpan(file, number, start + 1, column - start)));
                 }
                 else
