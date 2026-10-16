@@ -438,6 +438,7 @@ public sealed class Configuration
             .ToEquatableDictionary();
 
         var defaults = DefaultValues()
+            .Where(x => x.Value is not TextValue { Content: "" })
             .Where(x => !_hiddenFeatures.Contains(x.Feature))
             .Where(x => WithinDomain(x.Feature, x.Value))
             .ToList();
