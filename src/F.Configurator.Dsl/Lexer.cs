@@ -4,6 +4,8 @@ namespace F.Configurator.Dsl;
 
 public static class Lexer
 {
+    private static readonly string[] TwoCharacterOperators = ["..", "<=", ">="];
+
     public static LexResult Tokenize(string file, string source)
     {
         List<Token> tokens = [];
@@ -65,7 +67,7 @@ public static class Lexer
                 }
                 else
                 {
-                    column += line[column..].StartsWith("..", StringComparison.Ordinal) ? 2 : 1;
+                    column += TwoCharacterOperators.Any(o => line[column..].StartsWith(o, StringComparison.Ordinal)) ? 2 : 1;
                     tokens.Add(new Token(
                         TokenKind.Operator, line[start..column], new SourceSpan(file, number, start + 1, column - start)));
                 }
