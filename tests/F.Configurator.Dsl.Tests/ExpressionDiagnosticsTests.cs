@@ -79,7 +79,7 @@ public class ExpressionDiagnosticsTests
     [Fact]
     public void Condition_without_otherwise_is_an_error()
     {
-        Assert.Equal([Error(At(1, 15, 0), "brak „inaczej”")], ParseExpression("jeśli A to 1").Diagnostics);
+        Assert.Equal([Error(At(1, 13, 0), "brak „inaczej”")], ParseExpression("jeśli A to 1").Diagnostics);
     }
 
     // `A < B < C` reads as `(A < B) < C`, which compares a yes/no with a number; the author meant `A < B i B < C`.
