@@ -5,30 +5,38 @@ public static class Lexer
     public static LexResult Tokenize(string file, string source)
     {
         List<Token> tokens = [];
-        var column = 0;
-        while (column < source.Length)
+        var lines = source.Split('\n');
+        for (var index = 0; index < lines.Length; index++)
         {
-            if (source[column] == ' ')
+            var line = lines[index];
+            var number = index + 1;
+            var count = tokens.Count;
+            var column = 0;
+            while (column < line.Length)
             {
-                column++;
-                continue;
+                if (line[column] == ' ')
+                {
+                    column++;
+                    continue;
+                }
+
+                var start = column;
+                while (column < line.Length && line[column] != ' ')
+                {
+                    column++;
+                }
+
+                tokens.Add(new Token(
+                    TokenKind.Name, line[start..column], new SourceSpan(file, number, start + 1, column - start)));
             }
 
-            var start = column;
-            while (column < source.Length && source[column] != ' ')
+            if (tokens.Count > count)
             {
-                column++;
+                tokens.Add(new Token(TokenKind.NewLine, "", new SourceSpan(file, number, line.Length + 1, 0)));
             }
-
-            tokens.Add(new Token(TokenKind.Name, source[start..column], new SourceSpan(file, 1, start + 1, column - start)));
         }
 
-        if (tokens.Count > 0)
-        {
-            tokens.Add(new Token(TokenKind.NewLine, "", new SourceSpan(file, 1, source.Length + 1, 0)));
-        }
-
-        tokens.Add(new Token(TokenKind.End, "", new SourceSpan(file, 1, 1, 0)));
+        tokens.Add(new Token(TokenKind.End, "", new SourceSpan(file, lines.Length, 1, 0)));
         return new LexResult(tokens, []);
     }
 }
