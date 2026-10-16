@@ -4,6 +4,8 @@ namespace F.Configurator.Dsl;
 
 public static class Lexer
 {
+    private const string SingleCharacterOperators = "=≠<>≤≥+-*/()[],:.|%";
+
     private static readonly string[] TwoCharacterOperators = ["..", "<=", ">=", "!="];
 
     // Grammar 6.1: other ways to write an operator.
@@ -119,6 +121,13 @@ public static class Lexer
                         TokenKind.Text,
                         text.ToString(),
                         new SourceSpan(file, number, start + 1, column - start)));
+                }
+                else if (!TwoCharacterOperators.Any(o => line[column..].StartsWith(o, StringComparison.Ordinal))
+                    && !SingleCharacterOperators.Contains(current))
+                {
+                    column++;
+                    diagnostics.Add(new Diagnostic(
+                        Severity.Error, new SourceSpan(file, number, start + 1, 1), $"nieznany znak „{current}”", null));
                 }
                 else
                 {
