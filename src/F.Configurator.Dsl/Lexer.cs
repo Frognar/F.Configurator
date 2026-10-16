@@ -17,6 +17,7 @@ public static class Lexer
     public static LexResult Tokenize(string file, string source)
     {
         List<Token> tokens = [];
+        List<Diagnostic> diagnostics = [];
         Stack<int> levels = new([0]);
         var lines = source.Split('\n').Select(line => line.TrimEnd('\r')).ToArray();
         for (var index = 0; index < lines.Length; index++)
@@ -50,6 +51,12 @@ public static class Lexer
                 if (current == ' ')
                 {
                     column++;
+                }
+                else if (current == '\t')
+                {
+                    column++;
+                    diagnostics.Add(new Diagnostic(
+                        Severity.Error, new SourceSpan(file, number, start + 1, 1), "tabulator we wcięciu, użyj spacji", null));
                 }
                 else if (current == '#')
                 {
@@ -115,7 +122,7 @@ public static class Lexer
         }
 
         tokens.Add(new Token(TokenKind.End, "", new SourceSpan(file, lines.Length, 1, 0)));
-        return new LexResult(tokens, []);
+        return new LexResult(tokens, diagnostics);
     }
 
     // Grammar 3.1: a long line goes on in the next, deeper line after a comma or an operator that needs a right side.
