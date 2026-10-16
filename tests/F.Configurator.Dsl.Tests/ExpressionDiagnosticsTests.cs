@@ -40,13 +40,13 @@ public class ExpressionDiagnosticsTests
     [Fact]
     public void Missing_closing_bracket_of_a_list_is_an_error()
     {
-        Assert.Equal([Error(At(1, 13, 0), "brak „]”")], ParseExpression("A w [CZ, SK").Diagnostics);
+        Assert.Equal([Error(At(1, 12, 0), "brak „]”")], ParseExpression("A w [CZ, SK").Diagnostics);
     }
 
     [Fact]
     public void Missing_closing_parenthesis_of_a_function_is_an_error()
     {
-        Assert.Equal([Error(At(1, 11, 0), "brak „)”")], ParseExpression("wybrana(A").Diagnostics);
+        Assert.Equal([Error(At(1, 10, 0), "brak „)”")], ParseExpression("wybrana(A").Diagnostics);
     }
 
     [Fact]
