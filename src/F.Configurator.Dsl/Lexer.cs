@@ -40,6 +40,14 @@ public static class Lexer
                     tokens.Add(new Token(
                         TokenKind.Number, line[start..column], new SourceSpan(file, number, start + 1, column - start)));
                 }
+                else if (current == '"')
+                {
+                    column = line.IndexOf('"', column + 1) + 1;
+                    tokens.Add(new Token(
+                        TokenKind.Text,
+                        line[(start + 1)..(column - 1)],
+                        new SourceSpan(file, number, start + 1, column - start)));
+                }
                 else
                 {
                     column += line[column..].StartsWith("..", StringComparison.Ordinal) ? 2 : 1;
