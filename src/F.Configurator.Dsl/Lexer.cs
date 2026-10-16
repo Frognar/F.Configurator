@@ -32,6 +32,12 @@ public static class Lexer
                 count++;
             }
 
+            for (; column < line.Length && line[column] != '#' && column < levels.Peek(); levels.Pop())
+            {
+                tokens.Add(new Token(TokenKind.Dedent, "", new SourceSpan(file, number, column + 1, 0)));
+                count++;
+            }
+
             while (column < line.Length)
             {
                 var start = column;
