@@ -20,6 +20,11 @@ public static class Lexer
                     continue;
                 }
 
+                if (line[column] == '#')
+                {
+                    break;
+                }
+
                 var start = column;
                 while (column < line.Length && line[column] != ' ')
                 {
