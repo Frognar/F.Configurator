@@ -34,6 +34,12 @@ public static class Lexer
                         keyword ?? word,
                         new SourceSpan(file, number, start + 1, column - start)));
                 }
+                else if (char.IsAsciiDigit(current))
+                {
+                    column = NumberEnd(line, column);
+                    tokens.Add(new Token(
+                        TokenKind.Number, line[start..column], new SourceSpan(file, number, start + 1, column - start)));
+                }
                 else
                 {
                     column++;
@@ -49,6 +55,25 @@ public static class Lexer
 
         tokens.Add(new Token(TokenKind.End, "", new SourceSpan(file, lines.Length, 1, 0)));
         return new LexResult(tokens, []);
+    }
+
+    // Digits, and a decimal part after a dot followed by a digit.
+    private static int NumberEnd(string line, int column)
+    {
+        column = DigitsEnd(line, column);
+        return column + 1 < line.Length && line[column] == '.' && char.IsAsciiDigit(line[column + 1])
+            ? DigitsEnd(line, column + 1)
+            : column;
+    }
+
+    private static int DigitsEnd(string line, int column)
+    {
+        while (column < line.Length && char.IsAsciiDigit(line[column]))
+        {
+            column++;
+        }
+
+        return column;
     }
 
     // A word is letters, digits and underscores; `tak/nie` is one word, the name of the yes/no type.
