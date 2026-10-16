@@ -42,8 +42,9 @@ public static class Lexer
                 }
                 else
                 {
-                    column++;
-                    tokens.Add(new Token(TokenKind.Operator, line[start..column], new SourceSpan(file, number, start + 1, 1)));
+                    column += line[column..].StartsWith("..", StringComparison.Ordinal) ? 2 : 1;
+                    tokens.Add(new Token(
+                        TokenKind.Operator, line[start..column], new SourceSpan(file, number, start + 1, column - start)));
                 }
             }
 
