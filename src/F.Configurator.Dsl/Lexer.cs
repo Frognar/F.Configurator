@@ -25,7 +25,7 @@ public static class Lexer
             var number = index + 1;
             var count = tokens.Count;
             var column = line.Length - line.TrimStart(' ').Length;
-            if (column < line.Length && line[column] != '#' && column > levels.Peek() && GoesOn(tokens))
+            if (column < line.Length && line[column] != '#' && column > levels.Peek() && (GoesOn(tokens) || GoesOnFromAbove(line, column)))
             {
                 tokens.RemoveAt(tokens.Count - 1);
                 count--;
@@ -122,6 +122,10 @@ public static class Lexer
     private static bool GoesOn(List<Token> tokens) =>
         tokens is [.., { Kind: TokenKind.Operator, Text: "," or "=" or "+" or "-" or "*" or "/" }, { Kind: TokenKind.NewLine }]
             or [.., { Kind: TokenKind.Keyword, Text: "i" or "lub" }, { Kind: TokenKind.NewLine }];
+
+    // A deeper line that starts with `i`, `lub` or an arithmetic operator goes on from the line above.
+    private static bool GoesOnFromAbove(string line, int column) =>
+        line[column] is '+' or '-' or '*' or '/' || line[column..WordEnd(line, column)] is "i" or "lub";
 
     // Digits, and a decimal part after a dot followed by a digit.
     private static int NumberEnd(string line, int column)
