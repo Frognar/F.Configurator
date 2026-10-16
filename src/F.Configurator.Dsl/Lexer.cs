@@ -94,7 +94,7 @@ public static class Lexer
                 {
                     var text = new StringBuilder();
                     column++;
-                    while (line[column] != '"')
+                    while (column < line.Length && line[column] != '"')
                     {
                         if (line[column] == '\\' && column + 1 < line.Length && line[column + 1] == '"')
                         {
@@ -105,7 +105,16 @@ public static class Lexer
                         column++;
                     }
 
-                    column++;
+                    if (column == line.Length)
+                    {
+                        diagnostics.Add(new Diagnostic(
+                            Severity.Error,
+                            new SourceSpan(file, number, start + 1, column - start),
+                            "tekst bez cudzysłowu zamykającego",
+                            null));
+                    }
+
+                    column = Math.Min(column + 1, line.Length);
                     tokens.Add(new Token(
                         TokenKind.Text,
                         text.ToString(),
