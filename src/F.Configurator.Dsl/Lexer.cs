@@ -25,7 +25,12 @@ public static class Lexer
             var number = index + 1;
             var count = tokens.Count;
             var column = line.Length - line.TrimStart(' ').Length;
-            if (column < line.Length && line[column] != '#' && column > levels.Peek())
+            if (column < line.Length && line[column] != '#' && column > levels.Peek() && GoesOn(tokens))
+            {
+                tokens.RemoveAt(tokens.Count - 1);
+                count--;
+            }
+            else if (column < line.Length && line[column] != '#' && column > levels.Peek())
             {
                 levels.Push(column);
                 tokens.Add(new Token(TokenKind.Indent, "", new SourceSpan(file, number, 1, column)));
@@ -112,6 +117,10 @@ public static class Lexer
         tokens.Add(new Token(TokenKind.End, "", new SourceSpan(file, lines.Length, 1, 0)));
         return new LexResult(tokens, []);
     }
+
+    // Grammar 3.1: a long line goes on in the next, deeper line after a comma.
+    private static bool GoesOn(List<Token> tokens) =>
+        tokens is [.., { Kind: TokenKind.Operator, Text: "," }, { Kind: TokenKind.NewLine }];
 
     // Digits, and a decimal part after a dot followed by a digit.
     private static int NumberEnd(string line, int column)
