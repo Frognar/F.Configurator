@@ -15,6 +15,10 @@ public class DeclarationDiagnosticsTests
         "oczekiwano skutku (ukryj, zablokuj, tylko, zabroń, min, maks, krok, długość, znaki, ustaw, domyślnie, błąd, "
         + "ostrzeż, informuj)";
 
+    private const string Takeover = "po „jako” oczekiwano „domyślne”, „zablokowane” albo nazwy cechy";
+
+    private const string Customers = "po „kontrahentów” oczekiwano kontrahentów w cudzysłowie albo „z” i nazwy pliku";
+
     private static IReadOnlyList<Diagnostic> Diagnostics(string source) => ParseFile(source).Diagnostics;
 
     [Fact]
@@ -100,6 +104,32 @@ public class DeclarationDiagnosticsTests
     [InlineData("test \"T\"\n  dane A =", 2, 11, "oczekiwano wyrażenia")]
     [InlineData("test \"T\"\n  oczekuj indeks", 2, 17, "po „indeks” oczekiwano „zawiera” albo „=”")]
     [InlineData("test \"T\"\n  oczekuj niedostępne A", 2, 24, "oczekiwano wyrażenia")]
+    [InlineData("kolekcja K\n  wizualizacja\n    warstwa", 3, 12, "oczekiwano tekstu w cudzysłowie")]
+    [InlineData("kolekcja K\n  wizualizacja\n    warstwa \"a.png\" gdy", 3, 24, "oczekiwano wyrażenia")]
+    [InlineData("kolekcja K\n  wizualizacja\n    warstwa \"a.png\"\n      odbij", 4, 12, "po „odbij” oczekiwano „gdy”")]
+    [InlineData("kolekcja K\n  wizualizacja\n    warstwa \"a.png\"\n      tekstura", 4, 15, "oczekiwano nazwy")]
+    [InlineData("powiązanie P\n  z", 2, 4, "oczekiwano nazwy")]
+    [InlineData("powiązanie P\n  z A", 2, 6, "brak „do”")]
+    [InlineData("powiązanie P\n  z A do B\n  proponuj", 3, 11, "po „proponuj” oczekiwano „gdy”")]
+    [InlineData("powiązanie P\n  z A do B\n  przejmij A", 3, 13, "brak „jako”")]
+    [InlineData("powiązanie P\n  z A do B\n  przejmij A jako", 3, 18, Takeover)]
+    [InlineData("cennik C rozszerza", 1, 19, "oczekiwano nazwy")]
+    [InlineData("cennik C\n  baza z", 2, 9, "oczekiwano tekstu w cudzysłowie")]
+    [InlineData("cennik C\n  baza z \"c.csv\" klucz", 2, 23, "oczekiwano nazwy")]
+    [InlineData("cennik C\n  opcje", 2, 8, "brak „z”")]
+    [InlineData("cennik C\n  dopłata D", 2, 12, "oczekiwano tekstu w cudzysłowie")]
+    [InlineData("cennik C\n  dopłata D \"d\"\n    kwota", 3, 10, "oczekiwano wyrażenia")]
+    [InlineData("cennik C\n  rabat", 2, 8, "po „rabat” oczekiwano procentu, np. 5%")]
+    [InlineData("cennik C\n  zaokrąglij", 2, 13, "po „zaokrąglij” oczekiwano liczby")]
+    [InlineData("cennik C\n  nadpisz D", 2, 12, "brak „kwota”")]
+    [InlineData("cennik C\n  wyłącz", 2, 9, "oczekiwano nazwy")]
+    [InlineData("przypisz", 1, 9, "oczekiwano nazwy")]
+    [InlineData("przypisz C", 1, 11, "brak „do”")]
+    [InlineData("przypisz C do", 1, 14, "oczekiwano „kontrahenta” albo „kontrahentów”")]
+    [InlineData("przypisz C do kontrahenta", 1, 26, "oczekiwano tekstu w cudzysłowie")]
+    [InlineData("przypisz C do kontrahentów", 1, 27, Customers)]
+    [InlineData("przypisz C do kontrahentów z", 1, 29, "oczekiwano tekstu w cudzysłowie")]
+    [InlineData("przypisz C do kontrahentów [\"A\",", 1, 33, "oczekiwano tekstu w cudzysłowie")]
     public void Line_cut_off_is_an_error(string source, int line, int column, string message)
     {
         Assert.Equal([Error(At(line, column, 0), message)], Diagnostics(source));
@@ -286,5 +316,110 @@ public class DeclarationDiagnosticsTests
     public void Expectation_without_equals_is_an_error()
     {
         Assert.Equal([Error(At(2, 13, 1), "brak „=”")], Diagnostics("test \"T\"\n  oczekuj A 1"));
+    }
+
+    [Fact]
+    public void Visualization_outside_a_collection_is_an_error()
+    {
+        Assert.Equal(
+            [Error(At(1, 1, 12), "„wizualizacja” może stać tylko w kolekcji")],
+            Diagnostics("wizualizacja\n  warstwa \"a.png\""));
+    }
+
+    [Fact]
+    public void Second_visualization_of_a_collection_is_an_error()
+    {
+        const string Source = """
+            kolekcja K
+              wizualizacja
+                warstwa "a.png"
+              wizualizacja
+                warstwa "b.png"
+            """;
+
+        Assert.Equal([Error(At(4, 3, 12), "kolekcja ma już wizualizację")], Diagnostics(Source));
+    }
+
+    [Fact]
+    public void Unknown_line_in_a_visualization_is_an_error()
+    {
+        const string Source = """
+            kolekcja K
+              wizualizacja
+                obraz "a.png"
+            """;
+
+        Assert.Equal([Error(At(3, 5, 5), "oczekiwano „warstwa”")], Diagnostics(Source));
+    }
+
+    [Fact]
+    public void Unknown_line_in_a_layer_is_an_error()
+    {
+        const string Source = """
+            kolekcja K
+              wizualizacja
+                warstwa "a.png"
+                  obróć gdy A = B
+            """;
+
+        Assert.Equal([Error(At(4, 7, 5), "oczekiwano „tekstura” albo „odbij gdy”")], Diagnostics(Source));
+    }
+
+    [Fact]
+    public void Link_without_its_collections_is_an_error()
+    {
+        Assert.Equal(
+            [Error(At(1, 12, 1), "powiązanie bez „z … do …”")],
+            Diagnostics("powiązanie P\n  przejmij A jako domyślne"));
+    }
+
+    [Fact]
+    public void Unknown_line_in_a_link_is_an_error()
+    {
+        Assert.Equal(
+            [Error(At(3, 3, 6), "oczekiwano „z”, „proponuj” albo „przejmij”")],
+            Diagnostics("powiązanie P\n  z A do B\n  kopiuj A"));
+    }
+
+    [Fact]
+    public void Surcharge_without_an_amount_is_an_error()
+    {
+        const string Source = """
+            cennik C
+              dopłata D "d"
+                gdy A = B
+            """;
+
+        Assert.Equal([Error(At(2, 11, 1), "dopłata bez „kwota”")], Diagnostics(Source));
+    }
+
+    [Fact]
+    public void Unknown_line_in_a_surcharge_is_an_error()
+    {
+        const string Source = """
+            cennik C
+              dopłata D "d"
+                cena 5
+            """;
+
+        Assert.Equal([Error(At(3, 5, 4), "oczekiwano „gdy” albo „kwota”")], Diagnostics(Source));
+    }
+
+    [Fact]
+    public void Discount_is_given_in_percent()
+    {
+        Assert.Equal([Error(At(2, 10, 0), "po „rabat” oczekiwano procentu, np. 5%")], Diagnostics("cennik C\n  rabat 5"));
+    }
+
+    [Fact]
+    public void Unknown_line_in_a_base_price_is_an_error()
+    {
+        const string Source = """
+            cennik C
+              baza
+                wartości Kwota
+            """;
+
+        Assert.Equal([Error(At(3, 5, 8), "oczekiwano „klucz” albo wiersza tabeli")], Diagnostics(Source));
     }
 }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using F.Configurator.Dsl.Syntax;
 
 namespace F.Configurator.Dsl.Tests;
@@ -54,6 +55,7 @@ internal static class Declarations
                 collection.Shared.Count == 0 ? null : Group(["cechy wspólne", .. collection.Shared]),
                 collection.Own.Count == 0 ? null : Group(["cechy własne", .. collection.Own]),
                 collection.Index is null ? null : $"(indeks {Parsing.Print(collection.Index)})",
+                collection.Visualization is null ? null : Group(["wizualizacja", .. collection.Visualization.Select(Print)]),
                 .. collection.Declarations.Select(Print),
             ]),
             RuleSyntax rule => Group(
@@ -71,8 +73,70 @@ internal static class Declarations
                 test.Data.Count == 0 ? null : Group(["dane", .. test.Data.Select(Print)]),
                 test.Expectations.Count == 0 ? null : Group(["oczekuj", .. test.Expectations.Select(Print)]),
             ]),
+            LinkSyntax link => Group(
+            [
+                "powiązanie", link.Name,
+                $"(z {link.From} do {link.To})",
+                link.ProposeWhen is null ? null : $"(proponuj {Parsing.Print(link.ProposeWhen)})",
+                .. link.Takeovers.Select(Print),
+            ]),
+            PriceListSyntax priceList => Group(
+            [
+                "cennik", priceList.Name,
+                priceList.Extends is null ? null : $"(rozszerza {priceList.Extends})",
+                priceList.IsDefault ? "domyślny" : null,
+                .. priceList.Properties.Select(Print),
+                priceList.Base is null ? null : Print(priceList.Base),
+                .. priceList.OptionFiles.Select(file => $"(opcje z {Quote(file)})"),
+                .. priceList.Surcharges.Select(Print),
+                priceList.Disabled.Count == 0 ? null : Group(["wyłączone", .. priceList.Disabled]),
+                .. priceList.Overrides.Select(@override => $"(nadpisz {@override.Id} (kwota {Parsing.Print(@override.Amount)}))"),
+                priceList.Adjustments.Count == 0 ? null : Group(["modyfikatory", .. priceList.Adjustments.Select(Print)]),
+                .. priceList.Declarations.Select(Print),
+            ]),
+            PriceListAssignmentSyntax assignment => Group(
+            [
+                "przypisz", assignment.Name,
+                assignment.CustomersFile is null
+                    ? Group(["kontrahenci", .. assignment.Customers.Select(Quote)])
+                    : $"(kontrahenci z {Quote(assignment.CustomersFile)})",
+            ]),
             _ => throw new ArgumentOutOfRangeException(nameof(declaration), declaration, null),
         };
+
+    private static string Print(LayerSyntax layer) =>
+        Group(
+        [
+            "warstwa", Quote(layer.Image),
+            layer.When is null ? null : $"(gdy {Parsing.Print(layer.When)})",
+            layer.Texture is null ? null : $"(tekstura {Parsing.Print(layer.Texture)})",
+            layer.MirrorWhen is null ? null : $"(odbij gdy {Parsing.Print(layer.MirrorWhen)})",
+        ]);
+
+    private static string Print(TakeoverSyntax takeover) =>
+        Group(["przejmij", .. takeover.Features.Select(Parsing.Print), "jako", takeover.As]);
+
+    // Printed as `cena bazowa`, so that a property called `baza` could not look the same.
+    private static string Print(BaseSyntax @base) =>
+        Group(
+        [
+            "cena bazowa", Quote(@base.File),
+            @base.Keys.Count == 0 ? null : Group(["klucz", .. @base.Keys.Select(Parsing.Print)]),
+            .. @base.Rows.Select(Print),
+        ]);
+
+    private static string Print(SurchargeSyntax surcharge) =>
+        Group(
+        [
+            "dopłata", surcharge.Id, Quote(surcharge.Label),
+            surcharge.Condition is null ? null : $"(warunek {Parsing.Print(surcharge.Condition)})",
+            $"(kwota {Parsing.Print(surcharge.Amount)})",
+        ]);
+
+    private static string Print(AdjustmentSyntax adjustment) =>
+        adjustment.Kind == "zaokrąglij"
+            ? $"(zaokrąglij {adjustment.Value.ToString(CultureInfo.InvariantCulture)})"
+            : $"({adjustment.Kind} {adjustment.Value.ToString(CultureInfo.InvariantCulture)}%)";
 
     private static string Print(CollectionFeatureSyntax feature) =>
         feature.VisibleWhen is null ? feature.Name : $"({feature.Name} widoczna {Parsing.Print(feature.VisibleWhen)})";
