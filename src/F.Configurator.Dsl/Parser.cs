@@ -22,7 +22,19 @@ public static class Parser
 
         private ExpressionSyntax Or() => LeftToRight(And, "lub");
 
-        private ExpressionSyntax And() => LeftToRight(Comparison, "i");
+        private ExpressionSyntax And() => LeftToRight(Not, "i");
+
+        private ExpressionSyntax Not()
+        {
+            if (Current is not { Kind: TokenKind.Keyword, Text: "nie" })
+            {
+                return Comparison();
+            }
+
+            var not = Next();
+            var operand = Not();
+            return new UnarySyntax("nie", operand, Cover(not.Span, operand.Span));
+        }
 
         private ExpressionSyntax Comparison()
         {
