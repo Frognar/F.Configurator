@@ -18,7 +18,21 @@ public static class Parser
 
         private Token Current => tokens[_position];
 
-        public ExpressionSyntax Expression() => Or();
+        public ExpressionSyntax Expression()
+        {
+            if (Current is not { Kind: TokenKind.Keyword, Text: "jeśli" })
+            {
+                return Or();
+            }
+
+            var @if = Next();
+            var condition = Expression();
+            _position++;
+            var then = Expression();
+            _position++;
+            var otherwise = Expression();
+            return new ConditionalSyntax(condition, then, otherwise, Cover(@if.Span, otherwise.Span));
+        }
 
         private ExpressionSyntax Or() => LeftToRight(And, "lub");
 
