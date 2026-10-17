@@ -22,7 +22,19 @@ public static class Parser
 
         private ExpressionSyntax Additive() => LeftToRight(Multiplicative, "+", "-");
 
-        private ExpressionSyntax Multiplicative() => LeftToRight(Postfix, "*", "/");
+        private ExpressionSyntax Multiplicative() => LeftToRight(Negation, "*", "/");
+
+        private ExpressionSyntax Negation()
+        {
+            if (Current is not { Kind: TokenKind.Operator, Text: "-" })
+            {
+                return Postfix();
+            }
+
+            var minus = Next();
+            var operand = Negation();
+            return new UnarySyntax("-", operand, Cover(minus.Span, operand.Span));
+        }
 
         private ExpressionSyntax LeftToRight(Func<ExpressionSyntax> operand, params string[] operators)
         {
