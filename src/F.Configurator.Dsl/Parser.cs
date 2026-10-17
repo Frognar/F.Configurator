@@ -19,6 +19,8 @@ public static class Parser
         }
     }
 
+    public static ParseResult<FileSyntax> ParseFile(string file, string source) => throw new NotImplementedException();
+
     // Grammar 6.3: the built-in functions.
     private static readonly string[] Functions =
         ["domyślna", "wybrana", "dopełnij", "zaokrąglij", "min", "maks", "długość"];
