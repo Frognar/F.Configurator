@@ -49,7 +49,7 @@ public static partial class Parser
             }
 
             _position++;
-            return new FeatureSyntax(name.Text, type, [], [], [], [], name.Span);
+            return new FeatureSyntax(name.Text, type, Block(Property), [], [], [], name.Span);
         }
 
         // The lines one level deeper than the line above.
