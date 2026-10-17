@@ -60,6 +60,8 @@ public static partial class Parser
                 "wyliczana" => Computed(),
                 "tabela" => Table(),
                 "kontekst" => Context(),
+                "kolekcja" => Collection(),
+                "reguła" => Rule(),
                 _ => throw new SyntaxError(keyword.Span, "oczekiwano deklaracji"),
             };
         }
