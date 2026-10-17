@@ -3,7 +3,7 @@ using F.Configurator.Dsl.Syntax;
 
 namespace F.Configurator.Dsl;
 
-public static class Parser
+public static partial class Parser
 {
     public static ParseResult<ExpressionSyntax> ParseExpression(string file, string source)
     {
@@ -19,17 +19,11 @@ public static class Parser
         }
     }
 
-    public static ParseResult<FileSyntax> ParseFile(string file, string source)
-    {
-        var lexed = Lexer.Tokenize(file, source);
-        return new ParseResult<FileSyntax>(new FileSyntax([]), lexed.Diagnostics);
-    }
-
     // Grammar 6.3: the built-in functions.
     private static readonly string[] Functions =
         ["domyślna", "wybrana", "dopełnij", "zaokrąglij", "min", "maks", "długość"];
 
-    private sealed class Reader(IReadOnlyList<Token> tokens)
+    private sealed partial class Reader(IReadOnlyList<Token> tokens)
     {
         private int _position;
 
