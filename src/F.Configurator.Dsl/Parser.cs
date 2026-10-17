@@ -53,6 +53,13 @@ public static class Parser
         private ExpressionSyntax Primary()
         {
             var token = Next();
+            if (token is { Kind: TokenKind.Operator, Text: "(" })
+            {
+                var inner = Expression();
+                _position++;
+                return inner;
+            }
+
             if (token.Kind == TokenKind.Name && Current is { Kind: TokenKind.Operator, Text: "[" })
             {
                 _position++;
