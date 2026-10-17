@@ -12,6 +12,7 @@ public static class Parser
         ExpressionSyntax syntax = token.Kind switch
         {
             TokenKind.Text => new TextSyntax(token.Text, token.Span),
+            TokenKind.Name => new NameSyntax(token.Text, token.Span),
             _ => new NumberSyntax(decimal.Parse(token.Text, CultureInfo.InvariantCulture), token.Span),
         };
         return new ParseResult<ExpressionSyntax>(syntax, lexed.Diagnostics);
