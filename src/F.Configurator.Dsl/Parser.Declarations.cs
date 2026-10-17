@@ -19,19 +19,35 @@ public static partial class Parser
         public FileSyntax File()
         {
             List<DeclarationSyntax> declarations = [];
-            try
+            while (Current.Kind != TokenKind.End)
             {
-                while (Current.Kind != TokenKind.End)
+                try
                 {
                     declarations.Add(Declaration());
                 }
-            }
-            catch (SyntaxError error)
-            {
-                Errors.Add(error.Diagnostic);
+                catch (SyntaxError error)
+                {
+                    Errors.Add(error.Diagnostic);
+                    SkipToNextDeclaration();
+                }
             }
 
             return new FileSyntax(declarations);
+        }
+
+        // Every declaration starts a line without indentation.
+        private void SkipToNextDeclaration()
+        {
+            while (Current.Kind != TokenKind.End)
+            {
+                _position++;
+                if (tokens[_position - 1].Kind is TokenKind.NewLine or TokenKind.Dedent
+                    && Current.Kind is TokenKind.Name or TokenKind.Keyword
+                    && Current.Span.Column == 1)
+                {
+                    return;
+                }
+            }
         }
 
         private DeclarationSyntax Declaration()
@@ -50,22 +66,25 @@ public static partial class Parser
 
         private CatalogSyntax Catalog()
         {
-            var title = Next();
-            _position++;
+            var title = Text();
+            EndOfLine();
             return new CatalogSyntax(title.Text, Block(Property), title.Span);
         }
 
         private FeatureSyntax Feature()
         {
             var name = Name();
-            _position++;
-            var type = Next().Text;
+            Expect(":", "brak „:”");
+            var type = Current is { Kind: TokenKind.Keyword, Text: "wybór" or "wielokrotny" or "tak/nie" or "liczba" or "tekst" }
+                ? Next().Text
+                : throw new SyntaxError(
+                    Current.Span, "oczekiwano typu cechy (wybór, wielokrotny wybór, tak/nie, liczba, tekst)");
             if (type == "wielokrotny")
             {
-                type = $"{type} {Next().Text}";
+                type = $"{type} {Expect("wybór", "po „wielokrotny” oczekiwano „wybór”").Text}";
             }
 
-            _position++;
+            EndOfLine();
             List<PropertySyntax> properties = [];
             List<AttributeSyntax> attributes = [];
             List<string> optionFiles = [];
@@ -78,9 +97,10 @@ public static partial class Parser
                 }
                 else if (Current is { Kind: TokenKind.Keyword, Text: "opcje" })
                 {
-                    _position += 2;
-                    optionFiles.Add(Next().Text);
                     _position++;
+                    Expect("z", "brak „z”");
+                    optionFiles.Add(Text().Text);
+                    EndOfLine();
                 }
                 else if (Current is { Kind: TokenKind.Keyword, Text: "opcja" })
                 {
@@ -94,21 +114,46 @@ public static partial class Parser
             return new FeatureSyntax(name.Text, type, properties, attributes, optionFiles, options, name.Span);
         }
 
+        private AttributeSyntax Attribute()
+        {
+            _position++;
+            var name = Name();
+            Expect(":", "brak „:”");
+            var type = Current is { Kind: TokenKind.Keyword, Text: "tekst" or "liczba" or "tak/nie" }
+                ? Next()
+                : throw new SyntaxError(Current.Span, "oczekiwano typu atrybutu (tekst, liczba, tak/nie)");
+            ExpressionSyntax? @default = null;
+            if (Current is { Kind: TokenKind.Keyword, Text: "domyślnie" })
+            {
+                _position++;
+                @default = Expression();
+            }
+
+            EndOfLine();
+            return new AttributeSyntax(name.Text, type.Text, @default, name.Span);
+        }
+
         private OptionSyntax Option()
         {
             _position++;
-            var id = Next();
+            var id = Current.Kind switch
+            {
+                TokenKind.Name or TokenKind.Text => Next(),
+                TokenKind.Number => throw new SyntaxError(
+                    Current.Span, "identyfikator opcji zaczynający się od cyfry wpisz w cudzysłowie", $"\"{Current.Text}\""),
+                _ => throw new SyntaxError(Current.Span, "oczekiwano identyfikatora opcji"),
+            };
             var label = Current.Kind == TokenKind.Text ? Next().Text : null;
-            _position++;
+            EndOfLine();
             return new OptionSyntax(id.Text, label, Block(Property), id.Span);
         }
 
         private ComputedSyntax Computed()
         {
             var name = Name();
-            _position++;
+            Expect("=", "brak „=”");
             var expression = Expression();
-            _position++;
+            EndOfLine();
             return new ComputedSyntax(name.Text, expression, name.Span);
         }
 
@@ -119,10 +164,10 @@ public static partial class Parser
             if (Current is { Kind: TokenKind.Keyword, Text: "z" })
             {
                 _position++;
-                file = Next().Text;
+                file = Text().Text;
             }
 
-            _position++;
+            EndOfLine();
             List<string> keys = [];
             List<string> values = [];
             string? allowed = null;
@@ -138,14 +183,14 @@ public static partial class Parser
                 var word = Next().Text;
                 if (word == "dozwolone")
                 {
-                    allowed = Next().Text;
+                    allowed = Name().Text;
                 }
                 else
                 {
                     (word == "klucz" ? keys : values).AddRange(Names());
                 }
 
-                _position++;
+                EndOfLine();
             });
             return new TableSyntax(name.Text, file, keys, values, allowed, rows, name.Span);
         }
@@ -158,58 +203,21 @@ public static partial class Parser
             while (Current.Kind != TokenKind.NewLine)
             {
                 cells.Add(Cell());
-                _position++;
+                Expect("|", "brak „|” na końcu wiersza tabeli");
             }
 
-            _position++;
+            EndOfLine();
             return new TableRowSyntax(cells, start.Span);
         }
 
         // An empty cell, or values separated by commas.
-        private List<ExpressionSyntax> Cell()
-        {
-            List<ExpressionSyntax> values = [];
-            if (Current is { Kind: TokenKind.Operator, Text: "|" })
-            {
-                return values;
-            }
-
-            values.Add(Expression());
-            while (Current is { Kind: TokenKind.Operator, Text: "," })
-            {
-                _position++;
-                values.Add(Expression());
-            }
-
-            return values;
-        }
-
-        private Token Name() =>
-            Current.Kind switch
-            {
-                TokenKind.Name => Next(),
-                TokenKind.Keyword => throw new SyntaxError(
-                    Current.Span, $"„{Current.Text}” to słowo kluczowe i nie może być nazwą"),
-                _ => throw new SyntaxError(Current.Span, "oczekiwano nazwy"),
-            };
-
-        // Names separated by commas.
-        private List<string> Names()
-        {
-            List<string> names = [Next().Text];
-            while (Current is { Kind: TokenKind.Operator, Text: "," })
-            {
-                _position++;
-                names.Add(Next().Text);
-            }
-
-            return names;
-        }
+        private List<ExpressionSyntax> Cell() =>
+            Current is { Kind: TokenKind.Operator, Text: "|" } ? [] : SeparatedByCommas(Expression);
 
         private ContextSyntax Context()
         {
             var name = Name();
-            _position++;
+            EndOfLine();
             List<AttributeSyntax> attributes = [];
             string? valuesFile = null;
             Block(() =>
@@ -220,28 +228,12 @@ public static partial class Parser
                     return;
                 }
 
-                _position += 2;
-                valuesFile = Next().Text;
                 _position++;
+                Expect("z", "brak „z”");
+                valuesFile = Text().Text;
+                EndOfLine();
             });
             return new ContextSyntax(name.Text, attributes, valuesFile, name.Span);
-        }
-
-        private AttributeSyntax Attribute()
-        {
-            _position++;
-            var name = Next();
-            _position++;
-            var type = Next();
-            ExpressionSyntax? @default = null;
-            if (Current is { Kind: TokenKind.Keyword, Text: "domyślnie" })
-            {
-                _position++;
-                @default = Expression();
-            }
-
-            _position++;
-            return new AttributeSyntax(name.Text, type.Text, @default, name.Span);
         }
 
         // The lines one level deeper than the line above.
@@ -271,14 +263,13 @@ public static partial class Parser
         private PropertySyntax Property()
         {
             var name = Next();
-            List<ExpressionSyntax> values = [Value()];
-            while (Current is { Kind: TokenKind.Operator, Text: "," })
+            if (Current.Kind == TokenKind.NewLine)
             {
-                _position++;
-                values.Add(Value());
+                throw new SyntaxError(Current.Span, $"po „{name.Text}” oczekiwano wartości");
             }
 
-            _position++;
+            var values = SeparatedByCommas(Value);
+            EndOfLine();
             return new PropertySyntax(name.Text, values, name.Span);
         }
 
@@ -293,5 +284,31 @@ public static partial class Parser
 
             return Expression();
         }
+
+        private void EndOfLine()
+        {
+            if (Current.Kind != TokenKind.NewLine)
+            {
+                throw new SyntaxError(Current.Span, $"nieoczekiwane „{Current.Text}”");
+            }
+
+            _position++;
+        }
+
+        private Token Text() =>
+            Current.Kind == TokenKind.Text
+                ? Next()
+                : throw new SyntaxError(Current.Span, "oczekiwano tekstu w cudzysłowie");
+
+        private Token Name() =>
+            Current.Kind switch
+            {
+                TokenKind.Name => Next(),
+                TokenKind.Keyword => throw new SyntaxError(
+                    Current.Span, $"„{Current.Text}” to słowo kluczowe i nie może być nazwą"),
+                _ => throw new SyntaxError(Current.Span, "oczekiwano nazwy"),
+            };
+
+        private List<string> Names() => SeparatedByCommas(() => Name().Text);
     }
 }
