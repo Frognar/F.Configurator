@@ -22,7 +22,7 @@ public static class Parser
 
         private ExpressionSyntax Comparison()
         {
-            var left = Additive();
+            var left = Range();
             if (Current is not ({ Kind: TokenKind.Operator, Text: "=" or "≠" or "<" or "<=" or ">" or ">=" }
                 or { Kind: TokenKind.Keyword, Text: "w" }) && !NotIn())
             {
@@ -36,8 +36,21 @@ public static class Parser
                 @operator = "nie w";
             }
 
-            var right = Additive();
+            var right = Range();
             return new BinarySyntax(@operator, left, right, Cover(left.Span, right.Span));
+        }
+
+        private ExpressionSyntax Range()
+        {
+            var min = Additive();
+            if (Current is not { Kind: TokenKind.Operator, Text: ".." })
+            {
+                return min;
+            }
+
+            _position++;
+            var max = Additive();
+            return new BinarySyntax("..", min, max, Cover(min.Span, max.Span));
         }
 
         private bool NotIn() =>
