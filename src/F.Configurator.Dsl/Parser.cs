@@ -18,7 +18,11 @@ public static class Parser
 
         private Token Current => tokens[_position];
 
-        public ExpressionSyntax Expression() => Comparison();
+        public ExpressionSyntax Expression() => Or();
+
+        private ExpressionSyntax Or() => LeftToRight(And, "lub");
+
+        private ExpressionSyntax And() => LeftToRight(Comparison, "i");
 
         private ExpressionSyntax Comparison()
         {
@@ -75,7 +79,7 @@ public static class Parser
         private ExpressionSyntax LeftToRight(Func<ExpressionSyntax> operand, params string[] operators)
         {
             var syntax = operand();
-            while (Current.Kind == TokenKind.Operator && operators.Contains(Current.Text))
+            while (Current.Kind is TokenKind.Operator or TokenKind.Keyword && operators.Contains(Current.Text))
             {
                 var @operator = Next().Text;
                 var right = operand();
