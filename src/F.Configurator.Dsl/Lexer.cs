@@ -45,7 +45,9 @@ public static class Lexer
     // Grammar 3.1: a deeper line either goes on from the line above or opens a block; a shallower one closes blocks.
     private static void Indentation(Output output, Stack<int> levels, Line line, int indentation)
     {
-        if (indentation > levels.Peek() && (GoesOn(output.Tokens) || GoesOnFromAbove(line.Text, indentation)))
+        if (output.Tokens.Count > 0
+            && ((indentation > levels.Peek() && GoesOn(output.Tokens))
+                || (indentation >= levels.Peek() && GoesOnFromAbove(line.Text, indentation))))
         {
             output.Tokens.RemoveAt(output.Tokens.Count - 1);
         }
@@ -156,7 +158,8 @@ public static class Lexer
         tokens is [.., { Kind: TokenKind.Operator, Text: "," or "=" or "+" or "-" or "*" or "/" }, { Kind: TokenKind.NewLine }]
             or [.., { Kind: TokenKind.Keyword, Text: "i" or "lub" }, { Kind: TokenKind.NewLine }];
 
-    // A deeper line that starts with `i`, `lub`, `to`, `inaczej` or an arithmetic operator goes on from the line above.
+    // A line not shallower than the block that starts with `i`, `lub`, `to`, `inaczej` or an arithmetic operator goes
+    // on from the line above.
     private static bool GoesOnFromAbove(string text, int column) =>
         text[column] is '+' or '-' or '*' or '/'
         || text[column..WordEnd(text, column)] is "i" or "lub" or "to" or "inaczej";

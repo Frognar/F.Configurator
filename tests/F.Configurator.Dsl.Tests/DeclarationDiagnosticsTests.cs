@@ -11,6 +11,10 @@ public class DeclarationDiagnosticsTests
     private static Diagnostic Error(SourceSpan span, string message, string? hint = null) =>
         new(Severity.Error, span, message, hint);
 
+    private const string Effects =
+        "oczekiwano skutku (ukryj, zablokuj, tylko, zabroń, min, maks, krok, długość, znaki, ustaw, domyślnie, błąd, "
+        + "ostrzeż, informuj)";
+
     private static IReadOnlyList<Diagnostic> Diagnostics(string source) => ParseFile(source).Diagnostics;
 
     [Fact]
@@ -82,6 +86,20 @@ public class DeclarationDiagnosticsTests
     [InlineData("tabela T\n  | PL", 2, 7, "brak „|” na końcu wiersza tabeli")]
     [InlineData("kontekst K\n  wartości", 2, 11, "brak „z”")]
     [InlineData("kontekst K\n  wartości z", 2, 13, "oczekiwano tekstu w cudzysłowie")]
+    [InlineData("kolekcja K\n  etap", 2, 7, "oczekiwano tekstu w cudzysłowie")]
+    [InlineData("kolekcja K\n  cechy", 2, 8, "oczekiwano nazwy")]
+    [InlineData("kolekcja K\n  cechy A widoczna", 2, 19, "po „widoczna” oczekiwano „gdy”")]
+    [InlineData("kolekcja K\n  komponent C", 2, 14, "brak „:”")]
+    [InlineData("kolekcja K\n  indeks", 2, 1, "pod „indeks” oczekiwano wyrażenia we wciętych wierszach")]
+    [InlineData("reguła R\n  gdy", 2, 6, "oczekiwano wyrażenia")]
+    [InlineData("reguła R\n  wtedy", 2, 8, Effects)]
+    [InlineData("reguła R\n  wtedy ukryj A\n  przy", 3, 7, "po „przy” oczekiwano „naruszeniu”")]
+    [InlineData("reguła R\n  wtedy ukryj A\n  przy naruszeniu koryguj", 3, 26, "oczekiwano tekstu w cudzysłowie")]
+    [InlineData("test", 1, 5, "oczekiwano tekstu w cudzysłowie")]
+    [InlineData("test \"T\"\n  kolekcja", 2, 11, "oczekiwano nazwy")]
+    [InlineData("test \"T\"\n  dane A =", 2, 11, "oczekiwano wyrażenia")]
+    [InlineData("test \"T\"\n  oczekuj indeks", 2, 17, "po „indeks” oczekiwano „zawiera” albo „=”")]
+    [InlineData("test \"T\"\n  oczekuj niedostępne A", 2, 24, "oczekiwano wyrażenia")]
     public void Line_cut_off_is_an_error(string source, int line, int column, string message)
     {
         Assert.Equal([Error(At(line, column, 0), message)], Diagnostics(source));
@@ -170,5 +188,103 @@ public class DeclarationDiagnosticsTests
 
         Assert.Equal([new Diagnostic(Severity.Error, At(2, 8, 3), "liczba „0,5” – użyj kropki", "0.5")], result.Diagnostics);
         Assert.IsType<FeatureSyntax>(Assert.Single(result.Syntax!.Declarations));
+    }
+
+    [Fact]
+    public void Unknown_effect_is_an_error()
+    {
+        Assert.Equal([Error(At(2, 9, 5), Effects)], Diagnostics("reguła R\n  wtedy pokaż A"));
+    }
+
+    // The problem shows only at the end of the rule; the next declaration is still read.
+    [Fact]
+    public void Rule_without_effects_is_an_error()
+    {
+        const string Source = """
+            reguła R
+              gdy A = B
+            reguła S
+              wtedy ukryj A
+            """;
+
+        var result = ParseFile(Source);
+
+        Assert.Equal([Error(At(1, 8, 1), "reguła bez „wtedy”")], result.Diagnostics);
+        Assert.Equal(["S"], result.Syntax!.Declarations.Select(declaration => declaration.Name));
+    }
+
+    [Fact]
+    public void Limit_without_equals_is_an_error()
+    {
+        Assert.Equal([Error(At(2, 16, 1), "brak „=”")], Diagnostics("reguła R\n  wtedy maks A 5"));
+    }
+
+    [Fact]
+    public void Options_effect_needs_a_list_or_a_table()
+    {
+        Assert.Equal(
+            [Error(At(2, 21, 2), "oczekiwano listy opcji w nawiasach [ ] albo „z” i nazwy tabeli")],
+            Diagnostics("reguła R\n  wtedy tylko Norma PL"));
+    }
+
+    [Fact]
+    public void Unknown_reaction_is_an_error()
+    {
+        const string Source = """
+            reguła R
+              wtedy ukryj A
+              przy naruszeniu popraw "x"
+            """;
+
+        Assert.Equal([Error(At(3, 19, 6), "oczekiwano reakcji (koryguj, błąd, ostrzeż)")], Diagnostics(Source));
+    }
+
+    [Fact]
+    public void Index_outside_a_collection_is_an_error()
+    {
+        Assert.Equal([Error(At(1, 1, 6), "„indeks” może stać tylko w kolekcji")], Diagnostics("indeks\n  A + B"));
+    }
+
+    [Fact]
+    public void Second_index_of_a_collection_is_an_error()
+    {
+        const string Source = """
+            kolekcja K
+              indeks
+                A
+              indeks
+                B
+            """;
+
+        Assert.Equal([Error(At(4, 3, 6), "kolekcja ma już indeks")], Diagnostics(Source));
+    }
+
+    [Fact]
+    public void Index_is_one_expression_only()
+    {
+        const string Source = """
+            kolekcja K
+              indeks
+                Model + Norma
+                Kolor
+            """;
+
+        Assert.Equal(
+            [Error(At(4, 5, 5), "indeks to jedno wyrażenie, dalszy ciąg zacznij od „+”")],
+            Diagnostics(Source));
+    }
+
+    [Fact]
+    public void Unknown_line_in_a_test_is_an_error()
+    {
+        Assert.Equal(
+            [Error(At(2, 3, 7), "oczekiwano „kolekcja”, „dane” albo „oczekuj”")],
+            Diagnostics("test \"T\"\n  sprawdź A = 1"));
+    }
+
+    [Fact]
+    public void Expectation_without_equals_is_an_error()
+    {
+        Assert.Equal([Error(At(2, 13, 1), "brak „=”")], Diagnostics("test \"T\"\n  oczekuj A 1"));
     }
 }
