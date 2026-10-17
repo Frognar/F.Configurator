@@ -23,7 +23,8 @@ public static class Parser
         private ExpressionSyntax Comparison()
         {
             var left = Additive();
-            if (Current is not { Kind: TokenKind.Operator, Text: "=" or "≠" or "<" or "<=" or ">" or ">=" })
+            if (Current is not ({ Kind: TokenKind.Operator, Text: "=" or "≠" or "<" or "<=" or ">" or ">=" }
+                or { Kind: TokenKind.Keyword, Text: "w" }))
             {
                 return left;
             }
@@ -83,6 +84,19 @@ public static class Parser
                 var inner = Expression();
                 var close = Next();
                 return inner with { Span = Cover(token.Span, close.Span) };
+            }
+
+            if (token is { Kind: TokenKind.Operator, Text: "[" })
+            {
+                List<ExpressionSyntax> items = [Expression()];
+                while (Current is { Kind: TokenKind.Operator, Text: "," })
+                {
+                    _position++;
+                    items.Add(Expression());
+                }
+
+                var close = Next();
+                return new ListSyntax(items, Cover(token.Span, close.Span));
             }
 
             if (token.Kind == TokenKind.Name && Current is { Kind: TokenKind.Operator, Text: "[" })
