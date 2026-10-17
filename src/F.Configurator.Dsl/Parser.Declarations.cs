@@ -42,9 +42,14 @@ public static partial class Parser
         {
             var name = Next();
             _position++;
-            var type = Next();
+            var type = Next().Text;
+            if (type == "wielokrotny")
+            {
+                type = $"{type} {Next().Text}";
+            }
+
             _position++;
-            return new FeatureSyntax(name.Text, type.Text, [], [], [], [], name.Span);
+            return new FeatureSyntax(name.Text, type, [], [], [], [], name.Span);
         }
 
         // The lines one level deeper than the line above.
