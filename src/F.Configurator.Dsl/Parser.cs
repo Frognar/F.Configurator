@@ -3,7 +3,7 @@ using F.Configurator.Dsl.Syntax;
 
 namespace F.Configurator.Dsl;
 
-public static class Parser
+public static partial class Parser
 {
     public static ParseResult<ExpressionSyntax> ParseExpression(string file, string source)
     {
@@ -23,7 +23,7 @@ public static class Parser
     private static readonly string[] Functions =
         ["domyślna", "wybrana", "dopełnij", "zaokrąglij", "min", "maks", "długość"];
 
-    private sealed class Reader(IReadOnlyList<Token> tokens)
+    private sealed partial class Reader(IReadOnlyList<Token> tokens)
     {
         private int _position;
 
@@ -198,14 +198,20 @@ public static class Parser
         // Expressions separated by commas, up to the closing bracket.
         private (IReadOnlyList<ExpressionSyntax> Items, Token Close) Separated(string close)
         {
-            List<ExpressionSyntax> items = [Expression()];
+            var items = SeparatedByCommas(Expression);
+            return (items, Expect(close, $"brak „{close}”"));
+        }
+
+        private List<T> SeparatedByCommas<T>(Func<T> item)
+        {
+            List<T> items = [item()];
             while (Current is { Kind: TokenKind.Operator, Text: "," })
             {
                 _position++;
-                items.Add(Expression());
+                items.Add(item());
             }
 
-            return (items, Expect(close, $"brak „{close}”"));
+            return items;
         }
 
         private Token Next() => tokens[_position++];
@@ -221,8 +227,8 @@ public static class Parser
     }
 
     // Stops reading at the first problem; the expression then has no tree.
-    private sealed class SyntaxError(SourceSpan span, string message) : Exception(message)
+    private sealed class SyntaxError(SourceSpan span, string message, string? hint = null) : Exception(message)
     {
-        public Diagnostic Diagnostic { get; } = new(Severity.Error, span, message, null);
+        public Diagnostic Diagnostic { get; } = new(Severity.Error, span, message, hint);
     }
 }
