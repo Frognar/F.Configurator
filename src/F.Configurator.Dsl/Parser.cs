@@ -168,42 +168,21 @@ public static class Parser
 
             if (token is { Kind: TokenKind.Operator, Text: "[" })
             {
-                List<ExpressionSyntax> items = [Expression()];
-                while (Current is { Kind: TokenKind.Operator, Text: "," })
-                {
-                    _position++;
-                    items.Add(Expression());
-                }
-
-                var close = Expect("]", "brak „]”");
+                var (items, close) = Separated("]");
                 return new ListSyntax(items, Cover(token.Span, close.Span));
             }
 
             if (token is { Kind: TokenKind.Keyword, Text: var function } && Functions.Contains(function))
             {
                 Expect("(", $"po „{function}” oczekiwano „(”");
-                List<ExpressionSyntax> arguments = [Expression()];
-                while (Current is { Kind: TokenKind.Operator, Text: "," })
-                {
-                    _position++;
-                    arguments.Add(Expression());
-                }
-
-                var close = Expect(")", "brak „)”");
+                var (arguments, close) = Separated(")");
                 return new CallSyntax(function, arguments, Cover(token.Span, close.Span));
             }
 
             if (token.Kind == TokenKind.Name && Current is { Kind: TokenKind.Operator, Text: "[" })
             {
                 _position++;
-                List<ExpressionSyntax> keys = [Expression()];
-                while (Current is { Kind: TokenKind.Operator, Text: "," })
-                {
-                    _position++;
-                    keys.Add(Expression());
-                }
-
-                var close = Expect("]", "brak „]”");
+                var (keys, close) = Separated("]");
                 return new LookupSyntax(token.Text, keys, Cover(token.Span, close.Span));
             }
 
@@ -214,6 +193,19 @@ public static class Parser
                 TokenKind.Number => new NumberSyntax(decimal.Parse(token.Text, CultureInfo.InvariantCulture), token.Span),
                 _ => throw new SyntaxError(token.Span, "oczekiwano wyrażenia"),
             };
+        }
+
+        // Expressions separated by commas, up to the closing bracket.
+        private (IReadOnlyList<ExpressionSyntax> Items, Token Close) Separated(string close)
+        {
+            List<ExpressionSyntax> items = [Expression()];
+            while (Current is { Kind: TokenKind.Operator, Text: "," })
+            {
+                _position++;
+                items.Add(Expression());
+            }
+
+            return (items, Expect(close, $"brak „{close}”"));
         }
 
         private Token Next() => tokens[_position++];
