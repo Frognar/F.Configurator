@@ -132,7 +132,9 @@ public static class Parser
             while (Current is { Kind: TokenKind.Operator, Text: "." })
             {
                 _position++;
-                var member = Next();
+                var member = Current.Kind == TokenKind.Name
+                    ? Next()
+                    : throw new SyntaxError(Current.Span, "po „.” oczekiwano nazwy");
                 syntax = new MemberSyntax(syntax, member.Text, Cover(syntax.Span, member.Span));
             }
 
