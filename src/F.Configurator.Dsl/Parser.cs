@@ -38,7 +38,7 @@ public static class Parser
 
             var @if = Next();
             var condition = Expression();
-            _position++;
+            Expect("to", "brak „to”");
             var then = Expression();
             _position++;
             var otherwise = Expression();
