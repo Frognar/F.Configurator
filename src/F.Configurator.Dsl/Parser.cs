@@ -11,7 +11,7 @@ public static class Parser
         var reader = new Reader(lexed.Tokens);
         try
         {
-            return new ParseResult<ExpressionSyntax>(reader.Expression(), lexed.Diagnostics);
+            return new ParseResult<ExpressionSyntax>(reader.WholeLine(), lexed.Diagnostics);
         }
         catch (SyntaxError error)
         {
@@ -29,7 +29,16 @@ public static class Parser
 
         private Token Current => tokens[_position];
 
-        public ExpressionSyntax Expression()
+        // An expression is the whole line; anything after it is a mistake.
+        public ExpressionSyntax WholeLine()
+        {
+            var syntax = Expression();
+            return Current.Kind is TokenKind.NewLine or TokenKind.End
+                ? syntax
+                : throw new SyntaxError(Current.Span, $"nieoczekiwane „{Current.Text}” po wyrażeniu");
+        }
+
+        private ExpressionSyntax Expression()
         {
             if (Current is not { Kind: TokenKind.Keyword, Text: "jeśli" })
             {
