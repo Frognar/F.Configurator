@@ -156,9 +156,10 @@ public static class Lexer
         tokens is [.., { Kind: TokenKind.Operator, Text: "," or "=" or "+" or "-" or "*" or "/" }, { Kind: TokenKind.NewLine }]
             or [.., { Kind: TokenKind.Keyword, Text: "i" or "lub" }, { Kind: TokenKind.NewLine }];
 
-    // A deeper line that starts with `i`, `lub` or an arithmetic operator goes on from the line above.
+    // A deeper line that starts with `i`, `lub`, `to`, `inaczej` or an arithmetic operator goes on from the line above.
     private static bool GoesOnFromAbove(string text, int column) =>
-        text[column] is '+' or '-' or '*' or '/' || text[column..WordEnd(text, column)] is "i" or "lub";
+        text[column] is '+' or '-' or '*' or '/'
+        || text[column..WordEnd(text, column)] is "i" or "lub" or "to" or "inaczej";
 
     // Digits, and a decimal part after a dot followed by a digit.
     private static int NumberEnd(string text, int column)

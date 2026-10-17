@@ -8,28 +8,45 @@ public static partial class Parser
     {
         var lexed = Lexer.Tokenize(file, source);
         var reader = new Reader(lexed.Tokens);
-        return new ParseResult<FileSyntax>(reader.File(), lexed.Diagnostics);
+        var syntax = reader.File();
+        return new ParseResult<FileSyntax>(syntax, [.. lexed.Diagnostics, .. reader.Errors]);
     }
 
     private sealed partial class Reader
     {
+        public List<Diagnostic> Errors { get; } = [];
+
         public FileSyntax File()
         {
             List<DeclarationSyntax> declarations = [];
-            while (Current.Kind != TokenKind.End)
+            try
             {
-                declarations.Add(Declaration());
+                while (Current.Kind != TokenKind.End)
+                {
+                    declarations.Add(Declaration());
+                }
+            }
+            catch (SyntaxError error)
+            {
+                Errors.Add(error.Diagnostic);
             }
 
             return new FileSyntax(declarations);
         }
 
-        private DeclarationSyntax Declaration() =>
-            Next().Text switch
+        private DeclarationSyntax Declaration()
+        {
+            var keyword = Next();
+            return keyword.Text switch
             {
+                "katalog" => Catalog(),
                 "cecha" => Feature(),
-                _ => Catalog(),
+                "wyliczana" => Computed(),
+                "tabela" => Table(),
+                "kontekst" => Context(),
+                _ => throw new SyntaxError(keyword.Span, "oczekiwano deklaracji"),
             };
+        }
 
         private CatalogSyntax Catalog()
         {
@@ -40,7 +57,7 @@ public static partial class Parser
 
         private FeatureSyntax Feature()
         {
-            var name = Next();
+            var name = Name();
             _position++;
             var type = Next().Text;
             if (type == "wielokrotny")
@@ -84,6 +101,130 @@ public static partial class Parser
             var label = Current.Kind == TokenKind.Text ? Next().Text : null;
             _position++;
             return new OptionSyntax(id.Text, label, Block(Property), id.Span);
+        }
+
+        private ComputedSyntax Computed()
+        {
+            var name = Name();
+            _position++;
+            var expression = Expression();
+            _position++;
+            return new ComputedSyntax(name.Text, expression, name.Span);
+        }
+
+        private TableSyntax Table()
+        {
+            var name = Name();
+            string? file = null;
+            if (Current is { Kind: TokenKind.Keyword, Text: "z" })
+            {
+                _position++;
+                file = Next().Text;
+            }
+
+            _position++;
+            List<string> keys = [];
+            List<string> values = [];
+            string? allowed = null;
+            List<TableRowSyntax> rows = [];
+            Block(() =>
+            {
+                if (Current is { Kind: TokenKind.Operator, Text: "|" })
+                {
+                    rows.Add(Row());
+                    return;
+                }
+
+                var word = Next().Text;
+                if (word == "dozwolone")
+                {
+                    allowed = Next().Text;
+                }
+                else
+                {
+                    (word == "klucz" ? keys : values).AddRange(Names());
+                }
+
+                _position++;
+            });
+            return new TableSyntax(name.Text, file, keys, values, allowed, rows, name.Span);
+        }
+
+        // `| PL | "80" | 844 |`
+        private TableRowSyntax Row()
+        {
+            var start = Next();
+            List<IReadOnlyList<ExpressionSyntax>> cells = [];
+            while (Current.Kind != TokenKind.NewLine)
+            {
+                cells.Add(Cell());
+                _position++;
+            }
+
+            _position++;
+            return new TableRowSyntax(cells, start.Span);
+        }
+
+        // An empty cell, or values separated by commas.
+        private List<ExpressionSyntax> Cell()
+        {
+            List<ExpressionSyntax> values = [];
+            if (Current is { Kind: TokenKind.Operator, Text: "|" })
+            {
+                return values;
+            }
+
+            values.Add(Expression());
+            while (Current is { Kind: TokenKind.Operator, Text: "," })
+            {
+                _position++;
+                values.Add(Expression());
+            }
+
+            return values;
+        }
+
+        private Token Name() =>
+            Current.Kind switch
+            {
+                TokenKind.Name => Next(),
+                TokenKind.Keyword => throw new SyntaxError(
+                    Current.Span, $"„{Current.Text}” to słowo kluczowe i nie może być nazwą"),
+                _ => throw new SyntaxError(Current.Span, "oczekiwano nazwy"),
+            };
+
+        // Names separated by commas.
+        private List<string> Names()
+        {
+            List<string> names = [Next().Text];
+            while (Current is { Kind: TokenKind.Operator, Text: "," })
+            {
+                _position++;
+                names.Add(Next().Text);
+            }
+
+            return names;
+        }
+
+        private ContextSyntax Context()
+        {
+            var name = Name();
+            _position++;
+            List<AttributeSyntax> attributes = [];
+            string? valuesFile = null;
+            Block(() =>
+            {
+                if (Current is { Kind: TokenKind.Keyword, Text: "atrybut" })
+                {
+                    attributes.Add(Attribute());
+                    return;
+                }
+
+                _position += 2;
+                valuesFile = Next().Text;
+                _position++;
+            });
+            return new ContextSyntax(name.Text, attributes, valuesFile, name.Span);
         }
 
         private AttributeSyntax Attribute()
