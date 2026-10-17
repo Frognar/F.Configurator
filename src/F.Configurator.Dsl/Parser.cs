@@ -12,6 +12,10 @@ public static class Parser
         return new ParseResult<ExpressionSyntax>(reader.Expression(), lexed.Diagnostics);
     }
 
+    // Grammar 6.3: the built-in functions.
+    private static readonly string[] Functions =
+        ["domyślna", "wybrana", "dopełnij", "zaokrąglij", "min", "maks", "długość"];
+
     private sealed class Reader(IReadOnlyList<Token> tokens)
     {
         private int _position;
@@ -149,6 +153,20 @@ public static class Parser
 
                 var close = Next();
                 return new ListSyntax(items, Cover(token.Span, close.Span));
+            }
+
+            if (token is { Kind: TokenKind.Keyword, Text: var function } && Functions.Contains(function))
+            {
+                _position++;
+                List<ExpressionSyntax> arguments = [Expression()];
+                while (Current is { Kind: TokenKind.Operator, Text: "," })
+                {
+                    _position++;
+                    arguments.Add(Expression());
+                }
+
+                var close = Next();
+                return new CallSyntax(function, arguments, Cover(token.Span, close.Span));
             }
 
             if (token.Kind == TokenKind.Name && Current is { Kind: TokenKind.Operator, Text: "[" })
