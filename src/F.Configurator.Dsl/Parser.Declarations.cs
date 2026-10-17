@@ -49,26 +49,82 @@ public static partial class Parser
             }
 
             _position++;
-            return new FeatureSyntax(name.Text, type, Block(Property), [], [], [], name.Span);
+            List<PropertySyntax> properties = [];
+            List<AttributeSyntax> attributes = [];
+            List<string> optionFiles = [];
+            List<OptionSyntax> options = [];
+            Block(() =>
+            {
+                if (Current is { Kind: TokenKind.Keyword, Text: "atrybut" })
+                {
+                    attributes.Add(Attribute());
+                }
+                else if (Current is { Kind: TokenKind.Keyword, Text: "opcje" })
+                {
+                    _position += 2;
+                    optionFiles.Add(Next().Text);
+                    _position++;
+                }
+                else if (Current is { Kind: TokenKind.Keyword, Text: "opcja" })
+                {
+                    options.Add(Option());
+                }
+                else
+                {
+                    properties.Add(Property());
+                }
+            });
+            return new FeatureSyntax(name.Text, type, properties, attributes, optionFiles, options, name.Span);
+        }
+
+        private OptionSyntax Option()
+        {
+            _position++;
+            var id = Next();
+            var label = Current.Kind == TokenKind.Text ? Next().Text : null;
+            _position++;
+            return new OptionSyntax(id.Text, label, Block(Property), id.Span);
+        }
+
+        private AttributeSyntax Attribute()
+        {
+            _position++;
+            var name = Next();
+            _position++;
+            var type = Next();
+            ExpressionSyntax? @default = null;
+            if (Current is { Kind: TokenKind.Keyword, Text: "domyślnie" })
+            {
+                _position++;
+                @default = Expression();
+            }
+
+            _position++;
+            return new AttributeSyntax(name.Text, type.Text, @default, name.Span);
         }
 
         // The lines one level deeper than the line above.
         private List<T> Block<T>(Func<T> line)
         {
             List<T> lines = [];
+            Block(() => lines.Add(line()));
+            return lines;
+        }
+
+        private void Block(Action line)
+        {
             if (Current.Kind != TokenKind.Indent)
             {
-                return lines;
+                return;
             }
 
             _position++;
             while (Current.Kind != TokenKind.Dedent)
             {
-                lines.Add(line());
+                line();
             }
 
             _position++;
-            return lines;
         }
 
         private PropertySyntax Property()
