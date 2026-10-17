@@ -18,7 +18,20 @@ public static class Parser
 
         private Token Current => tokens[_position];
 
-        public ExpressionSyntax Expression() => Additive();
+        public ExpressionSyntax Expression() => Comparison();
+
+        private ExpressionSyntax Comparison()
+        {
+            var left = Additive();
+            if (Current is not { Kind: TokenKind.Operator, Text: "=" or "≠" or "<" or "<=" or ">" or ">=" })
+            {
+                return left;
+            }
+
+            var @operator = Next().Text;
+            var right = Additive();
+            return new BinarySyntax(@operator, left, right, Cover(left.Span, right.Span));
+        }
 
         private ExpressionSyntax Additive() => LeftToRight(Multiplicative, "+", "-");
 
