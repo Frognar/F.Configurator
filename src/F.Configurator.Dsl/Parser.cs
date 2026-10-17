@@ -9,7 +9,14 @@ public static class Parser
     {
         var lexed = Lexer.Tokenize(file, source);
         var reader = new Reader(lexed.Tokens);
-        return new ParseResult<ExpressionSyntax>(reader.Expression(), lexed.Diagnostics);
+        try
+        {
+            return new ParseResult<ExpressionSyntax>(reader.Expression(), lexed.Diagnostics);
+        }
+        catch (SyntaxError error)
+        {
+            return new ParseResult<ExpressionSyntax>(null, [.. lexed.Diagnostics, error.Diagnostic]);
+        }
     }
 
     // Grammar 6.3: the built-in functions.
@@ -187,7 +194,8 @@ public static class Parser
             {
                 TokenKind.Text => new TextSyntax(token.Text, token.Span),
                 TokenKind.Name => new NameSyntax(token.Text, token.Span),
-                _ => new NumberSyntax(decimal.Parse(token.Text, CultureInfo.InvariantCulture), token.Span),
+                TokenKind.Number => new NumberSyntax(decimal.Parse(token.Text, CultureInfo.InvariantCulture), token.Span),
+                _ => throw new SyntaxError(token.Span, "oczekiwano wyrażenia"),
             };
         }
 
@@ -196,5 +204,11 @@ public static class Parser
         // From the start of the first span to the end of the last one, when both are on one line.
         private static SourceSpan Cover(SourceSpan first, SourceSpan last) =>
             first.Line == last.Line ? first with { Length = last.Column + last.Length - first.Column } : first;
+    }
+
+    // Stops reading at the first problem; the expression then has no tree.
+    private sealed class SyntaxError(SourceSpan span, string message) : Exception(message)
+    {
+        public Diagnostic Diagnostic { get; } = new(Severity.Error, span, message, null);
     }
 }
