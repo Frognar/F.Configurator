@@ -145,7 +145,7 @@ public static class Parser
             if (token is { Kind: TokenKind.Operator, Text: "(" })
             {
                 var inner = Expression();
-                var close = Next();
+                var close = Expect(")", "brak „)”");
                 return inner with { Span = Cover(token.Span, close.Span) };
             }
 
@@ -200,6 +200,11 @@ public static class Parser
         }
 
         private Token Next() => tokens[_position++];
+
+        private Token Expect(string text, string message) =>
+            Current.Kind is TokenKind.Operator or TokenKind.Keyword && Current.Text == text
+                ? Next()
+                : throw new SyntaxError(Current.Span, message);
 
         // From the start of the first span to the end of the last one, when both are on one line.
         private static SourceSpan Cover(SourceSpan first, SourceSpan last) =>
