@@ -172,7 +172,7 @@ public static class Parser
                     arguments.Add(Expression());
                 }
 
-                var close = Next();
+                var close = Expect(")", "brak „)”");
                 return new CallSyntax(function, arguments, Cover(token.Span, close.Span));
             }
 
