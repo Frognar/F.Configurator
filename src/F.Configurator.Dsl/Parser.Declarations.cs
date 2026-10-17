@@ -29,7 +29,34 @@ public static partial class Parser
             _position++;
             var title = Next();
             _position++;
-            return new CatalogSyntax(title.Text, [], title.Span);
+            return new CatalogSyntax(title.Text, Block(Property), title.Span);
+        }
+
+        // The lines one level deeper than the line above.
+        private List<T> Block<T>(Func<T> line)
+        {
+            List<T> lines = [];
+            if (Current.Kind != TokenKind.Indent)
+            {
+                return lines;
+            }
+
+            _position++;
+            while (Current.Kind != TokenKind.Dedent)
+            {
+                lines.Add(line());
+            }
+
+            _position++;
+            return lines;
+        }
+
+        private PropertySyntax Property()
+        {
+            var name = Next();
+            var value = Expression();
+            _position++;
+            return new PropertySyntax(name.Text, [value], name.Span);
         }
     }
 }
