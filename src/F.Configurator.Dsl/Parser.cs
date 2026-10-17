@@ -19,7 +19,11 @@ public static class Parser
         }
     }
 
-    public static ParseResult<FileSyntax> ParseFile(string file, string source) => throw new NotImplementedException();
+    public static ParseResult<FileSyntax> ParseFile(string file, string source)
+    {
+        var lexed = Lexer.Tokenize(file, source);
+        return new ParseResult<FileSyntax>(new FileSyntax([]), lexed.Diagnostics);
+    }
 
     // Grammar 6.3: the built-in functions.
     private static readonly string[] Functions =
