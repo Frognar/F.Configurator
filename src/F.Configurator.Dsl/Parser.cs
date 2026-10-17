@@ -34,6 +34,20 @@ public static class Parser
         private ExpressionSyntax Primary()
         {
             var token = Next();
+            if (token.Kind == TokenKind.Name && Current is { Kind: TokenKind.Operator, Text: "[" })
+            {
+                _position++;
+                List<ExpressionSyntax> keys = [Postfix()];
+                while (Current is { Kind: TokenKind.Operator, Text: "," })
+                {
+                    _position++;
+                    keys.Add(Postfix());
+                }
+
+                var close = Next();
+                return new LookupSyntax(token.Text, keys, Cover(token.Span, close.Span));
+            }
+
             return token.Kind switch
             {
                 TokenKind.Text => new TextSyntax(token.Text, token.Span),
