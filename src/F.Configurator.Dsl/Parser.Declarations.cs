@@ -74,9 +74,15 @@ public static partial class Parser
         private PropertySyntax Property()
         {
             var name = Next();
-            var value = Value();
+            List<ExpressionSyntax> values = [Value()];
+            while (Current is { Kind: TokenKind.Operator, Text: "," })
+            {
+                _position++;
+                values.Add(Value());
+            }
+
             _position++;
-            return new PropertySyntax(name.Text, [value], name.Span);
+            return new PropertySyntax(name.Text, values, name.Span);
         }
 
         // `reakcja błąd`: a keyword alone is a word, not the start of an expression.
