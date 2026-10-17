@@ -164,7 +164,7 @@ public static class Parser
 
             if (token is { Kind: TokenKind.Keyword, Text: var function } && Functions.Contains(function))
             {
-                _position++;
+                Expect("(", $"po „{function}” oczekiwano „(”");
                 List<ExpressionSyntax> arguments = [Expression()];
                 while (Current is { Kind: TokenKind.Operator, Text: "," })
                 {
