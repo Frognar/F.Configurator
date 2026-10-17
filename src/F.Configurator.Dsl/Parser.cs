@@ -56,8 +56,8 @@ public static class Parser
             if (token is { Kind: TokenKind.Operator, Text: "(" })
             {
                 var inner = Expression();
-                _position++;
-                return inner;
+                var close = Next();
+                return inner with { Span = Cover(token.Span, close.Span) };
             }
 
             if (token.Kind == TokenKind.Name && Current is { Kind: TokenKind.Operator, Text: "[" })
