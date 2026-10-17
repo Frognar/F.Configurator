@@ -40,7 +40,7 @@ public static class Parser
             var condition = Expression();
             Expect("to", "brak „to”");
             var then = Expression();
-            _position++;
+            Expect("inaczej", "brak „inaczej”");
             var otherwise = Expression();
             return new ConditionalSyntax(condition, then, otherwise, Cover(@if.Span, otherwise.Span));
         }
