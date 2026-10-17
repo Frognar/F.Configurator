@@ -9,7 +9,7 @@ public static class Parser
     {
         var lexed = Lexer.Tokenize(file, source);
         var reader = new Reader(lexed.Tokens);
-        return new ParseResult<ExpressionSyntax>(reader.Postfix(), lexed.Diagnostics);
+        return new ParseResult<ExpressionSyntax>(reader.Expression(), lexed.Diagnostics);
     }
 
     private sealed class Reader(IReadOnlyList<Token> tokens)
@@ -18,7 +18,26 @@ public static class Parser
 
         private Token Current => tokens[_position];
 
-        public ExpressionSyntax Postfix()
+        public ExpressionSyntax Expression() => Additive();
+
+        private ExpressionSyntax Additive() => LeftToRight(Multiplicative, "+", "-");
+
+        private ExpressionSyntax Multiplicative() => LeftToRight(Postfix, "*", "/");
+
+        private ExpressionSyntax LeftToRight(Func<ExpressionSyntax> operand, params string[] operators)
+        {
+            var syntax = operand();
+            while (Current.Kind == TokenKind.Operator && operators.Contains(Current.Text))
+            {
+                var @operator = Next().Text;
+                var right = operand();
+                syntax = new BinarySyntax(@operator, syntax, right, Cover(syntax.Span, right.Span));
+            }
+
+            return syntax;
+        }
+
+        private ExpressionSyntax Postfix()
         {
             var syntax = Primary();
             while (Current is { Kind: TokenKind.Operator, Text: "." })
