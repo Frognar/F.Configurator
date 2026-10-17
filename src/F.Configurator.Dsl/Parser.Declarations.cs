@@ -24,12 +24,27 @@ public static partial class Parser
             return new FileSyntax(declarations);
         }
 
-        private DeclarationSyntax Declaration()
+        private DeclarationSyntax Declaration() =>
+            Next().Text switch
+            {
+                "cecha" => Feature(),
+                _ => Catalog(),
+            };
+
+        private CatalogSyntax Catalog()
         {
-            _position++;
             var title = Next();
             _position++;
             return new CatalogSyntax(title.Text, Block(Property), title.Span);
+        }
+
+        private FeatureSyntax Feature()
+        {
+            var name = Next();
+            _position++;
+            var type = Next();
+            _position++;
+            return new FeatureSyntax(name.Text, type.Text, [], [], [], [], name.Span);
         }
 
         // The lines one level deeper than the line above.
