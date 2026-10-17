@@ -203,7 +203,7 @@ public static class Parser
                     keys.Add(Expression());
                 }
 
-                var close = Next();
+                var close = Expect("]", "brak „]”");
                 return new LookupSyntax(token.Text, keys, Cover(token.Span, close.Span));
             }
 
