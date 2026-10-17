@@ -37,13 +37,18 @@ public static partial class Parser
                     properties.Add(Property());
                 }
             });
-            return new RuleSyntax(name.Text, properties, condition, effects, reaction, name.Span);
+            return effects.Count == 0
+                ? throw new SyntaxError(name.Span, "reguła bez „wtedy”")
+                : new RuleSyntax(name.Text, properties, condition, effects, reaction, name.Span);
         }
 
         private ReactionSyntax Reaction()
         {
-            _position += 2;
-            var kind = Next();
+            _position++;
+            Expect("naruszeniu", "po „przy” oczekiwano „naruszeniu”");
+            var kind = Current is { Kind: TokenKind.Keyword, Text: "koryguj" or "błąd" or "ostrzeż" }
+                ? Next()
+                : throw new SyntaxError(Current.Span, "oczekiwano reakcji (koryguj, błąd, ostrzeż)");
             var message = Text();
             EndOfLine();
             return new ReactionSyntax(kind.Text, message.Text, kind.Span);
@@ -58,7 +63,11 @@ public static partial class Parser
                 "min" or "maks" or "krok" or "długość" or "znaki" => Limit(kind),
                 "domyślnie" or "ustaw" => Assignment(kind),
                 "błąd" or "ostrzeż" or "informuj" => Message(kind),
-                _ => new EffectSyntax(kind.Text, SeparatedByCommas(Reference), null, null, kind.Span),
+                "ukryj" or "zablokuj" => new EffectSyntax(kind.Text, SeparatedByCommas(Reference), null, null, kind.Span),
+                _ => throw new SyntaxError(
+                    kind.Span,
+                    "oczekiwano skutku (ukryj, zablokuj, tylko, zabroń, min, maks, krok, długość, znaki, ustaw, domyślnie, "
+                    + "błąd, ostrzeż, informuj)"),
             };
             EndOfLine();
             return effect;
@@ -99,21 +108,9 @@ public static partial class Parser
                 return new EffectSyntax(kind.Text, [target], null, Name().Text, kind.Span);
             }
 
-            return new EffectSyntax(kind.Text, [target], Expression(), null, kind.Span);
-        }
-
-        private ExpressionSyntax Reference()
-        {
-            var name = Name();
-            ExpressionSyntax reference = new NameSyntax(name.Text, name.Span);
-            while (Current is { Kind: TokenKind.Operator, Text: "." })
-            {
-                _position++;
-                var member = Name();
-                reference = new MemberSyntax(reference, member.Text, Cover(reference.Span, member.Span));
-            }
-
-            return reference;
+            return Current is { Kind: TokenKind.Operator, Text: "[" }
+                ? new EffectSyntax(kind.Text, [target], Expression(), null, kind.Span)
+                : throw new SyntaxError(Current.Span, "oczekiwano listy opcji w nawiasach [ ] albo „z” i nazwy tabeli");
         }
     }
 }

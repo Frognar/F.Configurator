@@ -16,6 +16,8 @@ public static partial class Parser
             List<ComponentSyntax> components = [];
             List<string> shared = [];
             List<string> own = [];
+            List<DeclarationSyntax> declarations = [];
+            ExpressionSyntax? index = null;
             Block(() =>
             {
                 if (Current is { Kind: TokenKind.Keyword, Text: "etap" })
@@ -25,6 +27,14 @@ public static partial class Parser
                 else if (Current is { Kind: TokenKind.Keyword, Text: "cechy" })
                 {
                     features.AddRange(Features());
+                }
+                else if (Current is { Kind: TokenKind.Keyword, Text: "tabela" or "wyliczana" or "reguła" })
+                {
+                    declarations.Add(Declaration());
+                }
+                else if (Current is { Kind: TokenKind.Keyword, Text: "indeks" })
+                {
+                    index = index is null ? Index() : throw new SyntaxError(Current.Span, "kolekcja ma już indeks");
                 }
                 else if (Current is { Kind: TokenKind.Keyword, Text: "komponent" })
                 {
@@ -40,7 +50,29 @@ public static partial class Parser
                     properties.Add(Property());
                 }
             });
-            return new CollectionSyntax(name.Text, properties, stages, features, components, shared, own, null, [], name.Span);
+            return new CollectionSyntax(name.Text, properties, stages, features, components, shared, own, index, declarations, name.Span);
+        }
+
+        // `indeks` and its expression in the deeper lines below.
+        private ExpressionSyntax Index()
+        {
+            _position++;
+            EndOfLine();
+            if (Current.Kind != TokenKind.Indent)
+            {
+                throw new SyntaxError(Current.Span, "pod „indeks” oczekiwano wyrażenia we wciętych wierszach");
+            }
+
+            _position++;
+            var index = Expression();
+            EndOfLine();
+            if (Current.Kind != TokenKind.Dedent)
+            {
+                throw new SyntaxError(Current.Span, "indeks to jedno wyrażenie, dalszy ciąg zacznij od „+”");
+            }
+
+            _position++;
+            return index;
         }
 
         private ComponentSyntax Component()
@@ -77,7 +109,8 @@ public static partial class Parser
             ExpressionSyntax? visibleWhen = null;
             if (Current is { Kind: TokenKind.Keyword, Text: "widoczna" })
             {
-                _position += 2;
+                _position++;
+                Expect("gdy", "po „widoczna” oczekiwano „gdy”");
                 visibleWhen = Expression();
             }
 

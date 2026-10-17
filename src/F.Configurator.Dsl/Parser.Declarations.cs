@@ -35,20 +35,20 @@ public static partial class Parser
             return new FileSyntax(declarations);
         }
 
-        // Every declaration starts a line without indentation.
+        // Every declaration starts a line without indentation. A problem found at the end of a declaration leaves the
+        // reader already there.
         private void SkipToNextDeclaration()
         {
-            while (Current.Kind != TokenKind.End)
+            while (Current.Kind != TokenKind.End && !AtDeclaration())
             {
                 _position++;
-                if (tokens[_position - 1].Kind is TokenKind.NewLine or TokenKind.Dedent
-                    && Current.Kind is TokenKind.Name or TokenKind.Keyword
-                    && Current.Span.Column == 1)
-                {
-                    return;
-                }
             }
         }
+
+        private bool AtDeclaration() =>
+            tokens[_position - 1].Kind is TokenKind.NewLine or TokenKind.Dedent
+            && Current.Kind is TokenKind.Name or TokenKind.Keyword
+            && Current.Span.Column == 1;
 
         private DeclarationSyntax Declaration()
         {
@@ -62,6 +62,8 @@ public static partial class Parser
                 "kontekst" => Context(),
                 "kolekcja" => Collection(),
                 "reguła" => Rule(),
+                "test" => Test(),
+                "indeks" => throw new SyntaxError(keyword.Span, "„indeks” może stać tylko w kolekcji"),
                 _ => throw new SyntaxError(keyword.Span, "oczekiwano deklaracji"),
             };
         }
@@ -310,6 +312,20 @@ public static partial class Parser
                     Current.Span, $"„{Current.Text}” to słowo kluczowe i nie może być nazwą"),
                 _ => throw new SyntaxError(Current.Span, "oczekiwano nazwy"),
             };
+
+        private ExpressionSyntax Reference()
+        {
+            var name = Name();
+            ExpressionSyntax reference = new NameSyntax(name.Text, name.Span);
+            while (Current is { Kind: TokenKind.Operator, Text: "." })
+            {
+                _position++;
+                var member = Name();
+                reference = new MemberSyntax(reference, member.Text, Cover(reference.Span, member.Span));
+            }
+
+            return reference;
+        }
 
         private List<string> Names() => SeparatedByCommas(() => Name().Text);
     }
