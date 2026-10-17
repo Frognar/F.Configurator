@@ -73,8 +73,7 @@ public static class Parser
         private ExpressionSyntax Comparison()
         {
             var left = Range();
-            if (Current is not ({ Kind: TokenKind.Operator, Text: "=" or "≠" or "<" or "<=" or ">" or ">=" }
-                or { Kind: TokenKind.Keyword, Text: "w" }) && !NotIn())
+            if (!AtComparison())
             {
                 return left;
             }
@@ -87,8 +86,15 @@ public static class Parser
             }
 
             var right = Range();
-            return new BinarySyntax(@operator, left, right, Cover(left.Span, right.Span));
+            return AtComparison()
+                ? throw new SyntaxError(Current.Span, "porównań nie można łączyć, użyj „i”")
+                : new BinarySyntax(@operator, left, right, Cover(left.Span, right.Span));
         }
+
+        private bool AtComparison() =>
+            Current is { Kind: TokenKind.Operator, Text: "=" or "≠" or "<" or "<=" or ">" or ">=" }
+                or { Kind: TokenKind.Keyword, Text: "w" }
+            || NotIn();
 
         private ExpressionSyntax Range()
         {
