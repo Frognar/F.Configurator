@@ -24,15 +24,24 @@ public static class Parser
         {
             var left = Additive();
             if (Current is not ({ Kind: TokenKind.Operator, Text: "=" or "≠" or "<" or "<=" or ">" or ">=" }
-                or { Kind: TokenKind.Keyword, Text: "w" }))
+                or { Kind: TokenKind.Keyword, Text: "w" }) && !NotIn())
             {
                 return left;
             }
 
             var @operator = Next().Text;
+            if (@operator == "nie")
+            {
+                _position++;
+                @operator = "nie w";
+            }
+
             var right = Additive();
             return new BinarySyntax(@operator, left, right, Cover(left.Span, right.Span));
         }
+
+        private bool NotIn() =>
+            Current is { Kind: TokenKind.Keyword, Text: "nie" } && tokens[_position + 1] is { Kind: TokenKind.Keyword, Text: "w" };
 
         private ExpressionSyntax Additive() => LeftToRight(Multiplicative, "+", "-");
 
