@@ -158,7 +158,7 @@ public static class Parser
                     items.Add(Expression());
                 }
 
-                var close = Next();
+                var close = Expect("]", "brak „]”");
                 return new ListSyntax(items, Cover(token.Span, close.Span));
             }
 
