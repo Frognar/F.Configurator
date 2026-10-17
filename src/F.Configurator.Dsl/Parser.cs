@@ -196,11 +196,11 @@ public static class Parser
             if (token.Kind == TokenKind.Name && Current is { Kind: TokenKind.Operator, Text: "[" })
             {
                 _position++;
-                List<ExpressionSyntax> keys = [Postfix()];
+                List<ExpressionSyntax> keys = [Expression()];
                 while (Current is { Kind: TokenKind.Operator, Text: "," })
                 {
                     _position++;
-                    keys.Add(Postfix());
+                    keys.Add(Expression());
                 }
 
                 var close = Next();
