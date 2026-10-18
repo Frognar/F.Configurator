@@ -63,7 +63,11 @@ public static partial class Parser
                 "kolekcja" => Collection(),
                 "reguła" => Rule(),
                 "test" => Test(),
+                "powiązanie" => Link(),
+                "cennik" => PriceList(),
+                "przypisz" => PriceListAssignment(),
                 "indeks" => throw new SyntaxError(keyword.Span, "„indeks” może stać tylko w kolekcji"),
+                "wizualizacja" => throw new SyntaxError(keyword.Span, "„wizualizacja” może stać tylko w kolekcji"),
                 _ => throw new SyntaxError(keyword.Span, "oczekiwano deklaracji"),
             };
         }
