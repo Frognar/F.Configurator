@@ -11,7 +11,10 @@ public sealed record ProductCatalog(
     EquatableList<Collection> Collections,
     EquatableList<Rule> Rules,
     EquatableDictionary<string, Table> Tables,
-    EquatableDictionary<string, AllowedCombinationsTable> AllowedCombinations);
+    EquatableDictionary<string, AllowedCombinationsTable> AllowedCombinations)
+{
+    public string? Language { get; init; }
+}
 
 public sealed class CatalogBuilder
 {
@@ -31,6 +34,8 @@ public sealed class CatalogBuilder
             EquatableDictionary<string, AllowedCombinationsTable>.Empty));
 
     public CatalogBuilder Version(string version) => new(_catalog with { Version = version });
+
+    public CatalogBuilder Language(string language) => new(_catalog with { Language = language });
 
     public CatalogBuilder DefaultReaction(Reaction reaction) => new(_catalog with { DefaultReaction = reaction });
 
