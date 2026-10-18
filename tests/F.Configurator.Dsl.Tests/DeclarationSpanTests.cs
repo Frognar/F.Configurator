@@ -60,4 +60,39 @@ public class DeclarationSpanTests
         Assert.Equal(At(6, 6, 3), test.Span);
         Assert.Equal(At(7, 11, 9), Assert.Single(test.Expectations).Span);
     }
+
+    [Fact]
+    public void Parts_of_a_visualization_link_and_price_list_point_at_their_first_word()
+    {
+        const string Source = """
+            kolekcja Demo
+              wizualizacja
+                warstwa "a.png"
+            powiązanie P
+              z A do B
+              przejmij Kolor jako domyślne
+            cennik C
+              baza z "c.csv" klucz Model
+              dopłata W5 "w"
+                kwota 70
+              nadpisz Ramiak kwota 30
+              rabat 5%
+            przypisz C do kontrahenta "X"
+            """;
+
+        var declarations = ParseFile(Source).Syntax!.Declarations;
+        var collection = (CollectionSyntax)declarations[0];
+        var link = (LinkSyntax)declarations[1];
+        var priceList = (PriceListSyntax)declarations[2];
+
+        Assert.Equal(At(3, 13, 7), Assert.Single(collection.Visualization!).Span);
+        Assert.Equal(At(4, 12, 1), link.Span);
+        Assert.Equal(At(6, 3, 8), Assert.Single(link.Takeovers).Span);
+        Assert.Equal(At(7, 8, 1), priceList.Span);
+        Assert.Equal(At(8, 3, 4), priceList.Base!.Span);
+        Assert.Equal(At(9, 11, 2), Assert.Single(priceList.Surcharges).Span);
+        Assert.Equal(At(11, 11, 6), Assert.Single(priceList.Overrides).Span);
+        Assert.Equal(At(12, 3, 5), Assert.Single(priceList.Adjustments).Span);
+        Assert.Equal(At(13, 10, 1), declarations[3].Span);
+    }
 }

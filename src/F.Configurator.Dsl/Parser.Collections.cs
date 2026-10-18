@@ -18,6 +18,7 @@ public static partial class Parser
             List<string> own = [];
             List<DeclarationSyntax> declarations = [];
             ExpressionSyntax? index = null;
+            List<LayerSyntax>? visualization = null;
             Block(() =>
             {
                 if (Current is { Kind: TokenKind.Keyword, Text: "etap" })
@@ -36,6 +37,12 @@ public static partial class Parser
                 {
                     index = index is null ? Index() : throw new SyntaxError(Current.Span, "kolekcja ma już indeks");
                 }
+                else if (Current is { Kind: TokenKind.Keyword, Text: "wizualizacja" })
+                {
+                    visualization = visualization is null
+                        ? Visualization()
+                        : throw new SyntaxError(Current.Span, "kolekcja ma już wizualizację");
+                }
                 else if (Current is { Kind: TokenKind.Keyword, Text: "komponent" })
                 {
                     components.Add(Component());
@@ -50,7 +57,7 @@ public static partial class Parser
                     properties.Add(Property());
                 }
             });
-            return new CollectionSyntax(name.Text, properties, stages, features, components, shared, own, index, declarations, name.Span);
+            return new CollectionSyntax(name.Text, properties, stages, features, components, shared, own, index, visualization, declarations, name.Span);
         }
 
         // `indeks` and its expression in the deeper lines below.
@@ -73,6 +80,50 @@ public static partial class Parser
 
             _position++;
             return index;
+        }
+
+        private List<LayerSyntax> Visualization()
+        {
+            _position++;
+            EndOfLine();
+            return Block(Layer);
+        }
+
+        private LayerSyntax Layer()
+        {
+            Expect("warstwa", "oczekiwano „warstwa”");
+            var image = Text();
+            ExpressionSyntax? when = null;
+            if (Current is { Kind: TokenKind.Keyword, Text: "gdy" })
+            {
+                _position++;
+                when = Expression();
+            }
+
+            EndOfLine();
+            ExpressionSyntax? texture = null;
+            ExpressionSyntax? mirrorWhen = null;
+            Block(() =>
+            {
+                if (Current is { Kind: TokenKind.Keyword, Text: "tekstura" })
+                {
+                    _position++;
+                    texture = Reference();
+                }
+                else if (Current is { Kind: TokenKind.Keyword, Text: "odbij" })
+                {
+                    _position++;
+                    Expect("gdy", "po „odbij” oczekiwano „gdy”");
+                    mirrorWhen = Expression();
+                }
+                else
+                {
+                    throw new SyntaxError(Current.Span, "oczekiwano „tekstura” albo „odbij gdy”");
+                }
+
+                EndOfLine();
+            });
+            return new LayerSyntax(image.Text, when, texture, mirrorWhen, image.Span);
         }
 
         private ComponentSyntax Component()
