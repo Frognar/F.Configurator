@@ -50,7 +50,7 @@ public static partial class Parser
                     properties.Add(Property());
                 }
             });
-            return new CollectionSyntax(name.Text, properties, stages, features, components, shared, own, index, declarations, name.Span);
+            return new CollectionSyntax(name.Text, properties, stages, features, components, shared, own, index, null, declarations, name.Span);
         }
 
         // `indeks` and its expression in the deeper lines below.
